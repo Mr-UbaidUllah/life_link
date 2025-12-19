@@ -1,3 +1,4 @@
+import 'package:blood_donation/Provider/auth_provider.dart';
 import 'package:blood_donation/view/Profile_screen/personel_information.dart';
 import 'package:blood_donation/view/auth%20_screens.dart/login_screen.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
@@ -7,6 +8,7 @@ import 'package:blood_donation/widgets/reusable_email.dart';
 import 'package:blood_donation/widgets/reusable_password.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -70,23 +72,99 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
             ),
 
-            // SIGN UP BUTTON
+
             Positioned(
-              left: width * 0.05,
-              right: width * 0.05,
-              top: height * 0.45,
-              child: InkWell(
-                 onTap: () {
-                  Navigator.push(
-                    context,
+  left: width * 0.05,
+  right: width * 0.05,
+  top: height * 0.45,
+  child: Selector<AuthProviders, bool>(
+    selector: (_, auth) => auth.isLoading,
+    builder: (context, isLoading, _) {
+      return InkWell(
+        onTap: isLoading
+            ? null
+            : () async {
+                final auth =
+                    context.read<AuthProviders>();
+
+                try {
+                  await auth.signup(
+                    email_controller.text.trim(),
+                    password_controller.text.trim(),
+                  );
+
+                  if (!context.mounted) return;
+
+                  Navigator.of(context).pushReplacement(
                     MaterialPageRoute(
-                      builder: (context) => PersonelInformation(),
+                      builder: (_) => PersonelInformation(),
                     ),
                   );
-                },
-                child: ReusableButton(label: 'Sign up'),
-              ),
-            ),
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString()),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+        child: isLoading
+            ? const Center(
+                child: SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            : ReusableButton(label: 'Sign up'),
+      );
+    },
+  ),
+),
+
+
+            // // SIGN UP BUTTON
+            // Positioned(
+            //   left: width * 0.05,
+            //   right: width * 0.05,
+            //   top: height * 0.45,
+            //   child: Consumer<AuthProviders>(
+            //     builder:
+            //         (BuildContext context, AuthProviders auth, Widget? child) {
+            //           return InkWell(
+            //             onTap: auth.isLoading
+            //                 ? null
+            //                 : () async {
+            //                     try {
+            //                       await auth.Signup(
+            //                         email_controller.text.trim(),
+            //                         password_controller.text.trim(),
+            //                       );
+
+            //                       // ✅ SUCCESS → Navigate
+            //                       Navigator.push(
+            //                         context,
+            //                         MaterialPageRoute(
+            //                           builder: (_) => PersonelInformation(),
+            //                         ),
+            //                       );
+            //                     } catch (e) {
+            //                       ScaffoldMessenger.of(context).showSnackBar(
+            //                         SnackBar(
+            //                           content: Text('Signupo failed'),
+            //                           backgroundColor: Colors.red,
+            //                         ),
+            //                       );
+            //                     }
+            //                   },
+            //             child: auth.isLoading 
+            //                 ? const CircularProgressIndicator()
+            //                 : ReusableButton(label: 'Sign up'),
+            //           );
+            //         },
+            //   ),
+            // ),
 
             Positioned(
               top: height * 0.60, //
