@@ -18,12 +18,11 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  TextEditingController email_controller = TextEditingController();
+  TextEditingController password_controller = TextEditingController();
+  TextEditingController phone_controller = TextEditingController();
   @override
   Widget build(BuildContext context) {
-    TextEditingController email_controller = TextEditingController();
-    TextEditingController password_controller = TextEditingController();
-    TextEditingController phone_controller = TextEditingController();
-
     final width = MediaQuery.of(context).size.width;
     final height = MediaQuery.of(context).size.height;
 
@@ -72,57 +71,54 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
             ),
 
-
             Positioned(
-  left: width * 0.05,
-  right: width * 0.05,
-  top: height * 0.45,
-  child: Selector<AuthProviders, bool>(
-    selector: (_, auth) => auth.isLoading,
-    builder: (context, isLoading, _) {
-      return InkWell(
-        onTap: isLoading
-            ? null
-            : () async {
-                final auth =
-                    context.read<AuthProviders>();
+              left: width * 0.05,
+              right: width * 0.05,
+              top: height * 0.45,
+              child: Selector<AuthProviders, bool>(
+                selector: (_, auth) => auth.isLoading,
+                builder: (context, isLoading, _) {
+                  return InkWell(
+                    onTap: isLoading
+                        ? null
+                        : () async {
+                            final auth = context.read<AuthProviders>();
 
-                try {
-                  await auth.signup(
-                    email_controller.text.trim(),
-                    password_controller.text.trim(),
+                            try {
+                              await auth.signup(
+                                email_controller.text.trim(),
+                                password_controller.text.trim(),
+                              );
+
+                              if (!context.mounted) return;
+
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (_) => PersonelInformation(),
+                                ),
+                              );
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(e.toString()),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          },
+                    child: isLoading
+                        ? const Center(
+                            child: SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : ReusableButton(label: 'Sign up'),
                   );
-
-                  if (!context.mounted) return;
-
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (_) => PersonelInformation(),
-                    ),
-                  );
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(e.toString()),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              },
-        child: isLoading
-            ? const Center(
-                child: SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            : ReusableButton(label: 'Sign up'),
-      );
-    },
-  ),
-),
-
+                },
+              ),
+            ),
 
             // // SIGN UP BUTTON
             // Positioned(
@@ -158,14 +154,13 @@ class _SignupScreenState extends State<SignupScreen> {
             //                       );
             //                     }
             //                   },
-            //             child: auth.isLoading 
+            //             child: auth.isLoading
             //                 ? const CircularProgressIndicator()
             //                 : ReusableButton(label: 'Sign up'),
             //           );
             //         },
             //   ),
             // ),
-
             Positioned(
               top: height * 0.60, //
               left: 0,

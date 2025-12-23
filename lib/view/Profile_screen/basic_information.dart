@@ -1,3 +1,4 @@
+import 'package:blood_donation/Provider/user_provider.dart';
 import 'package:blood_donation/view/Profile_screen/image_screen.dart';
 import 'package:blood_donation/view/Profile_screen/personel_information.dart';
 import 'package:blood_donation/widgets/custom_dropdown_form_field.dart';
@@ -5,8 +6,11 @@ import 'package:blood_donation/widgets/custom_text_field.dart';
 import 'package:blood_donation/widgets/dropdownheader.dart';
 import 'package:blood_donation/widgets/header.dart';
 import 'package:blood_donation/widgets/reusable_button.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 class BasicInformation extends StatefulWidget {
   const BasicInformation({super.key});
@@ -21,6 +25,7 @@ class _BasicInformationState extends State<BasicInformation> {
   final List<String> Genders = ['Male', 'Female', 'Others'];
   final List<String> Options = ['Yes', 'No'];
   final TextEditingController dateController = TextEditingController();
+  final TextEditingController aboutcontroller = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -129,17 +134,73 @@ class _BasicInformationState extends State<BasicInformation> {
                     focusedBorderColor: Colors.red,
                     labelText: "About Your Self",
                     maxLines: 7,
+                    controller: aboutcontroller,
                   ),
                   SizedBox(height: 20.h),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => ImageScreen()),
-                      );
-                    },
-                    child: ReusableButton(label: 'Next'),
+                  Consumer<UserProvider>(
+                    builder:
+                        (
+                          BuildContext context,
+                          UserProvider users,
+                          Widget? child,
+                        ) {
+                          return GestureDetector(
+                            onTap: () async {
+                              final user = FirebaseAuth.instance.currentUser;
+
+                              if (user == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('User not logged in'),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              if (dateController.text.isEmpty ||
+                                  selectedGender == null ||
+                                  selectedOption == null ||
+                                  aboutcontroller.text.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Please fill all fields'),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              // Update basic info
+                              final success = await users.updateBasicInfo(
+                                uid: user.uid,
+                                dateOfBirth: dateController.text.trim(),
+                                gender: selectedGender!,
+                                wantToDonate: selectedOption!,
+                                about: aboutcontroller.text.trim(),
+                              );
+
+                              // ✅ Update profileCompleted field
+                              if (success) {
+                                await FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(user.uid)
+                                    .update({'profileCompleted': true});
+                              }
+
+                              // Navigate to next screen
+                              if (success && context.mounted) {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ImageScreen(),
+                                  ),
+                                );
+                              }
+                            },
+                            child: ReusableButton(label: 'Next'),
+                          );
+                        },
                   ),
+
                   SizedBox(height: 20.h),
                 ],
               ),

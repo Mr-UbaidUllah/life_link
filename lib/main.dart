@@ -1,7 +1,7 @@
 import 'package:blood_donation/Provider/auth_provider.dart';
-import 'package:blood_donation/view/Profile_screen/personel_information.dart';
-import 'package:blood_donation/view/auth%20_screens.dart/onboarding_Screen.dart';
-import 'package:blood_donation/view/bottmNavigation.dart';
+import 'package:blood_donation/Provider/user_provider.dart';
+
+import 'package:blood_donation/view/auth_wrappper.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -12,7 +12,10 @@ void main() async {
   await Firebase.initializeApp();
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => AuthProviders())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProviders()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+      ],
       child: ScreenUtilInit(
         designSize: Size(375, 812),
         minTextAdapt: true,
@@ -33,7 +36,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const OnboardingScreen(),
+      home: const AuthWrapper(),
     );
   }
 }

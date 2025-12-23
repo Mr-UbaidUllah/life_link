@@ -1,6 +1,9 @@
+import 'package:blood_donation/Provider/user_provider.dart';
 import 'package:blood_donation/widgets/menu_tile.dart';
+import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 class MoreScreen extends StatefulWidget {
   const MoreScreen({super.key});
@@ -10,6 +13,14 @@ class MoreScreen extends StatefulWidget {
 }
 
 class _MoreScreenState extends State<MoreScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      context.read<UserProvider>().loadCurrentUser();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,16 +57,42 @@ class _MoreScreenState extends State<MoreScreen> {
               ),
               Positioned(
                 top: 80.h,
-                left: 100.h,
+                left: 125.h,
                 child: Column(
                   children: [
-                    Text(
-                      'Brooklyn Simmons',
-                      style: TextStyle(color: Colors.white, fontSize: 20),
-                    ),
-                    Text(
-                      'Blood Group: B+',
-                      style: TextStyle(color: Colors.white, fontSize: 15),
+                    Consumer<UserProvider>(
+                      builder:
+                          (
+                            BuildContext context,
+                            UserProvider provider,
+                            Widget? child,
+                          ) {
+                            if (provider.isLoading) {
+                              return UserNameShimmer();
+                            }
+                            final user = provider.user;
+                            if (user == null) {
+                              return Text('User not found');
+                            }
+                            return Column(
+                              children: [
+                                Text(
+                                  user.name ?? 'User Name',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                  ),
+                                ),
+                                Text(
+                                  'Blood Group : ${user.bloodGroup}',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                     ),
                   ],
                 ),

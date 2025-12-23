@@ -1,13 +1,15 @@
+import 'package:blood_donation/Provider/auth_provider.dart';
+import 'package:blood_donation/Provider/user_provider.dart';
 import 'package:blood_donation/view/Profile_screen/basic_information.dart';
+import 'package:blood_donation/view/auth%20_screens.dart/login_screen.dart';
 import 'package:blood_donation/widgets/custom_dropdown_form_field.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
-import 'package:blood_donation/widgets/dropdown%20.dart';
 import 'package:blood_donation/widgets/dropdownheader.dart';
-import 'package:blood_donation/widgets/header.dart';
 import 'package:blood_donation/widgets/reusable_button.dart';
-import 'package:blood_donation/widgets/reusable_email.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 class PersonelInformation extends StatefulWidget {
   const PersonelInformation({super.key});
@@ -17,6 +19,9 @@ class PersonelInformation extends StatefulWidget {
 }
 
 class _PersonelInformationState extends State<PersonelInformation> {
+  TextEditingController nameController = TextEditingController();
+  TextEditingController phoneController = TextEditingController();
+  final user = FirebaseAuth.instance.currentUser;
   String? selectedBloodGroup;
   String? selectedCountry;
   String? selectedCity;
@@ -58,15 +63,34 @@ class _PersonelInformationState extends State<PersonelInformation> {
   Widget build(BuildContext context) {
     // final width = MediaQuery.of(context).size.width;
     final height = MediaQuery.of(context).size.height;
-    TextEditingController nameController = TextEditingController();
+    final authProvider = context.read<AuthProviders>();
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: InkWell(
-          onTap: () {
-            Navigator.pop(context);
+        title: Consumer<AuthProviders>(
+          builder: (BuildContext context, auth, Widget? child) {
+            return InkWell(
+              onTap: auth.isLoading
+                  ? null
+                  : () async{
+                                  await FirebaseAuth.instance.signOut();
+
+                      if (context.mounted) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LoginScreen(),
+                          ),
+                        );
+                      }
+                      // if (context.mounted) {
+                      //   // Navigator.pop(context);
+                      // }
+                    },
+              child: Icon(Icons.arrow_back_ios_new_outlined),
+            );
           },
-          child: Icon(Icons.arrow_back_ios_new_outlined),
         ),
       ),
       body: SingleChildScrollView(
@@ -118,6 +142,7 @@ class _PersonelInformationState extends State<PersonelInformation> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CustomTextField(
+                    controller: nameController,
                     focusedBorderColor: Colors.red,
                     labelText: "Your Name",
                     keyboardType: TextInputType.name,
@@ -126,6 +151,7 @@ class _PersonelInformationState extends State<PersonelInformation> {
 
                   CustomTextField(
                     focusedBorderColor: Colors.red,
+                    controller: phoneController,
                     labelText: "Mobile Number",
                     keyboardType: TextInputType.phone,
                   ),
@@ -171,7 +197,9 @@ class _PersonelInformationState extends State<PersonelInformation> {
                     items: countries,
                     itemToString: (item) => item,
                     onChanged: (val) {
-                      selectedCountry = val;
+                      setState(() {
+                        selectedCountry = val;
+                      });
                     },
                   ),
 
@@ -180,8 +208,14 @@ class _PersonelInformationState extends State<PersonelInformation> {
                     value: selectedCity,
                     items: getCityList(),
                     itemToString: (item) => item,
-                    hintText: 'Enter Your City ',
+                    hintText: 'Enter Your City',
+                     onChanged: (val) {
+                      setState(() {
+                        selectedCity = val;
+                      });
+                    },
                   ),
+
                   SizedBox(height: 20.h),
 
                   // Dropdownheader(name: 'Country '),
@@ -211,14 +245,54 @@ class _PersonelInformationState extends State<PersonelInformation> {
             ),
             Padding(
               padding: const EdgeInsets.all(12.0),
-              child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => BasicInformation()),
+              child: Consumer<UserProvider>(
+                builder: (BuildContext context, User, Widget? child) {
+                  return InkWell(
+                    onTap: () async {
+                      final user = FirebaseAuth.instance.currentUser;
+                      if (user == null) return;
+
+                      if (nameController.text.isEmpty ||
+                          phoneController.text.isEmpty ||
+                          selectedBloodGroup == null ||
+                          selectedCountry == null ||
+                          selectedCity == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please fill all fields'),
+                          ),
+                        );
+                        return;
+                      }
+                      final success = await User.updatePersonalInfo(
+                        uid: user.uid,
+                        name: nameController.text,
+                        phone: phoneController.text,
+                        bloodGroup: selectedBloodGroup!,
+                        country: selectedCountry!,
+                        city: selectedCity!,
+                      );
+                      if (success && context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => BasicInformation()),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Something went wrong')),
+                        );
+                      }
+
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //     builder: (context) => BasicInformation(),
+                      //   ),
+                      // );
+                    },
+                    child: ReusableButton(label: 'Next'),
                   );
                 },
-                child: ReusableButton(label: 'Next'),
               ),
             ),
           ],

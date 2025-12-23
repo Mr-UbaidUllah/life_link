@@ -1,3 +1,5 @@
+import 'package:blood_donation/Provider/auth_provider.dart';
+import 'package:blood_donation/view/Profile_screen/personel_information.dart';
 import 'package:blood_donation/view/auth%20_screens.dart/signup_screen.dart';
 import 'package:blood_donation/widgets/redContainer.dart';
 import 'package:blood_donation/widgets/reusable_button.dart';
@@ -5,6 +7,7 @@ import 'package:blood_donation/widgets/reusable_email.dart';
 import 'package:blood_donation/widgets/reusable_password.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,11 +17,10 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  TextEditingController email_controller = TextEditingController();
+  TextEditingController password_controller = TextEditingController();
   @override
   Widget build(BuildContext context) {
-    TextEditingController email_controller = TextEditingController();
-    TextEditingController password_controller = TextEditingController();
-
     final width = MediaQuery.of(context).size.width;
     final height = MediaQuery.of(context).size.height;
     return Scaffold(
@@ -63,7 +65,46 @@ class _LoginScreenState extends State<LoginScreen> {
             left: width * 0.05,
             right: width * 0.05,
             top: height * 0.55,
-            child: ReusableButton(label: 'Login'),
+            child: Consumer<AuthProviders>(
+              builder: (BuildContext context, auth, Widget? child) {
+                return InkWell(
+                  onTap: auth.isLoading
+                      ? null
+                      : () async {
+                          try {
+                            await auth.login(
+                              email_controller.text.trim(),
+                              password_controller.text.trim(),
+                            );
+
+                            if (context.mounted) {
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (_) => PersonelInformation(),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(e.toString()),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
+                  child: auth.isLoading
+                      ? const Center(
+                          child: SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : ReusableButton(label: 'Login'),
+                );
+              },
+            ),
           ),
 
           Positioned(
@@ -103,4 +144,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

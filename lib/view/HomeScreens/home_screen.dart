@@ -1,8 +1,14 @@
+import 'package:blood_donation/Provider/auth_provider.dart';
+import 'package:blood_donation/Provider/user_provider.dart';
+import 'package:blood_donation/view/auth%20_screens.dart/login_screen.dart';
+import 'package:blood_donation/view/bloodrequest_screen.dart';
 import 'package:blood_donation/widgets/contribution.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
 import 'package:blood_donation/widgets/reusable_email.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,6 +32,14 @@ class _HomeScreenState extends State<HomeScreen> {
     "O-",
   ];
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      context.read<UserProvider>().loadCurrentUser();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SingleChildScrollView(
@@ -39,18 +53,57 @@ class _HomeScreenState extends State<HomeScreen> {
                 SizedBox(width: 10),
                 Column(
                   children: [
-                    Text(
-                      'User Name',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Consumer<UserProvider>(
+                      builder:
+                          (
+                            BuildContext context,
+                            UserProvider provider,
+                            Widget? child,
+                          ) {
+                            if (provider.isLoading) {
+                              return const CircularProgressIndicator();
+                            }
+                            final user = provider.user;
+                            if (user == null) {
+                              return const Text('User not found');
+                            }
+                            return Text(
+                              user.name ?? 'User Name',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            );
+                          },
                     ),
                     Text('Donate Blood : off', style: TextStyle(fontSize: 10)),
                   ],
                 ),
                 SizedBox(width: 120.w),
-                Icon(Icons.forward_to_inbox_rounded),
+                Consumer<AuthProviders>(
+                  builder: (BuildContext context, auth, Widget? child) {
+                    return InkWell(
+                      onTap: auth.isLoading
+                          ? null
+                          : () async {
+                              await FirebaseAuth.instance.signOut();
+
+                              if (context.mounted) {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const LoginScreen(),
+                                  ),
+                                );
+                              }
+                              // if (context.mounted) {
+                              //   // Navigator.pop(context);
+                              // }
+                            },
+                      child: Icon(Icons.arrow_back_ios_new_outlined),
+                    );
+                  },
+                ),
                 SizedBox(width: 10.w),
 
                 Icon(Icons.notifications_none_outlined),
@@ -101,6 +154,8 @@ class _HomeScreenState extends State<HomeScreen> {
             homeHeader(tilte: 'Blood Group'),
 
             GridView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+
               shrinkWrap: true,
               padding: EdgeInsets.symmetric(horizontal: 20.h, vertical: 20.h),
               itemCount: bloodGroups.length,
@@ -119,33 +174,46 @@ class _HomeScreenState extends State<HomeScreen> {
                       selectedIndex = index;
                     });
                   },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected ? Colors.white : Colors.red,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Image.asset('assets/images/drop.png', height: 60.h),
-                            Text(
-                              bloodGroups[index],
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 10,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BloodrequestScreen(),
                         ),
-                      ],
+                      );
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected ? Colors.white : Colors.red,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Image.asset(
+                                'assets/images/drop.png',
+                                height: 60.h,
+                              ),
+                              Text(
+                                bloodGroups[index],
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
