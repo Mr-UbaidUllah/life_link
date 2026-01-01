@@ -1,5 +1,6 @@
 import 'package:blood_donation/Provider/storage_provider.dart';
 import 'package:blood_donation/Provider/user_provider.dart';
+import 'package:blood_donation/view/organization_screen.dart';
 import 'package:blood_donation/view/request_screen.dart';
 import 'package:blood_donation/view/user_donate_blood.dart';
 import 'package:blood_donation/widgets/image_picker.dart';
@@ -197,7 +198,14 @@ class _MoreScreenState extends State<MoreScreen> {
                 MenuTile(
                   icon: Icons.bus_alert_outlined,
                   title: 'Blood Donat Oraganization',
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => OrganizationScreen(),
+                      ),
+                    );
+                  },
                 ),
                 MenuTile(
                   icon: Icons.bus_alert,
