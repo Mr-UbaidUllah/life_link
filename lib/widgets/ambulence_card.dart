@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class OrganizationCard extends StatelessWidget {
+class AmbulenceCard extends StatelessWidget {
   final String image;
   final String name;
   final String address;
   final String phone;
 
-  const OrganizationCard({
+  const AmbulenceCard({
     super.key,
     required this.image,
     required this.name,
@@ -62,7 +62,7 @@ class OrganizationCard extends StatelessWidget {
                         Row(
                           children: [
                             const Icon(
-                              Icons.location_on,
+                              Icons.bus_alert_outlined,
                               size: 14,
                               color: Colors.red,
                             ),
@@ -82,7 +82,7 @@ class OrganizationCard extends StatelessWidget {
                         Row(
                           children: [
                             const Icon(
-                              Icons.phone,
+                              Icons.location_on_sharp,
                               size: 14,
                               color: Colors.red,
                             ),

@@ -1,5 +1,6 @@
 import 'package:blood_donation/Provider/storage_provider.dart';
 import 'package:blood_donation/Provider/user_provider.dart';
+import 'package:blood_donation/view/ambulance_screen.dart';
 import 'package:blood_donation/view/organization_screen.dart';
 import 'package:blood_donation/view/request_screen.dart';
 import 'package:blood_donation/view/user_donate_blood.dart';
@@ -207,10 +208,19 @@ class _MoreScreenState extends State<MoreScreen> {
                     );
                   },
                 ),
-                MenuTile(
-                  icon: Icons.bus_alert,
-                  title: 'Ambulence',
-                  onTap: () {},
+                InkWell(
+                  child: MenuTile(
+                    icon: Icons.bus_alert,
+                    title: 'Ambulence',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AmbulanceScreen(),
+                        ),
+                      );
+                    },
+                  ),
                 ),
                 MenuTile(
                   icon: Icons.forward_to_inbox_sharp,

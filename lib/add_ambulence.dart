@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:blood_donation/Models/ambulance_model.dart';
 import 'package:blood_donation/Models/organization_model.dart';
+import 'package:blood_donation/Provider/ambulance_provider.dart';
 import 'package:blood_donation/Provider/organization_provider.dart';
 import 'package:blood_donation/Provider/organization_storage_provider.dart';
 import 'package:blood_donation/widgets/image_picker.dart';
@@ -9,16 +11,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
-class AddOrganizationScreen extends StatefulWidget {
-  const AddOrganizationScreen({super.key});
+class AddAmbulence extends StatefulWidget {
+  const AddAmbulence({super.key});
 
   @override
-  State<AddOrganizationScreen> createState() => _AddOrganizationScreenState();
+  State<AddAmbulence> createState() => _AddOrganizationScreenState();
 }
 
-class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
-  final nameCtrl = TextEditingController();
-  final countryCtrl = TextEditingController();
+class _AddOrganizationScreenState extends State<AddAmbulence> {
+  final ambulancenameCtrl = TextEditingController();
+  final hospitolname = TextEditingController();
   final cityCtrl = TextEditingController();
   final addressCtrl = TextEditingController();
   final phoneCtrl = TextEditingController();
@@ -33,18 +35,18 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
 
   bool _validateForm(BuildContext context) {
     if (selectedImage == null) {
-      _showError(context, 'Please select organization image');
+      _showError(context, 'Please select Ambulance image');
       return false;
     }
-    if (nameCtrl.text.trim().isEmpty) {
-      _showError(context, 'Please enter organization name');
+    if (ambulancenameCtrl.text.trim().isEmpty) {
+      _showError(context, 'Please enter Ambulance name');
       return false;
     }
-    if (countryCtrl.text.trim().isEmpty) {
-      _showError(context, 'Please enter country');
-      return false;
-    }
-    if (cityCtrl.text.trim().isEmpty) {
+    // if (countryCtrl.text.trim().isEmpty) {
+    //   _showError(context, 'Please enter country');
+    //   return false;
+    // }
+    if (hospitolname.text.trim().isEmpty) {
       _showError(context, 'Please enter city');
       return false;
     }
@@ -63,7 +65,7 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Organization')),
+      appBar: AppBar(title: const Text('Add Ambulence')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -90,16 +92,20 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
             ),
 
             TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Name'),
+              controller: ambulancenameCtrl,
+              decoration: const InputDecoration(labelText: 'Ambulance Name'),
             ),
+            // TextField(
+            //   controller: countryCtrl,
+            //   decoration: const InputDecoration(labelText: 'Country'),
+            // ),
+            // TextField(
+            //   controller: cityCtrl,
+            //   decoration: const InputDecoration(labelText: 'City'),
+            // ),
             TextField(
-              controller: countryCtrl,
-              decoration: const InputDecoration(labelText: 'Country'),
-            ),
-            TextField(
-              controller: cityCtrl,
-              decoration: const InputDecoration(labelText: 'City'),
+              controller: hospitolname,
+              decoration: const InputDecoration(labelText: 'Hospitol name'),
             ),
             TextField(
               controller: addressCtrl,
@@ -113,43 +119,42 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
             const SizedBox(height: 20),
 
             /// SAVE BUTTON
-            Consumer2<OrganizationProvider, OrganizationStorageProvider>(
-              builder: (context, orgProvider, storageProvider, _) {
+            Consumer<AmbulanceProvider>(
+              builder: (context, ambulance, _) {
                 return ElevatedButton(
-                  onPressed: orgProvider.isLoading || storageProvider.isLoading
+                  onPressed: ambulance.isLoading
                       ? null
                       : () async {
                           if (!_validateForm(context)) return;
                           final docRef = FirebaseFirestore.instance
-                              .collection('organizations')
+                              .collection('Ambulance')
                               .doc();
 
-                          final org = OrganizationModel(
+                          final org = AmbulanceModel(
                             id: docRef.id,
-                            name: nameCtrl.text.trim(),
-                            country: countryCtrl.text.trim(),
-                            city: cityCtrl.text.trim(),
-                            address: addressCtrl.text.trim(),
-                            phone: phoneCtrl.text.trim(),
-                            image: '',
+                            ambulanceName: ambulancenameCtrl.text,
+                            hospitalName: hospitolname.text,
+                            address: addressCtrl.text,
+                            imageUrl: '',
+                            phoneNumber: phoneCtrl.text,
                           );
 
                           // Create organization
-                          await orgProvider.addOraganization(org);
+                          await ambulance.addAmbulance(org);
 
                           //  Upload image (if selected)
-                          if (selectedImage != null) {
-                            await storageProvider.uploadImage(
-                              org.id,
-                              selectedImage!,
-                            );
-                          }
+                          // if (selectedImage != null) {
+                          //   await storageProvider.uploadImage(
+                          //     org.id,
+                          //     selectedImage!,
+                          //   );
+                          // }
 
                           Navigator.pop(context);
                         },
-                  child: (orgProvider.isLoading || storageProvider.isLoading)
+                  child: (ambulance.isLoading)
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Save Organization'),
+                      : const Text('Save Ambulance'),
                 );
               },
             ),

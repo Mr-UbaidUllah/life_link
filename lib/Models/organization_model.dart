@@ -39,4 +39,25 @@ class OrganizationModel {
       'city': city,
     };
   }
+
+  /// ✅ ADD THIS
+  OrganizationModel copyWith({
+    String? id,
+    String? name,
+    String? image,
+    String? address,
+    String? phone,
+    String? country,
+    String? city,
+  }) {
+    return OrganizationModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      image: image ?? this.image,
+      address: address ?? this.address,
+      phone: phone ?? this.phone,
+      country: country ?? this.country,
+      city: city ?? this.city,
+    );
+  }
 }
