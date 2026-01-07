@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:blood_donation/Models/bloodrequest_model.dart';
 import 'package:blood_donation/Provider/auth_provider.dart';
@@ -11,11 +10,9 @@ import 'package:blood_donation/view/specific_Bloodgroup_screen.dart';
 import 'package:blood_donation/widgets/contribution.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
 import 'package:blood_donation/widgets/image_picker.dart';
-import 'package:blood_donation/widgets/reusable_email.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {

@@ -15,6 +15,7 @@ class PostDetailsScreen extends StatefulWidget {
 }
 
 class _PostDetailsScreenState extends State<PostDetailsScreen> {
+  @override
   void initState() {
     super.initState();
 

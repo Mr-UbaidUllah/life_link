@@ -4,6 +4,7 @@ import 'package:blood_donation/view/ambulance_screen.dart';
 import 'package:blood_donation/view/organization_screen.dart';
 import 'package:blood_donation/view/request_screen.dart';
 import 'package:blood_donation/view/user_donate_blood.dart';
+import 'package:blood_donation/view/volunteer_screen.dart';
 import 'package:blood_donation/widgets/image_picker.dart';
 import 'package:blood_donation/widgets/menu_tile.dart';
 import 'package:blood_donation/widgets/shimmer.dart';
@@ -68,7 +69,7 @@ class _MoreScreenState extends State<MoreScreen> {
                     return InkWell(
                       onTap: () async {
                         final file = await pickImage();
-                        if (file == null) return null;
+                        if (file == null) return;
 
                         final success = await storage.uploadImage(uid, file);
 
@@ -230,7 +231,14 @@ class _MoreScreenState extends State<MoreScreen> {
                 MenuTile(
                   icon: Icons.add_reaction_sharp,
                   title: 'Work as volunteer',
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => VolunteerScreen(),
+                      ),
+                    );
+                  },
                 ),
                 MenuTile(
                   icon: Icons.takeout_dining,
