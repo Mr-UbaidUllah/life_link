@@ -22,7 +22,7 @@ class _UserDonateBloodState extends State<UserDonateBlood> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Create Donat Blood')),
+      appBar: AppBar(title: Text('Create Donate Blood')),
 
       body: Consumer<UserProvider>(
         builder: (context, provider, child) {

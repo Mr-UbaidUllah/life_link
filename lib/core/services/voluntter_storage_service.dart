@@ -5,9 +5,9 @@ import 'package:firebase_storage/firebase_storage.dart';
 
 class VoluntterStorageService {
   Future<String> uploadorganizationImage(String uid, File image) async {
-    final FirebaseStorage _storage = FirebaseStorage.instance;
-    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-    final ref = _storage.ref().child('volunteer_images/$uid.jpg');
+    final FirebaseStorage storage = FirebaseStorage.instance;
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+    final ref = storage.ref().child('volunteer_images/$uid.jpg');
 
     await ref.putFile(image);
 

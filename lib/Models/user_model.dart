@@ -72,11 +72,11 @@ class UserModel {
     };
   }
 
-  factory UserModel.fromMap(Map<String, dynamic> map) {
+  factory UserModel.fromMap(String uid, Map<String, dynamic> map) {
     final Timestamp? timestamp = map['createdAt'];
 
     return UserModel(
-      uid: map['uid'] ?? '',
+      uid: uid, // ← coming from doc.id
       email: map['email'] ?? '',
       name: map['name'],
       phone: map['phone'],

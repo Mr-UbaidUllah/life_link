@@ -148,4 +148,8 @@ class UserProvider extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
   }
+
+  Stream<List<UserModel>> get donors {
+    return _firestoreService.getDonors();
+  }
 }

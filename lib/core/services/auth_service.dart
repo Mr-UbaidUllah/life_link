@@ -18,7 +18,7 @@ class AuthService {
       uid: userCredential.user!.uid,
       email: email,
       createdAt: DateTime.now(),
-    
+
       profileCompleted: false,
     );
 
@@ -54,6 +54,7 @@ class AuthService {
     // user document not found
     if (!doc.exists) return null;
 
-    return UserModel.fromMap(doc.data()!);
+    // return UserModel.fromMap(doc.data()!);
+    return UserModel.fromMap(doc.id, doc.data()!);
   }
 }
