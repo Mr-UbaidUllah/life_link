@@ -10,7 +10,7 @@ import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/provider/volunteer_provider.dart';
 import 'package:blood_donation/provider/volunteer_storagar_provider.dart';
 
-import 'package:blood_donation/view/auth_wrappper.dart';
+import 'package:blood_donation/view/auth/auth_wrappper.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';

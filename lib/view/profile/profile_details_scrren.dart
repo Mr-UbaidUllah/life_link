@@ -208,8 +208,8 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                               ),
                               child: Column(
                                 children: [
-                                  _infoRow("Age", "30"),
-                                  _infoRow("Gender", "Male"),
+                                  // _infoRow("Age", "30"),
+                                  // _infoRow("Gender", "Male"),
                                   _infoRow("City", user.city.toString()),
                                   _infoRow("Country", user.country.toString()),
                                   _infoRow("Mobile", user.phone.toString()),

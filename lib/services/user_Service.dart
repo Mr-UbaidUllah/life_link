@@ -38,6 +38,9 @@ class UserFirestoreService {
     });
   }
 
+
+
+  // fetch the current user details
   Future<UserModel?> fetchCurrentUser() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return null;
