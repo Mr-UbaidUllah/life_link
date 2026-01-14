@@ -1,6 +1,6 @@
 import 'package:blood_donation/Provider/auth_provider.dart';
-import 'package:blood_donation/view/Profile_screen/personel_information.dart';
-import 'package:blood_donation/view/auth%20_screens.dart/login_screen.dart';
+import 'package:blood_donation/view/profile/personel_information.dart';
+import 'package:blood_donation/view/auth/login_screen.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
 import 'package:blood_donation/widgets/redContainer.dart';
 import 'package:blood_donation/widgets/reusable_button.dart';

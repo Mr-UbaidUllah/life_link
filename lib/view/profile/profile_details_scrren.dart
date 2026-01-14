@@ -2,7 +2,7 @@ import 'package:blood_donation/Models/bloodrequest_model.dart';
 import 'package:blood_donation/Provider/userPost_provider.dart';
 import 'package:blood_donation/Provider/user_provider.dart';
 import 'package:blood_donation/view/bloodrequest_screen.dart';
-import 'package:blood_donation/view/HomeScreens/home_screen.dart';
+import 'package:blood_donation/view/home/home_screen.dart';
 import 'package:blood_donation/view/request_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';

@@ -1,5 +1,5 @@
 import 'package:blood_donation/Models/bloodrequest_model.dart';
-import 'package:blood_donation/core/services/bloodGroup_Service.dart';
+import 'package:blood_donation/services/bloodGroup_Service.dart';
 import 'package:flutter/material.dart';
 
 class BloodGroupRequestProvider with ChangeNotifier {

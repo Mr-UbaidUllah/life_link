@@ -1,4 +1,4 @@
-import 'package:blood_donation/view/auth%20_screens.dart/onboarding_Screen.dart';
+import 'package:blood_donation/view/auth/onboarding_Screen.dart';
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {

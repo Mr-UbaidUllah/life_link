@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:blood_donation/Models/volunteer_model.dart';
-import 'package:blood_donation/core/services/voluntter_storage_service.dart';
+import 'package:blood_donation/services/voluntter_storage_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 

@@ -1,5 +1,5 @@
 import 'package:blood_donation/Provider/organization_provider.dart';
-import 'package:blood_donation/add_organization_screen.dart';
+import 'package:blood_donation/view/add_organization_screen.dart';
 import 'package:blood_donation/widgets/organization_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

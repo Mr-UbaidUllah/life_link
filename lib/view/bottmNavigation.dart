@@ -1,4 +1,4 @@
-import 'package:blood_donation/view/HomeScreens/home_screen.dart';
+import 'package:blood_donation/view/home/home_screen.dart';
 import 'package:blood_donation/view/more_screen.dart';
 import 'package:blood_donation/view/search_screen.dart';
 import 'package:flutter/material.dart';

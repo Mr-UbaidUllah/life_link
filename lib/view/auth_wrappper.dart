@@ -1,5 +1,5 @@
-import 'package:blood_donation/view/Profile_screen/personel_information.dart';
-import 'package:blood_donation/view/auth%20_screens.dart/login_screen.dart';
+import 'package:blood_donation/view/profile/personel_information.dart';
+import 'package:blood_donation/view/auth/login_screen.dart';
 import 'package:blood_donation/view/bottmNavigation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';

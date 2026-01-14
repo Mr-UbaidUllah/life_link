@@ -1,5 +1,6 @@
 {
     "cSpell.words": [
         "orgmodel"
-    ]
+    ],
+    "cmake.ignoreCMakeListsMissing": true
 }

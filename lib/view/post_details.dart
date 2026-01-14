@@ -1,6 +1,6 @@
 import 'package:blood_donation/Models/bloodrequest_model.dart';
 import 'package:blood_donation/Provider/user_provider.dart';
-import 'package:blood_donation/view/profiledetails_screens/profile_details_scrren.dart';
+import 'package:blood_donation/view/profile/profile_details_scrren.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -50,7 +50,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: [ 
                 /// Blood Icon
                 Center(
                   child: CircleAvatar(
