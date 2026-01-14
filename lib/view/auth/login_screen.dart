@@ -1,4 +1,4 @@
-import 'package:blood_donation/Provider/auth_provider.dart';
+import 'package:blood_donation/provider/auth_provider.dart';
 import 'package:blood_donation/view/auth/signup_screen.dart';
 import 'package:blood_donation/view/auth_wrappper.dart';
 import 'package:blood_donation/widgets/redContainer.dart';

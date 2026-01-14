@@ -1,5 +1,5 @@
-import 'package:blood_donation/Provider/storage_provider.dart';
-import 'package:blood_donation/Provider/user_provider.dart';
+import 'package:blood_donation/provider/storage_provider.dart';
+import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/view/ambulance_screen.dart';
 import 'package:blood_donation/view/organization_screen.dart';
 import 'package:blood_donation/view/request_screen.dart';

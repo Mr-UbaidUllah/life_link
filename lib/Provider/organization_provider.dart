@@ -1,5 +1,5 @@
 import 'package:blood_donation/services/organization_service.dart';
-import 'package:blood_donation/Models/organization_model.dart';
+import 'package:blood_donation/models/organization_model.dart';
 import 'package:flutter/material.dart';
 
 class OrganizationProvider with ChangeNotifier {

@@ -1,8 +1,8 @@
 import 'dart:io';
 
-import 'package:blood_donation/Models/ambulance_model.dart';
-import 'package:blood_donation/Provider/ambulance_provider.dart';
-import 'package:blood_donation/Provider/ambulance_storage_provider.dart';
+import 'package:blood_donation/models/ambulance_model.dart';
+import 'package:blood_donation/provider/ambulance_provider.dart';
+import 'package:blood_donation/provider/ambulance_storage_provider.dart';
 import 'package:blood_donation/widgets/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';

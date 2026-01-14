@@ -1,5 +1,5 @@
-import 'package:blood_donation/Models/bloodrequest_model.dart';
-import 'package:blood_donation/Provider/bloodRequest_provider.dart';
+import 'package:blood_donation/models/bloodrequest_model.dart';
+import 'package:blood_donation/provider/bloodRequest_provider.dart';
 import 'package:blood_donation/view/home/home_screen.dart';
 import 'package:blood_donation/view/post_details.dart';
 import 'package:blood_donation/widgets/dropdownheader.dart';

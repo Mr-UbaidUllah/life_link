@@ -1,6 +1,6 @@
-import 'package:blood_donation/Models/bloodrequest_model.dart';
-import 'package:blood_donation/Provider/userPost_provider.dart';
-import 'package:blood_donation/Provider/user_provider.dart';
+import 'package:blood_donation/models/bloodrequest_model.dart';
+import 'package:blood_donation/provider/userPost_provider.dart';
+import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/view/bloodrequest_screen.dart';
 import 'package:blood_donation/view/home/home_screen.dart';
 import 'package:blood_donation/view/request_screen.dart';

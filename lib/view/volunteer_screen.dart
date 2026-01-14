@@ -1,5 +1,5 @@
-import 'package:blood_donation/Models/volunteer_model.dart';
-import 'package:blood_donation/Provider/volunteer_provider.dart';
+import 'package:blood_donation/models/volunteer_model.dart';
+import 'package:blood_donation/provider/volunteer_provider.dart';
 import 'package:blood_donation/view/add_volunteer_screen.dart';
 import 'package:blood_donation/widgets/volunteer_card.dart';
 import 'package:flutter/material.dart';

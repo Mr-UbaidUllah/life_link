@@ -1,4 +1,4 @@
-import 'package:blood_donation/Provider/user_provider.dart';
+import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/view/profile/image_screen.dart';
 import 'package:blood_donation/view/profile/personel_information.dart';
 import 'package:blood_donation/widgets/custom_dropdown_form_field.dart';

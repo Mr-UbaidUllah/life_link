@@ -1,4 +1,4 @@
-import 'package:blood_donation/Models/user_model.dart';
+import 'package:blood_donation/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';

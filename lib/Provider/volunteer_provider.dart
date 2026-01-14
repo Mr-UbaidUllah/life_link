@@ -1,4 +1,4 @@
-import 'package:blood_donation/Models/volunteer_model.dart';
+import 'package:blood_donation/models/volunteer_model.dart';
 import 'package:blood_donation/services/volunteer_service.dart';
 import 'package:flutter/material.dart';
 
