@@ -1,5 +1,6 @@
 import 'package:blood_donation/models/bloodrequest_model.dart';
 import 'package:blood_donation/provider/bloodRequest_provider.dart';
+import 'package:blood_donation/widgets/request_screen_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -44,16 +45,16 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _inputField("Post Title", "Type title", titleController),
+            inputField("Post Title", "Type title", titleController),
 
-            _dropdownField(
+            dropdownField(
               label: "Select Group",
               value: selectedBloodGroup,
               items: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
               onChanged: (val) => setState(() => selectedBloodGroup = val),
             ),
 
-            _inputField(
+            inputField(
               "Amount of Request Blood",
               "Type how much",
               amountController,
@@ -62,36 +63,36 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
 
             _dateField(),
 
-            _inputField(
+            inputField(
               "Hospital Name",
               "Type hospital name",
               hospitalController,
             ),
 
-            _inputField(
+            inputField(
               "Why do you need blood?",
               "Type why",
               reasonController,
               maxLines: 3,
             ),
 
-            _inputField("Contact person Name", "Type name", contactController),
+            inputField("Contact person Name", "Type name", contactController),
 
-            _inputField(
+            inputField(
               "Mobile number",
               "Type mobile number",
               phoneController,
               keyboard: TextInputType.phone,
             ),
 
-            _dropdownField(
+            dropdownField(
               label: "Country",
               value: selectedCountry,
               items: ["Pakistan", "India", "USA"],
               onChanged: (val) => setState(() => selectedCountry = val),
             ),
 
-            _dropdownField(
+            dropdownField(
               label: "City",
               value: selectedCity,
               items: ["Lahore", "Karachi", "Islamabad"],
@@ -165,73 +166,6 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   }
 
   // ---------- WIDGETS ----------
-
-  Widget _inputField(
-    String label,
-    String hint,
-    TextEditingController controller, {
-    int maxLines = 1,
-    TextInputType keyboard = TextInputType.text,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 13)),
-          const SizedBox(height: 6),
-          TextField(
-            controller: controller,
-            maxLines: maxLines,
-            keyboardType: keyboard,
-            decoration: InputDecoration(
-              hintText: hint,
-              filled: true,
-              fillColor: Colors.grey.shade100,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _dropdownField({
-    required String label,
-    required String? value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 13)),
-          const SizedBox(height: 6),
-          DropdownButtonFormField<String>(
-            value: value,
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.grey.shade100,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide.none,
-              ),
-            ),
-            hint: Text(label),
-            items: items
-                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                .toList(),
-            onChanged: onChanged,
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _dateField() {
     return Padding(

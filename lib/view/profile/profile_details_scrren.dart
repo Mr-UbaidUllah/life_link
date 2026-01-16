@@ -2,8 +2,9 @@ import 'package:blood_donation/models/bloodrequest_model.dart';
 import 'package:blood_donation/provider/userPost_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/view/bloodrequest_screen.dart';
-import 'package:blood_donation/view/home/home_screen.dart';
+import 'package:blood_donation/view/chat_screen.dart';
 import 'package:blood_donation/view/request_screen.dart';
+import 'package:blood_donation/widgets/home_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -159,7 +160,15 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                       ProfileDetailsScreen._actionButton(
                         text: "Chat Now",
                         color: Colors.red,
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ChatScreen(otherUserId: widget.userId),
+                            ),
+                          );
+                        },
                       ),
                       SizedBox(width: 12.w),
                       ProfileDetailsScreen._outlineButton(

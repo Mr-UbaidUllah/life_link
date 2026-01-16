@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// ignore: must_be_immutable
 class ReusableButton extends StatelessWidget {
   String label;
   ReusableButton({super.key, required this.label});

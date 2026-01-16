@@ -100,10 +100,8 @@ class _BasicInformationState extends State<BasicInformation> {
                         firstDate: DateTime(1990),
                         lastDate: DateTime(2100),
                       );
-                      if (pickDate != null) {
-                        dateController.text =
-                            "${pickDate.day}/${pickDate.month}/${pickDate.year}";
-                      }
+                      dateController.text =
+                          "${pickDate?.day}/${pickDate?.month}/${pickDate?.year}";
                     },
                   ),
                   Dropdownheader(name: 'Gender'),

@@ -1,4 +1,5 @@
 import 'package:blood_donation/provider/user_provider.dart';
+import 'package:blood_donation/widgets/donate_blood_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -81,17 +82,4 @@ class _UserDonateBloodState extends State<UserDonateBlood> {
       ),
     );
   }
-}
-
-Widget userTile(String title, String value) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(title, style: TextStyle(fontWeight: FontWeight.w500)),
-        Text(value, style: TextStyle(color: Colors.grey)),
-      ],
-    ),
-  );
 }

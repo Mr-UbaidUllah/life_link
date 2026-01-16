@@ -1,6 +1,9 @@
 {
     "cSpell.words": [
-        "orgmodel"
+        "Dropdownheader",
+        "orgmodel",
+        "Shifa"
     ],
-    "cmake.ignoreCMakeListsMissing": true
+    "cmake.ignoreCMakeListsMissing": true,
+    "dart.flutterSdkPath": "D:\\flutter\\src\\flutter"
 }
