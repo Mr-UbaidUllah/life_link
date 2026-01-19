@@ -38,8 +38,6 @@ class UserFirestoreService {
     });
   }
 
-
-
   // fetch the current user details
   Future<UserModel?> fetchCurrentUser() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -76,5 +74,18 @@ class UserFirestoreService {
             return UserModel.fromMap(doc.id, doc.data());
           }).toList();
         });
+  }
+
+  /// 🔹 Fetch ALL users
+  Stream<List<UserModel>> fetchAllUsers() {
+    return _firestore.collection('users').snapshots().map((snapshot) {
+      debugPrint('USERS COUNT: ${snapshot.docs.length}');
+
+      return snapshot.docs.map((doc) {
+        debugPrint('USER DATA: ${doc.data()}');
+
+        return UserModel.fromMap(doc.id, doc.data());
+      }).toList();
+    });
   }
 }

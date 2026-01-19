@@ -9,6 +9,8 @@ class UserProvider extends ChangeNotifier {
 
   bool _isLoading = false;
   bool isWilling = false;
+  List<UserModel> _users = [];
+
   bool get isLoading => _isLoading;
   UserModel? _user;
   UserModel? _postUser;
@@ -16,6 +18,7 @@ class UserProvider extends ChangeNotifier {
   String? _error;
   String? get error => _error;
   UserModel? get user => _user;
+  List<UserModel> get users => _users;
 
   /// Update personal information
   Future<bool> updatePersonalInfo({
@@ -151,5 +154,10 @@ class UserProvider extends ChangeNotifier {
 
   Stream<List<UserModel>> get donors {
     return _firestoreService.getDonors();
+  }
+
+  Stream<List<UserModel>> get allUsers  {
+    print('get function${_firestoreService.fetchAllUsers()}');
+    return _firestoreService.fetchAllUsers();
   }
 }

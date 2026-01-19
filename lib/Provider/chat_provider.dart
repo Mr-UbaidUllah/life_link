@@ -1,33 +1,16 @@
+import 'package:blood_donation/models/message_model.dart';
+import 'package:blood_donation/services/chat_service.dart';
 import 'package:flutter/material.dart';
-import '../services/chat_service.dart';
 
-class ChatProvider extends ChangeNotifier {
-  final ChatService _chatService = ChatService();
+class MessageProvider extends ChangeNotifier {
+  final ChatService _service = ChatService();
 
-  bool isSending = false;
-  String? currentChatId;
+  Stream<List<MessageModel>> getMessages(String receiverId) {
+    return _service.getMessages(receiverId: receiverId);
+  }
 
-  /// Create chat + send message
-  Future<void> sendMessage({
-    required String otherUserId,
-    required String text,
-  }) async {
+  Future<void> sendMessage(String receiverId, String text) async {
     if (text.trim().isEmpty) return;
-
-    isSending = true;
-    notifyListeners();
-
-    try {
-      // 1️⃣ Create or get chat
-      currentChatId = await _chatService.createChatIfNotExists(otherUserId);
-
-      // 2️⃣ Send message
-      await _chatService.sendMessage(chatId: currentChatId!, text: text.trim());
-    } catch (e) {
-      debugPrint('Send message error: $e');
-    } finally {
-      isSending = false;
-      notifyListeners();
-    }
+    await _service.sendMessage(reciverid: receiverId, text: text);
   }
 }

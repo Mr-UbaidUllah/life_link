@@ -39,7 +39,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AmbulanceProvider()),
         ChangeNotifierProvider(create: (_) => VolunteerProvider()),
         ChangeNotifierProvider(create: (_) => volunteerStorageProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => MessageProvider()),
       ],
       child: ScreenUtilInit(
         designSize: Size(375, 812),

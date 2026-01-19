@@ -26,7 +26,7 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(title: const Text('Chat')),
       body: Column(
         children: [
-          // 🔹 Messages area (will be used later)
+          //  Messages area (will be used later)
           Expanded(
             child: Container(
               color: Colors.grey.shade100,
@@ -40,46 +40,46 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
 
           // 🔹 Input area
-          Consumer<ChatProvider>(
-            builder: (context, chatProvider, _) {
-              return Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _messageController,
-                        decoration: const InputDecoration(
-                          hintText: 'Type a message...',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: chatProvider.isSending
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.send),
-                      onPressed: chatProvider.isSending
-                          ? null
-                          : () async {
-                              await context.read<ChatProvider>().sendMessage(
-                                otherUserId: widget.otherUserId,
-                                text: _messageController.text,
-                              );
+          // Consumer<ChatProvider>(
+          //   builder: (context, chatProvider, _) {
+          //     return Padding(
+          //       padding: const EdgeInsets.all(8.0),
+          //       child: Row(
+          //         children: [
+          //           Expanded(
+          //             child: TextField(
+          //               controller: _messageController,
+          //               decoration: const InputDecoration(
+          //                 hintText: 'Type a message...',
+          //                 border: OutlineInputBorder(),
+          //               ),
+          //             ),
+          //           ),
+          //           const SizedBox(width: 8),
+          //           IconButton(
+          //             icon: chatProvider.isSending
+          //                 ? const SizedBox(
+          //                     width: 20,
+          //                     height: 20,
+          //                     child: CircularProgressIndicator(strokeWidth: 2),
+          //                   )
+          //                 : const Icon(Icons.send),
+          //             onPressed: chatProvider.isSending
+          //                 ? null
+          //                 : () async {
+          //                     await context.read<ChatProvider>().sendMessage(
+          //                       otherUserId: widget.otherUserId,
+          //                       text: _messageController.text,
+          //                     );
 
-                              _messageController.clear();
-                            },
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+          //                     _messageController.clear();
+          //                   },
+          //           ),
+          //         ],
+          //       ),
+          //     );
+          //   },
+          // ),
         ],
       ),
     );
