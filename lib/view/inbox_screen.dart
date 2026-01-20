@@ -12,7 +12,7 @@ class UsersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('All Users')),
+      appBar: AppBar(title: const Text('Inbox')),
       body: Consumer<UserProvider>(
         builder: (context, provider, _) {
           return StreamBuilder<List<UserModel>>(

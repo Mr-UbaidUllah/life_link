@@ -7,12 +7,6 @@ class ChatService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  /// Generate SAME chatId for two users
-  String getChatId(String uid1, String uid2) {
-    final sorted = [uid1, uid2]..sort();
-    return sorted.join('_');
-  }
-
   // Future<String> createChatIfNotExists(String otherUserId) async {
   //   final myUid = FirebaseAuth.instance.currentUser!.uid;
   //   final chatId = getChatId(myUid, otherUserId);
@@ -44,26 +38,28 @@ class ChatService {
     final senderEmail = currentUser.email!;
     final Timestamp timestamp = Timestamp.now();
 
-    // 🔹 chatId
+    // chatId
     List<String> ids = [senderId, reciverid];
     ids.sort();
     String chatRoomId = ids.join('_');
 
     final chatRef = _firestore.collection('chats').doc(chatRoomId);
 
-    //  CREATE CHAT IF NOT EXISTS
+    //  CREATE CHAT IF NOT EXISTS  
     await chatRef.set({
-      'users': ids,
+      'users': ids, 
       'lastMessage': text,
       'updatedAt': timestamp,
     }, SetOptions(merge: true));
 
-    // 🔹 ADD MESSAGE
+    //  ADD MESSAGE
     MessageModel newMessage = MessageModel(
       senderId: senderId,
       senderEmail: senderEmail,
       receiverId: reciverid,
       text: text,
+      createdAt: Timestamp.now(), //  REQUIRED
+      isDelivered: false,
     );
 
     await chatRef.collection('messages').add(newMessage.toMap());
@@ -73,7 +69,7 @@ class ChatService {
     final currentUser = FirebaseAuth.instance.currentUser!;
     final senderId = currentUser.uid;
 
-    // 🔹 Compute chat ID (same as sendMessage)
+    //  Compute chat ID (same as sendMessage)
     List<String> ids = [senderId, receiverId];
     ids.sort();
     String chatRoomId = ids.join('_');
@@ -84,7 +80,7 @@ class ChatService {
         .collection('messages')
         .orderBy('createdAt', descending: false);
 
-    // 🔹 Return a stream of MessageModel
+    //  Return a stream of MessageModel
     return chatRef.snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
         final data = doc.data();

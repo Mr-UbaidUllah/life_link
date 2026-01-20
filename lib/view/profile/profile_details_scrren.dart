@@ -3,6 +3,7 @@ import 'package:blood_donation/provider/userPost_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/view/bloodrequest_screen.dart';
 import 'package:blood_donation/view/chat_screen.dart';
+import 'package:blood_donation/view/msg_screen.dart';
 import 'package:blood_donation/view/request_screen.dart';
 import 'package:blood_donation/widgets/home_widgets.dart';
 import 'package:flutter/material.dart';
@@ -164,8 +165,10 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  ChatScreen(otherUserId: widget.userId),
+                              builder: (context) => ChatScreen(
+                                name: user.name.toString(),
+                                receiverId: user.uid,
+                              ),
                             ),
                           );
                         },

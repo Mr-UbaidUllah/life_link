@@ -55,23 +55,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   SizedBox(width: 20),
                   Consumer2<StorageProvider, UserProvider>(
-                    // used for the 2 providers
                     builder: (context, storage, userProvider, child) {
                       final imageUrl = userProvider.user?.profileImage;
                       final uid = FirebaseAuth.instance.currentUser!.uid;
 
                       return InkWell(
-                        onTap: () async {
-                          final file = await pickImage();
-                          if (file == null) return;
+                        onTap: storage.isLoading
+                            ? null
+                            : () async {
+                                final file = await pickImage();
+                                if (file == null) return;
 
-                          final success = await storage.uploadImage(uid, file);
-                          if (success) {
-                            await userProvider
-                                .loadCurrentUser(); //  refresh user
-                          }
-                        },
-                        onLongPress: imageUrl == null
+                                final success = await storage.uploadImage(
+                                  uid,
+                                  file,
+                                );
+                                if (success) {
+                                  await userProvider.loadCurrentUser();
+                                }
+                              },
+                        onLongPress: storage.isLoading || imageUrl == null
                             ? null
                             : () async {
                                 final confirm = await showDialog(
@@ -108,14 +111,34 @@ class _HomeScreenState extends State<HomeScreen> {
                                   }
                                 }
                               },
-                        child: CircleAvatar(
-                          radius: 30.h,
-                          backgroundImage: imageUrl != null
-                              ? NetworkImage(imageUrl)
-                              : null,
-                          child: imageUrl == null
-                              ? const Icon(Icons.person)
-                              : null,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            CircleAvatar(
+                              radius: 30.h,
+                              backgroundImage: imageUrl != null
+                                  ? NetworkImage(imageUrl)
+                                  : null,
+                              child: imageUrl == null
+                                  ? const Icon(Icons.person)
+                                  : null,
+                            ),
+
+                            // 🔥 PROVIDER LOADER
+                            if (storage.isLoading)
+                              Container(
+                                width: 60.h,
+                                height: 60.h,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.4),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              ),
+                          ],
                         ),
                       );
                     },
