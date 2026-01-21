@@ -1,4 +1,5 @@
 import 'package:blood_donation/models/bloodrequest_model.dart';
+import 'package:blood_donation/notifications/notification_service.dart';
 import 'package:blood_donation/provider/auth_provider.dart';
 import 'package:blood_donation/provider/bloodRequest_provider.dart';
 import 'package:blood_donation/provider/storage_provider.dart';
@@ -35,9 +36,18 @@ class _HomeScreenState extends State<HomeScreen> {
     "O+",
     "O-",
   ];
+  NotificationService notificationService = NotificationService();
   @override
   void initState() {
     super.initState();
+    notificationService.requestNotificationpermission();
+    notificationService.firebaseInit();
+
+    notificationService.isDeviceTokenRefresh();
+    notificationService.getDeviceToken().then((value) {
+      print('Device token');
+      print(value);
+    });
     Future.microtask(() {
       context.read<UserProvider>().loadCurrentUser();
     });

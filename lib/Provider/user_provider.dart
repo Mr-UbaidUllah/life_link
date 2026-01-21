@@ -9,7 +9,7 @@ class UserProvider extends ChangeNotifier {
 
   bool _isLoading = false;
   bool isWilling = false;
-  List<UserModel> _users = [];
+  final List<UserModel> _users = [];
 
   bool get isLoading => _isLoading;
   UserModel? _user;

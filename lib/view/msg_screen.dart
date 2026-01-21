@@ -138,7 +138,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 const SizedBox(height: 4),
                                 Text(
                                   msg.createdAt != null
-                                      ? _formatTime(msg.createdAt!)
+                                      ? _formatTime(msg.createdAt)
                                       : '',
                                   style: TextStyle(
                                     fontSize: 10,

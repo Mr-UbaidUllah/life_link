@@ -2,7 +2,6 @@ import 'package:blood_donation/models/bloodrequest_model.dart';
 import 'package:blood_donation/provider/userPost_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/view/bloodrequest_screen.dart';
-import 'package:blood_donation/view/chat_screen.dart';
 import 'package:blood_donation/view/msg_screen.dart';
 import 'package:blood_donation/view/request_screen.dart';
 import 'package:blood_donation/widgets/home_widgets.dart';
