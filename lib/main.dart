@@ -13,13 +13,25 @@ import 'package:blood_donation/provider/volunteer_storagar_provider.dart';
 
 import 'package:blood_donation/view/auth/auth_wrappper.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
+/// Must be top-level & outside any class
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  debugPrint(' Background Message: ${message.messageId}');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  ///  Register background notification handler
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
   // await Supabase.initialize(
   //   url: 'https://fjohvobuwontphqccgbo.supabase.co',
   //   anonKey:
