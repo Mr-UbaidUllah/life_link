@@ -2,8 +2,8 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:app_settings/app_settings.dart';
+import 'package:blood_donation/view/bloodrequest_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -59,9 +59,6 @@ class NotificationService {
         initLocalNotifications(context, message);
         showNotification(message);
       }
-      
-
-      
     });
   }
 
@@ -77,7 +74,15 @@ class NotificationService {
     );
     await flutterLocalNotificationsPlugin.initialize(
       initializationSetting,
-      onDidReceiveNotificationResponse: (payload) {},
+      onDidReceiveNotificationResponse: (response) {
+        if (response.payload == 'msj') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => BloodrequestScreen()),
+          );
+        }
+        // handleMessage(context, message);    
+      },
     );
   }
 
@@ -105,6 +110,7 @@ class NotificationService {
         message.notification!.title,
         message.notification!.body,
         notificationDetails,
+        payload: message.data['type'],
       );
     });
   }
@@ -141,6 +147,28 @@ class NotificationService {
     messaging.onTokenRefresh.listen((event) {
       event.toString();
     });
+  }
+
+  Future<void> setupInteractMessage(BuildContext context) async {
+    // when app is terminated
+    RemoteMessage? initialMessage = await FirebaseMessaging.instance
+        .getInitialMessage();
+    if (initialMessage != null) {
+      handleMessage(context, initialMessage);
+    }
+    // when app is in background
+    FirebaseMessaging.onMessageOpenedApp.listen((event) {
+      handleMessage(context, event);
+    });
+  }
+
+  void handleMessage(BuildContext context, RemoteMessage message) {
+    if (message.data['type'] == 'msj') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => BloodrequestScreen()),
+      );
+    }
   }
 }
 
