@@ -1,10 +1,27 @@
 import 'package:blood_donation/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Future<void> _saveFcmToken(String uid) async {
+    try {
+      String? token = await FirebaseMessaging.instance.getToken();
+      if (token == null) return;
+
+      await _firestore.collection('users').doc(uid).set({
+        'fcmTokens': FieldValue.arrayUnion([token]),
+        'tokenUpdatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      print("✅ FCM Token saved for user");
+    } catch (e) {
+      print("❌ Error saving FCM token: $e");
+    }
+  }
 
   Future<UserCredential> signup(String email, String password) async {
     // Create user in Firebase Auth;
@@ -28,12 +45,20 @@ class AuthService {
         .doc(userModel.uid)
         .set(userModel.toMap());
 
+    // SAVE FCM TOKEN AFTER SIGNUPx`
+    await _saveFcmToken(userModel.uid);
     // return credentialllls
     return userCredential;
   }
 
   Future<void> Login(String email, String password) async {
-    await _auth.signInWithEmailAndPassword(email: email, password: password);
+    UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    // SAVE / UPDATE FCM TOKEN AFTER LOGIN
+    await _saveFcmToken(userCredential.user!.uid);
   }
 
   Future<void> logout() async {

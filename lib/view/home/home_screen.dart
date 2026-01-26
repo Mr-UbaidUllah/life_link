@@ -36,18 +36,11 @@ class _HomeScreenState extends State<HomeScreen> {
     "O+",
     "O-",
   ];
-  NotificationService notificationService = NotificationService();
+  NotificationServices notificationService = NotificationServices();
   @override
   void initState() {
-    super.initState();
-    notificationService.requestNotificationpermission();
-    notificationService.firebaseInit(context);
-    notificationService.setupInteractMessage(context);
-    notificationService.isDeviceTokenRefresh();
-    notificationService.getDeviceToken().then((value) {
-      print('Device token');
-      print(value);
-    });
+    // super.initState();
+
     Future.microtask(() {
       context.read<UserProvider>().loadCurrentUser();
     });

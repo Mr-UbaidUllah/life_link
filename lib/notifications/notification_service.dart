@@ -7,10 +7,12 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-class NotificationService {
+class NotificationServices {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+      FlutterLocalNotificationsPlugin();//This is used to SHOW notifications manually when the app is:
+//Open (foreground)
+//Or you want custom behavior
   void requestNotificationpermission() async {
     NotificationSettings settings = await messaging.requestPermission(
       alert: true,
@@ -48,9 +50,9 @@ class NotificationService {
   //   );
   // }
 
-  Future<String> getDeviceToken() async {
+  Future<String?> getDeviceToken() async {
     String? token = await messaging.getToken();
-    return token!;
+    return token;
   }
 
   void firebaseInit(BuildContext context) {

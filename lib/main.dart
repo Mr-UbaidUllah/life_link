@@ -10,6 +10,7 @@ import 'package:blood_donation/provider/userPost_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/provider/volunteer_provider.dart';
 import 'package:blood_donation/provider/volunteer_storagar_provider.dart';
+import 'package:blood_donation/services/push_notification_service.dart';
 
 import 'package:blood_donation/view/auth/auth_wrappper.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -31,6 +32,8 @@ void main() async {
 
   ///  Register background notification handler
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+   final notificationService = NotificationService();
+  await notificationService.initialize();
 
   // await Supabase.initialize(
   //   url: 'https://fjohvobuwontphqccgbo.supabase.co',
