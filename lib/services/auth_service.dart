@@ -35,7 +35,7 @@ class AuthService {
       uid: userCredential.user!.uid,
       email: email,
       createdAt: DateTime.now(),
-
+ 
       profileCompleted: false,
     );
 

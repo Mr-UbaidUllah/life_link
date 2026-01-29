@@ -1,5 +1,4 @@
 import 'package:blood_donation/models/bloodrequest_model.dart';
-import 'package:blood_donation/notifications/notification_service.dart';
 import 'package:blood_donation/provider/auth_provider.dart';
 import 'package:blood_donation/provider/bloodRequest_provider.dart';
 import 'package:blood_donation/provider/storage_provider.dart';
@@ -36,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
     "O+",
     "O-",
   ];
-  NotificationServices notificationService = NotificationServices();
+  // NotificationServices notificationService = NotificationServices();
   @override
   void initState() {
     // super.initState();

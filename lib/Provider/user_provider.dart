@@ -156,7 +156,7 @@ class UserProvider extends ChangeNotifier {
     return _firestoreService.getDonors();
   }
 
-  Stream<List<UserModel>> get allUsers  {
+  Stream<List<UserModel>> get allUsers {
     print('get function${_firestoreService.fetchAllUsers()}');
     return _firestoreService.fetchAllUsers();
   }

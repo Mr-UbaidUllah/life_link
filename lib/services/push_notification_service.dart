@@ -1,4 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,6 +9,10 @@ class NotificationService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
+       // Add navigation key to navigate from anywhere
+  static final GlobalKey<NavigatorState> navigatorKey = 
+      GlobalKey<NavigatorState>();
+
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'blood_requests',
@@ -16,11 +21,11 @@ class NotificationService {
     importance: Importance.high,
   );
 
-  // 🔹 CALL THIS AFTER LOGIN
+  // 🔹 CALL THIS AFTER LOGIN 
   Future<void> initialize() async {
     print("🔔 Initializing notifications...");
 
-    // 1️⃣ Request permission
+    // 1️ Request permission
     NotificationSettings settings = await _messaging.requestPermission(
       alert: true,
       badge: true,
@@ -34,7 +39,7 @@ class NotificationService {
 
     print("✅ Permission granted");
 
-    // 2️⃣ Get FCM token
+    // 2️ Get FCM token
     String? token = await _messaging.getToken();
     print("✅ FCM Token: $token");
 
@@ -42,21 +47,21 @@ class NotificationService {
       await _saveTokenToFirestore(token);
     }
 
-    // 3️⃣ Listen for token refresh
+    // 3️ Listen for token refresh
     _messaging.onTokenRefresh.listen(_saveTokenToFirestore);
 
-    // 4️⃣ Setup local notifications
+    // 4️ Setup local notifications
     await _setupLocalNotifications();
 
-    // 5️⃣ Foreground notification
+    // 5️ Foreground notification
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
 
-    // 6️⃣ When notification is tapped
+    // 6️ When notification is tapped
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
       print("📲 Notification clicked");
     });
 
-    // 7️⃣ App opened from terminated state
+    // 7️ App opened from terminated state
     RemoteMessage? initialMessage = await FirebaseMessaging.instance
         .getInitialMessage();
     if (initialMessage != null) {
