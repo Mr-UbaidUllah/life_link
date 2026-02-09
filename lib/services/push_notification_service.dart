@@ -9,10 +9,9 @@ class NotificationService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
-       // Add navigation key to navigate from anywhere
-  static final GlobalKey<NavigatorState> navigatorKey = 
+  // Add navigation key to navigate from anywhere
+  static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
-
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'blood_requests',
@@ -21,7 +20,7 @@ class NotificationService {
     importance: Importance.high,
   );
 
-  // 🔹 CALL THIS AFTER LOGIN 
+  // 🔹 CALL THIS AFTER LOGIN
   Future<void> initialize() async {
     print("🔔 Initializing notifications...");
 
@@ -121,14 +120,13 @@ class NotificationService {
     final androidDetails = AndroidNotificationDetails(
       _channel.id,
       _channel.name,
-      channelDescription: _channel.description,
+      channelDescription: _channel.description, 
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
     );
 
     final details = NotificationDetails(android: androidDetails);
-
     await _localNotifications.show(
       message.hashCode,
       message.notification?.title,
@@ -138,7 +136,7 @@ class NotificationService {
   }
 }
 
-// 🔹 BACKGROUND / TERMINATED HANDLER
+//  BACKGROUND / TERMINATED HANDLER
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("📬 Background notification: ${message.notification?.title}");

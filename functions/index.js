@@ -453,7 +453,6 @@ exports.sendBloodRequestNotification = onDocumentCreated(
           }
         });
       }
-
       return {
         success: response.successCount,
         failed: response.failureCount,
@@ -467,7 +466,7 @@ exports.sendBloodRequestNotification = onDocumentCreated(
 );
 
 // ============================================
-// 👤 DONOR AVAILABILITY NOTIFICATION
+//  DONOR AVAILABILITY NOTIFICATION
 // ============================================
 exports.sendDonorAvailabilityNotification = onDocumentUpdated(
   "users/{userId}",

@@ -49,33 +49,35 @@ class _BloodrequestScreenState extends State<BloodrequestScreen> {
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return const Center(child: Text("No requests found"));
                   }
-                    final requests = snapshot.data!;
+                  final requests = snapshot.data!;
 
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: requests.length,
-                    itemBuilder: (context, index) {
-                      final req = requests[index];
-                      return InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  PostDetailsScreen(request: req),
-                            ),
-                          );
-                        },
-                        child: homeContainer(
-                          bloodGroup: req.bloodGroup,
-                          title: req.title,
-                          hospital: req.hospital,
-                          date: req.createdAt.toLocal().toString().split(
-                            ' ',
-                          )[0],
-                        ),
-                      );
-                    },
+                  return Expanded(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: requests.length,
+                      itemBuilder: (context, index) {
+                        final req = requests[index];
+                        return InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    PostDetailsScreen(request: req),
+                              ),
+                            );
+                          },
+                          child: homeContainer(
+                            bloodGroup: req.bloodGroup,
+                            title: req.title,
+                            hospital: req.hospital,
+                            date: req.createdAt.toLocal().toString().split(
+                              ' ',
+                            )[0],
+                          ),
+                        );
+                      },
+                    ),
                   );
                 },
               );
