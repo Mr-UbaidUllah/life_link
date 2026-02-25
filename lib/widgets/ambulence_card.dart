@@ -33,88 +33,98 @@ class AmbulenceCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               child: Image.network(
                 image,
-                width: 60,
-                height: 60,
+                width: 60.w,
+                height: 60.w,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 55.w, height: 55.w, color: Colors.grey[200],
+                  child: const Icon(Icons.person, color: Colors.grey),
+                ),
               ),
             ),
 
-            const SizedBox(width: 12),
+             SizedBox(width: 12.w),
             Expanded(
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // column
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // name
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-
-                        // location
-                        Row(
+                  Row(
+                    children: [
+                      // column
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
-                              Icons.bus_alert_outlined,
-                              size: 14,
-                              color: Colors.red,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                address,
-                                style: const TextStyle(fontSize: 12),
+                            // name
+                            Text(
+                              name,
+                              style:  TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18.sp,
                               ),
                             ),
-                          ],
-                        ),
+                             SizedBox(height: 4.w),
 
-                        const SizedBox(height: 4),
-
-                        // phone
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on_sharp,
-                              size: 14,
-                              color: Colors.red,
+                            // location
+                            Row(
+                              children: [
+                                 Icon(
+                                  Icons.bus_alert_outlined,
+                                  size: 14.sp,
+                                  color: Colors.red,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    address,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 4),
-                            Text(phone, style: const TextStyle(fontSize: 12)),
-                            SizedBox(width: 54.w),
+
+                            const SizedBox(height: 4),
+
+                            // phone
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.location_on_sharp,
+                                  size: 14,
+                                  color: Colors.red,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(phone, style: const TextStyle(fontSize: 12)),
+                                SizedBox(width: 54.w),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                      ],
-                    ),
-                  ),
+                      ),
 
-                  // button
-                  SizedBox(
-                    width: 100,
-                    height: 36,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      // button
+                      SizedBox(
+                        width: 100,
+                        height: 36,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () {},
+                          child: Center(
+                            child: const Text(
+                              'Chat Now',
+                              style: TextStyle(fontSize: 11, color: Colors.white),
+                            ),
+                          ),
                         ),
                       ),
-                      onPressed: () {},
-                      child: Center(
-                        child: const Text(
-                          'Chat Now',
-                          style: TextStyle(fontSize: 11, color: Colors.white),
-                        ),
-                      ),
-                    ),
+                    ],
                   ),
                 ],
               ),

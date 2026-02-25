@@ -45,7 +45,7 @@ class _AddOrganizationScreenState extends State<AddAmbulence> {
     //   return false;
     // }
     if (hospitolname.text.trim().isEmpty) {
-      _showError(context, 'Please enter city');
+      _showError(context, 'Please enter hospital name');
       return false;
     }
     if (addressCtrl.text.trim().isEmpty) {
@@ -63,7 +63,7 @@ class _AddOrganizationScreenState extends State<AddAmbulence> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Ambulence')),
+      appBar: AppBar(title: const Text('Add Ambulance')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -103,7 +103,7 @@ class _AddOrganizationScreenState extends State<AddAmbulence> {
             // ),
             TextField(
               controller: hospitolname,
-              decoration: const InputDecoration(labelText: 'Hospitol name'),
+              decoration: const InputDecoration(labelText: 'Hospital name'),
             ),
             TextField(
               controller: addressCtrl,
@@ -119,7 +119,7 @@ class _AddOrganizationScreenState extends State<AddAmbulence> {
             /// SAVE BUTTON
             Consumer2<AmbulanceProvider,AmbulanceStorageProvider>(
 
-              builder: (context, ambulance,storage, _) {
+              builder: (BuildContext context, ambulance,storage, _) {
                 return ElevatedButton(
                   onPressed: ambulance.isLoading
                       ? null
@@ -146,6 +146,7 @@ class _AddOrganizationScreenState extends State<AddAmbulence> {
                             await storage.uploadImage(org.id, selectedImage!);
                           }
 
+                          if (!context.mounted) return;
                           Navigator.pop(context);
                         },
                   child: (ambulance.isLoading)

@@ -336,7 +336,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                                                 ),
                                               );
                                             },
-                                            child: homeContainer(
+                                            child: HomeContainer(
                                               bloodGroup: req.bloodGroup,
                                               title: req.title,
                                               hospital: req.hospital,

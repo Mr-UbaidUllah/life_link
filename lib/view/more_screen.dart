@@ -4,6 +4,7 @@ import 'package:blood_donation/view/ambulance_screen.dart';
 import 'package:blood_donation/view/inbox_screen.dart';
 import 'package:blood_donation/view/organization_screen.dart';
 import 'package:blood_donation/view/request_screen.dart';
+import 'package:blood_donation/view/settings_screen.dart';
 import 'package:blood_donation/view/user_donate_blood.dart';
 import 'package:blood_donation/view/volunteer_screen.dart';
 import 'package:blood_donation/widgets/image_picker.dart';
@@ -13,6 +14,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+
+import 'auth/login_screen.dart';
 
 class MoreScreen extends StatefulWidget {
   const MoreScreen({super.key});
@@ -188,7 +191,7 @@ class _MoreScreenState extends State<MoreScreen> {
 
                 MenuTile(
                   icon: Icons.add_box_sharp,
-                  title: 'Create Donot Blood ',
+                  title: 'Create Donat Blood ',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -200,7 +203,7 @@ class _MoreScreenState extends State<MoreScreen> {
                 ),
                 MenuTile(
                   icon: Icons.bus_alert_outlined,
-                  title: 'Blood Donat Oraganization',
+                  title: 'Blood Donat Organization',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -213,7 +216,7 @@ class _MoreScreenState extends State<MoreScreen> {
                 InkWell(
                   child: MenuTile(
                     icon: Icons.bus_alert,
-                    title: 'Ambulence',
+                    title: 'Ambulance',
                     onTap: () {
                       Navigator.push(
                         context,
@@ -251,11 +254,29 @@ class _MoreScreenState extends State<MoreScreen> {
                   title: 'Tags',
                   onTap: () {},
                 ),
-                MenuTile(icon: Icons.settings, title: 'settings', onTap: () {}),
+                MenuTile(icon: Icons.settings, title: 'settings', onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SettingsScreen()),
+                  );
+                }),
                 MenuTile(
                   icon: Icons.favorite,
                   title: 'Donate Us',
                   onTap: () {},
+                ),
+                MenuTile(
+                  icon: Icons.logout,
+                  title: 'Logout',
+                  onTap: () {
+                    FirebaseAuth.instance.signOut();
+                    if (context.mounted) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
+                    }
+                  },
                 ),
               ],
             ),

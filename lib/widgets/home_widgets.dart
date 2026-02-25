@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // ignore: must_be_immutable
-class homeHeader extends StatelessWidget {
+class HomeHeader extends StatelessWidget {
   String title;
-  homeHeader({super.key, required this.title});
+  HomeHeader({super.key, required this.title});
 
   @override
   Widget build(BuildContext context) {
@@ -21,8 +21,8 @@ class homeHeader extends StatelessWidget {
   }
 }
 
-class homeContainer extends StatelessWidget {
-  const homeContainer({
+class HomeContainer extends StatelessWidget {
+  const HomeContainer({
     super.key,
     required this.bloodGroup,
     required this.title,

@@ -20,54 +20,57 @@ class _AmbulanceScreenState extends State<AmbulanceScreen> {
         title: const Text('Ambulance'),
         leading: const BackButton(),
       ),
-      body: Column(
-        children: [
-          Consumer<AmbulanceProvider>(
-            builder:
-                (
-                  BuildContext context,
-                  AmbulanceProvider ambulance,
-                  Widget? child,
-                ) {
-                  return StreamBuilder<List<AmbulanceModel>>(
-                    stream: ambulance.ambulanceRequest,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
+      body: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Column(
+          children: [
+            Consumer<AmbulanceProvider>(
+              builder:
+                  (
+                    BuildContext context,
+                    AmbulanceProvider ambulance,
+                    Widget? child,
+                  ) {
+                    return StreamBuilder<List<AmbulanceModel>>(
+                      stream: ambulance.ambulanceRequest,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
 
-                      if (snapshot.hasError) {
-                        return const Center(
-                          child: Text('Something went wrong'),
+                        if (snapshot.hasError) {
+                          return const Center(
+                            child: Text('Something went wrong'),
+                          );
+                        }
+
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const Center(child: Text('No ambulances found'));
+                        }
+                        final requests = snapshot.data!;
+
+                        return Expanded(
+                          child: ListView.builder(
+                            // shrinkWrap: true,
+                            itemCount: requests.length,
+                            itemBuilder: (BuildContext context, index) {
+                              final req = requests[index];
+
+                              return AmbulenceCard(
+                                image: req.imageUrl,
+                                name: req.hospitalName,
+                                address: req.address,
+                                phone: req.phoneNumber,
+                              );
+                            },
+                          ),
                         );
-                      }
-
-                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return const Center(child: Text('No ambulances found'));
-                      }
-                      final requests = snapshot.data!;
-
-                      return Expanded(
-                        child: ListView.builder(
-                          // shrinkWrap: true,
-                          itemCount: requests.length,
-                          itemBuilder: (BuildContext context, index) {
-                            final req = requests[index];
-
-                            return AmbulenceCard(
-                              image: req.imageUrl,
-                              name: req.hospitalName,
-                              address: req.address,
-                              phone: req.phoneNumber,
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  );
-                },
-          ),
-        ],
+                      },
+                    );
+                  },
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.red,

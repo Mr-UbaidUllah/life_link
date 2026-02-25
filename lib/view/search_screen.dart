@@ -143,7 +143,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               ),
                             );
                           },
-                          child: homeContainer(
+                          child: HomeContainer(
                             bloodGroup: req.bloodGroup,
                             title: req.title,
                             hospital: req.hospital,

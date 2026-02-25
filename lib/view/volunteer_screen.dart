@@ -75,7 +75,7 @@ class _VolunteerScreenState extends State<VolunteerScreen> {
               ),
             ),
             SizedBox(height: 20.h),
- 
+
             Divider(),
             SizedBox(height: 20.h),
             Text(
@@ -117,17 +117,19 @@ class _VolunteerScreenState extends State<VolunteerScreen> {
                               );
                             }
                             final req = snapshot.data!;
-                            return ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: req.length,
-                              itemBuilder: (BuildContext context, index) {
-                                final requests = req[index];
-                                return VolunteerCard(
-                                  image: requests.imageUrl,
-                                  name: requests.name,
-                                  description: requests.workDescription,
-                                );
-                              },
+                            return Expanded(
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: req.length,
+                                itemBuilder: (BuildContext context, index) {
+                                  final requests = req[index];
+                                  return VolunteerCard(
+                                    image: requests.imageUrl,
+                                    name: requests.name,
+                                    description: requests.workDescription,
+                                  );
+                                },
+                              ),
                             );
                           },
                     );

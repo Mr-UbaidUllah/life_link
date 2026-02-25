@@ -1,5 +1,4 @@
 import 'package:blood_donation/models/bloodrequest_model.dart';
-import 'package:blood_donation/provider/auth_provider.dart';
 import 'package:blood_donation/provider/bloodRequest_provider.dart';
 import 'package:blood_donation/provider/storage_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
@@ -52,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
         body: SingleChildScrollView(
           child: Column(
             children: [
-              // SizedBox(height: 80.h),
+             
               Row(
                 children: [
                   SizedBox(width: 20),
@@ -132,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 width: 60.h,
                                 height: 60.h,
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.4),
+                                  color: Colors.black.withValues(alpha: 0.4),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const CircularProgressIndicator(
@@ -190,30 +189,30 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   SizedBox(width: 120.w),
-                  Consumer<AuthProviders>(
-                    builder: (BuildContext context, auth, Widget? child) {
-                      return InkWell(
-                        onTap: auth.isLoading
-                            ? null
-                            : () async {
-                                await FirebaseAuth.instance.signOut();
-
-                                if (context.mounted) {
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const LoginScreen(),
-                                    ),
-                                  );
-                                }
-                                // if (context.mounted) {
-                                //   // Navigator.pop(context);
-                                // }
-                              },
-                        child: Icon(Icons.arrow_back_ios_new_outlined),
-                      );
-                    },
-                  ),
+                  // Consumer<AuthProviders>(
+                  //   builder: (BuildContext context, auth, Widget? child) {
+                  //     return InkWell(
+                  //       onTap: auth.isLoading
+                  //           ? null
+                  //           : () async {
+                  //               await FirebaseAuth.instance.signOut();
+                  //
+                  //               if (context.mounted) {
+                  //                 Navigator.pushReplacement(
+                  //                   context,
+                  //                   MaterialPageRoute(
+                  //                     builder: (_) => const LoginScreen(),
+                  //                   ),
+                  //                 );
+                  //               }
+                  //               // if (context.mounted) {
+                  //               //   // Navigator.pop(context);
+                  //               // }
+                  //             },
+                  //       child: Icon(Icons.arrow_back_ios_new_outlined),
+                  //     );
+                  //   },
+                  // ),
                   SizedBox(width: 10.w),
 
                   Icon(Icons.notifications_none_outlined),
@@ -267,7 +266,9 @@ class _HomeScreenState extends State<HomeScreen> {
               //     );
               //   },
               // ),
-              homeHeader(title: 'Activity As'),
+                SizedBox(height: 20.h),
+
+              HomeHeader(title: 'Activity As'),
 
               GridView.count(
                 shrinkWrap: true,
@@ -285,7 +286,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   ActivityCard(
                     imagePath: 'assets/images/blod.png',
-                    title: 'Blood Recepient',
+                    title: 'Blood Recipient',
                     subtitle: '120 post',
                   ),
                   ActivityCard(
@@ -300,7 +301,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              homeHeader(title: 'Blood Group'),
+              HomeHeader(title: 'Blood Group'),
 
               GridView.builder(
                 physics: const NeverScrollableScrollPhysics(),
@@ -369,7 +370,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               ),
-              homeHeader(title: 'Recently Viewed'),
+              HomeHeader(title: 'Recently Viewed'),
               Consumer<BloodrequestProvider>(
                 builder: (context, provider, _) {
                   return StreamBuilder<List<BloodRequestModel>>(
@@ -404,7 +405,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               );
                             },
-                            child: homeContainer(
+                            child: HomeContainer(
                               bloodGroup: req.bloodGroup,
                               title: req.title,
                               hospital: req.hospital,
@@ -420,7 +421,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
 
-              homeHeader(title: 'Our Contribution'),
+              HomeHeader(title: 'Our Contribution'),
               GridView.builder(
                 physics: const NeverScrollableScrollPhysics(),
 

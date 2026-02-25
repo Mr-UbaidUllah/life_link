@@ -67,7 +67,7 @@ class _BloodrequestScreenState extends State<BloodrequestScreen> {
                               ),
                             );
                           },
-                          child: homeContainer(
+                          child: HomeContainer(
                             bloodGroup: req.bloodGroup,
                             title: req.title,
                             hospital: req.hospital,

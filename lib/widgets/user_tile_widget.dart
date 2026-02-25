@@ -5,7 +5,7 @@ class UserTile extends StatelessWidget {
   final String? imageUrl;
   final VoidCallback? onTap;
 
-  const UserTile({super.key, required this.name, this.imageUrl, this.onTap});
+  const UserTile({super.key, required this.name, this.imageUrl, this.onTap,});
 
   @override
   Widget build(BuildContext context) {
