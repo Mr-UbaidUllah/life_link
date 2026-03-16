@@ -1,26 +1,42 @@
-  import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 /// Reusable Info Row
-  Widget infoRow(IconData icon, String title, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.red, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(title, style: TextStyle(color: Colors.grey[600])),
+Widget infoRow(BuildContext context, IconData icon, String title, String value) {
+  final theme = Theme.of(context);
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Row(
+      children: [
+        Icon(icon, color: theme.colorScheme.primary, size: 20),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            title, 
+            style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6)),
           ),
-          Text(value, style: TextStyle(fontWeight: FontWeight.w500)),
-        ],
-      ),
-    );
-  }
-    /// Reusable Tag Chip
-  Widget tagChip(String label) {
-    return Chip(
-      label: Text(label, style: TextStyle(color: Colors.red)),
-      backgroundColor: Colors.red.withOpacity(0.1),
-      shape: StadiumBorder(),
-    );
-  }
+        ),
+        Text(
+          value, 
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Reusable Tag Chip
+Widget tagChip(BuildContext context, String label) {
+  final theme = Theme.of(context);
+  return Chip(
+    label: Text(
+      label, 
+      style: TextStyle(color: theme.colorScheme.primary),
+    ),
+    backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+    side: BorderSide.none,
+    shape: const StadiumBorder(),
+  );
+}

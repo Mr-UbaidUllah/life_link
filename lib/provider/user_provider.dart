@@ -152,12 +152,25 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> dismissRequest(String requestId) async {
+    await _firestoreService.dismissRequest(requestId);
+    await loadCurrentUser();
+  }
+
+  Future<void> dismissAllRequests(List<String> requestIds) async {
+    _isLoading = true;
+    notifyListeners();
+    await _firestoreService.dismissAllRequests(requestIds);
+    await loadCurrentUser();
+    _isLoading = false;
+    notifyListeners();
+  }
+
   Stream<List<UserModel>> get donors {
     return _firestoreService.getDonors();
   }
 
   Stream<List<UserModel>> get allUsers {
-    print('get function${_firestoreService.fetchAllUsers()}');
     return _firestoreService.fetchAllUsers();
   }
 }

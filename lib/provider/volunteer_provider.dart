@@ -4,13 +4,18 @@ import 'package:flutter/material.dart';
 
 class VolunteerProvider with ChangeNotifier {
   final _service = VolunteerService();
-  bool isloading = false;
+  bool isLoading = false;
+  
   Future<void> addVolunteer(VolunteerModel volunteer) async {
-    isloading = true;
+    isLoading = true;
     notifyListeners();
-    _service.addVolunteer(volunteer);
-    isloading = true;
-    notifyListeners();
+    
+    try {
+      await _service.addVolunteer(volunteer);
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   Stream<List<VolunteerModel>> get volunteerRequests => _service.getVolunteers();

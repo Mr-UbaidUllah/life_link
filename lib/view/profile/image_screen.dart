@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:blood_donation/view/bottmNavigation.dart';
 import 'package:blood_donation/widgets/reusable_button.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -17,189 +16,208 @@ class ImageScreen extends StatefulWidget {
 }
 
 class _ImageScreenState extends State<ImageScreen> {
-  File? SelectedImage;
+  File? selectedImage;
   final ImagePicker _picker = ImagePicker();
-  Future<void> PickImage() async {
-    final XFile? Pickfile = await _picker.pickImage(
+
+  Future<void> pickImage() async {
+    final XFile? pickFile = await _picker.pickImage(
       source: ImageSource.gallery,
     );
 
-    if (Pickfile != null) {
-      final File imageFile = File(Pickfile.path);
-      //  Get file size in bytes
+    if (pickFile != null) {
+      final File imageFile = File(pickFile.path);
       final int imageSize = await imageFile.length();
-      //  1 MB = 1048576 bytes
+      
       if (imageSize <= 1048576) {
         setState(() {
-          SelectedImage = File(Pickfile.path);
+          selectedImage = imageFile;
         });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Image size must be less than or equal to 1 MB"),
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Image size must be less than or equal to 1 MB"),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      body: Column(
-        children: [
-          SizedBox(height: 60.h),
-
-          Divider(color: Colors.grey, thickness: 0.5),
-          SizedBox(height: 20.h),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.h),
-            child: Text(
-              'Profile Setup',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 20.h,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.h),
-            child: Text(
-              'Almost Done to set your profile,fill up below\ninformation, its easy just 3 steps',
-              style: TextStyle(color: Colors.black, fontSize: 12),
-            ),
-          ),
-          SizedBox(height: 20.h),
-
-          Divider(color: Colors.grey, thickness: 0.5.h),
-          SizedBox(height: 20.h),
-
-          GestureDetector(
-            onTap: () {
-              PickImage();
-            },
-            child: Container(
-              height: 100.h,
-              // width: width * 0.20,v
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new, color: theme.colorScheme.onSurface),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Profile Setup',
+          style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 20),
               decoration: BoxDecoration(
-                color: Colors.red[100],
-                shape: BoxShape.circle,
-                image: SelectedImage != null
-                    ? DecorationImage(
-                        image: FileImage(SelectedImage!),
-                        fit: BoxFit.contain,
-                      )
-                    : null,
-              ),
-              child: SelectedImage == null
-                  ? Center(
-                      child: Icon(
-                        Icons.person_3_outlined,
-                        size: 30.h,
-                        color: Colors.red,
-                      ),
-                    )
-                  : null,
-            ),
-          ),
-          SizedBox(height: 10.h),
-          Align(
-            alignment: Alignment.center,
-            child: Text(
-              'Upload your image',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          SizedBox(height: 20.h),
-          DottedBorder(
-            options: RoundedRectDottedBorderOptions(
-              radius: Radius.circular(20),
-            ),
-
-            child: InkWell(
-              onTap: () {
-                PickImage();
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  image: SelectedImage != null
-                      ? DecorationImage(
-                          image: FileImage(SelectedImage!),
-                          fit: BoxFit.contain,
-                        )
-                      : null,
+                color: theme.colorScheme.primary.withOpacity(0.05),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
                 ),
-                height: 200.h,
-                width: 350.w,
-                alignment: Alignment.center,
-                child: SelectedImage == null
-                    ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.image_outlined,
-                            size: 40,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            "Upload your profile photo",
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      )
-                    : null,
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.camera_alt_outlined, size: 80, color: theme.colorScheme.primary),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Step 3 of 3',
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Profile Photo',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          SizedBox(height: 20.h),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 15.h),
-              child: Text(
-                'uplaod Upto to 1mb',
-                style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-          SizedBox(height: 40.h),
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                children: [
+                  Text(
+                    'Add a photo so your community can recognize you.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                  ),
+                  const SizedBox(height: 40),
+                  GestureDetector(
+                    onTap: pickImage,
+                    child: DottedBorder(
+                      options: RoundedRectDottedBorderOptions(
+                        color: theme.colorScheme.primary.withOpacity(0.5),
+                        strokeWidth: 2,
+                        dashPattern: const [8, 4],
+                        radius: const Radius.circular(20),
+                      ),
+                      child: Container(
+                        height: 250.h,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withOpacity(0.02),
+                          borderRadius: BorderRadius.circular(20),
+                          image: selectedImage != null
+                              ? DecorationImage(
+                                  image: FileImage(selectedImage!),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                        ),
+                        child: selectedImage == null
+                            ? Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.cloud_upload_outlined,
+                                    size: 64.sp,
+                                    color: theme.colorScheme.primary.withOpacity(0.5),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    "Tap to upload photo",
+                                    style: TextStyle(
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "Maximum size 1MB",
+                                    style: TextStyle(
+                                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Stack(
+                                children: [
+                                  Positioned(
+                                    right: 12,
+                                    top: 12,
+                                    child: CircleAvatar(
+                                      backgroundColor: theme.colorScheme.primary,
+                                      radius: 18,
+                                      child: IconButton(
+                                        padding: EdgeInsets.zero,
+                                        icon: const Icon(Icons.edit,
+                                            size: 18, color: Colors.white),
+                                        onPressed: pickImage,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 60),
+                  InkWell(
+                    onTap: () async {
+                      await FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(FirebaseAuth.instance.currentUser!.uid)
+                          .update({'profileCompleted': true});
 
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 15.h),
-            child: InkWell(
-              onTap: () async {
-                await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(FirebaseAuth.instance.currentUser!.uid)
-                    .update({'profileCompleted': true});
-
-                if (context.mounted) {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const MainScreen()),
-                    (route) => false,
-                  );
-                }
-              },
-              child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => MainScreen()),
-                  );
-                },
-                child: ReusableButton(label: 'Home'),
+                      if (context.mounted) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const MainScreen()),
+                          (route) => false,
+                        );
+                      }
+                    },
+                    child: const ReusableButton(label: 'Complete Setup'),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MainScreen()),
+                        (route) => false,
+                      );
+                    },
+                    child: Text(
+                      'Skip for now',
+                      style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4), fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

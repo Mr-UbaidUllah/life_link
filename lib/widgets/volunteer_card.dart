@@ -15,84 +15,104 @@ class VolunteerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Colors.white,
-      elevation: 1,
+    final theme = Theme.of(context);
+    return Container(
       margin: EdgeInsets.only(bottom: 16.h),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
         padding: EdgeInsets.all(12.w),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // 1. Image (Responsive Width using .w)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12.r),
-              child: Image.network(
-                image,
-                width: 55.w,
-                height: 55.w,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 55.w, height: 55.w, color: Colors.grey[200],
-                  child: const Icon(Icons.person, color: Colors.grey),
+            // Image with rounded corners and loading handling
+            Container(
+              width: 65.w,
+              height: 65.w,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16.r),
+                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16.r),
+                child: Image.network(
+                  image,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      Icon(Icons.person_rounded, color: theme.colorScheme.onSurface.withOpacity(0.4), size: 30.sp),
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
-            SizedBox(width: 12.w),
+            SizedBox(width: 16.w),
 
-            // 2. Text Details (Expanded to take safe remaining space)
+            // Volunteer Info
             Expanded(
               child: Column(
-                mainAxisSize: MainAxisSize.min, // Prevents vertical overflow
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16.sp,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 4.h),
                   Row(
                     children: [
-                      Icon(Icons.person_4_outlined, size: 16.sp, color: Colors.red),
+                      Icon(Icons.volunteer_activism_rounded, size: 14.sp, color: theme.colorScheme.primary),
                       SizedBox(width: 6.w),
                       Expanded(
                         child: Text(
-                          name,
+                          description,
                           style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 12.sp,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            height: 1.2,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis, // Prevents text overflow
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    description,
-                    style: TextStyle(fontSize: 13.sp),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis, // Prevents text overflow
-                  ),
                 ],
               ),
             ),
-            SizedBox(width: 8.w),
-
-            // 3. Button (Responsive Width using .w)
-            SizedBox(
-              width: 85.w,
-              height: 34.h,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  padding: EdgeInsets.zero, // Prevents text clipping inside button
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
+            
+            // Chat Action
+            GestureDetector(
+              onTap: () {},
+              child: Container(
+                padding: EdgeInsets.all(10.r),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
                 ),
-                onPressed: () {},
-                child: Text(
-                  'Chat Now',
-                  style: TextStyle(fontSize: 11.sp, color: Colors.white),
-                ),
+                child: Icon(Icons.chat_bubble_rounded, color: theme.colorScheme.primary, size: 18.sp),
               ),
             ),
           ],

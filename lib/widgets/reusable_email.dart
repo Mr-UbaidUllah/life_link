@@ -18,6 +18,7 @@ class ReusableTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     // MediaQuery values
     final width = MediaQuery.of(context).size.width;
     final height = MediaQuery.of(context).size.height;
@@ -27,15 +28,15 @@ class ReusableTextField extends StatelessWidget {
       child: TextFormField(
         controller: controller,
         obscureText: obscureText,
-        style: TextStyle(fontSize: width * 0.04),
+        style: TextStyle(fontSize: width * 0.04, color: theme.colorScheme.onSurface),
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: TextStyle(
-            color: Color.fromRGBO(154, 154, 154, 1),
+            color: theme.colorScheme.onSurface.withOpacity(0.4),
             fontSize: width * 0.04,
           ),
 
-          prefixIcon: Icon(icon, color: Colors.black, size: width * 0.06),
+          prefixIcon: Icon(icon, color: theme.colorScheme.onSurface.withOpacity(0.6), size: width * 0.06),
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(
             horizontal: width * 0.04,

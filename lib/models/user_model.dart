@@ -12,7 +12,8 @@ class UserModel {
   final bool profileCompleted;
   final String? profileImage;
   final DateTime createdAt;
-  final String? fcmToken; // 👈 Add this line
+  final String? fcmToken;
+  final List<String> dismissedRequests; // Added for local "clear" functionality
 
   UserModel({
     required this.uid,
@@ -26,10 +27,10 @@ class UserModel {
     this.profileCompleted = false,
     this.profileImage,
     required this.createdAt,
-    this.fcmToken, // 👈 Add this line
+    this.fcmToken,
+    this.dismissedRequests = const [],
   });
 
-  /// 🔁 COPY WITH
   UserModel copyWith({
     String? uid,
     String? email,
@@ -42,7 +43,8 @@ class UserModel {
     bool? profileCompleted,
     String? profileImage,
     DateTime? createdAt,
-    String? fcmToken, // 👈 Add this line
+    String? fcmToken,
+    List<String>? dismissedRequests,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -56,7 +58,8 @@ class UserModel {
       profileCompleted: profileCompleted ?? this.profileCompleted,
       profileImage: profileImage ?? this.profileImage,
       createdAt: createdAt ?? this.createdAt,
-      fcmToken: fcmToken ?? this.fcmToken, // 👈 Add this line
+      fcmToken: fcmToken ?? this.fcmToken,
+      dismissedRequests: dismissedRequests ?? this.dismissedRequests,
     );
   }
 
@@ -73,12 +76,14 @@ class UserModel {
       'profileCompleted': profileCompleted,
       'profileImage': profileImage,
       'createdAt': FieldValue.serverTimestamp(),
-      'fcmToken': fcmToken, // 👈 Add this line
+      'fcmToken': fcmToken,
+      'dismissedRequests': dismissedRequests,
     };
   }
 
   factory UserModel.fromMap(String uid, Map<String, dynamic> map) {
     final Timestamp? timestamp = map['createdAt'];
+    final List<dynamic>? dismissed = map['dismissedRequests'];
 
     return UserModel(
       uid: uid,
@@ -92,7 +97,8 @@ class UserModel {
       profileCompleted: map['profileCompleted'] ?? false,
       profileImage: map['profileImage'],
       createdAt: timestamp?.toDate() ?? DateTime.now(),
-      fcmToken: map['fcmToken'], // 👈 Add this line
+      fcmToken: map['fcmToken'],
+      dismissedRequests: dismissed != null ? List<String>.from(dismissed) : [],
     );
   }
 }

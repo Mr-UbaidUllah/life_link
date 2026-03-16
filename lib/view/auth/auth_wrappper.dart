@@ -37,7 +37,7 @@ class AuthWrapper extends StatelessWidget {
               );
             }
 
-            // 🔴 HANDLE FIRESTORE ERROR
+            // HANDLE FIRESTORE ERROR
             if (userSnapshot.hasError) {
               return const Scaffold(
                 body: Center(
@@ -46,7 +46,7 @@ class AuthWrapper extends StatelessWidget {
               );
             }
 
-            // 🔹 Document not found
+            // Document not found
             if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
               return const PersonelInformation();
             }

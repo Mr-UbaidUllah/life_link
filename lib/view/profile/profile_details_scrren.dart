@@ -1,9 +1,7 @@
 import 'package:blood_donation/models/bloodrequest_model.dart';
 import 'package:blood_donation/provider/userPost_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
-import 'package:blood_donation/view/bloodrequest_screen.dart';
 import 'package:blood_donation/view/msg_screen.dart';
-import 'package:blood_donation/view/request_screen.dart';
 import 'package:blood_donation/widgets/home_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -16,355 +14,371 @@ class ProfileDetailsScreen extends StatefulWidget {
 
   @override
   State<ProfileDetailsScreen> createState() => _ProfileDetailsScreenState();
-
-  /// RED BUTTON
-  static Widget _actionButton({
-    required String text,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return SizedBox(
-      width: 120.w,
-      height: 40.h,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        onPressed: onTap,
-        child: Text(text),
-      ),
-    );
-  }
-
-  /// OUTLINE BUTTON
-  static Widget _outlineButton({
-    required String text,
-    required VoidCallback onTap,
-  }) {
-    return SizedBox(
-      width: 120.w,
-      height: 40.h,
-      child: OutlinedButton(
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Colors.red),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        onPressed: onTap,
-        child: Text(text, style: const TextStyle(color: Colors.red)),
-      ),
-    );
-  }
-
-  /// SOCIAL ICON
-  static Widget _socialIcon(IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.blue),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Icon(icon, color: Colors.blue),
-    );
-  }
 }
 
 class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   @override
   void initState() {
     super.initState();
-
-    // Load user data
     Future.microtask(() {
-      context.read<UserProvider>().loadUserById(widget.userId);
+      if (mounted) {
+        context.read<UserProvider>().loadUserById(widget.userId);
+      }
     });
   }
 
-  static Widget _infoRow(String title, String value) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 6.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new, color: theme.colorScheme.onSurface, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          "Donor Profile",
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.w700,
+            fontSize: 18.sp,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Consumer<UserProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return Center(child: CircularProgressIndicator(color: theme.colorScheme.primary));
+          }
+
+          final user = provider.postUser;
+          if (user == null) {
+            return Center(child: Text('User not found', style: TextStyle(color: theme.colorScheme.onSurface)));
+          }
+
+          return DefaultTabController(
+            length: 2,
+            child: Column(
+              children: [
+                /// PROFILE HEADER
+                Container(
+                  width: double.infinity,
+                  color: theme.colorScheme.surface,
+                  padding: EdgeInsets.only(bottom: 20.h),
+                  child: Column(
+                    children: [
+                      Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(4.r),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: CircleAvatar(
+                              radius: 50.r,
+                              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                              backgroundImage: user.profileImage != null ? NetworkImage(user.profileImage!) : null,
+                              child: user.profileImage == null ? Icon(Icons.person_rounded, size: 50.sp, color: theme.colorScheme.onSurface.withOpacity(0.4)) : null,
+                            ),
+                          ),
+                          if (user.isDonor)
+                            Container(
+                              padding: EdgeInsets.all(6.r),
+                              decoration: const BoxDecoration(
+                                color: Colors.green,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(Icons.check, color: Colors.white, size: 14.sp),
+                            ),
+                        ],
+                      ),
+                      SizedBox(height: 16.h),
+                      Text(
+                        user.name ?? 'Anonymous',
+                        style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
+                      ),
+                      SizedBox(height: 4.h),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.location_on_rounded, size: 14.sp, color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                          SizedBox(width: 4.w),
+                          Text(
+                            "${user.city ?? 'Unknown City'}, ${user.country ?? 'Unknown'}",
+                            style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 13.sp),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 20.h),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildQuickStat(theme, user.bloodGroup ?? '--', 'Blood Group'),
+                          Container(height: 30, width: 1, color: theme.dividerColor.withOpacity(0.1), margin: EdgeInsets.symmetric(horizontal: 20.w)),
+                          _buildQuickStat(theme, user.isDonor ? 'Available' : 'Unavailable', 'Status'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                /// TAB BAR
+                Container(
+                  color: theme.colorScheme.surface,
+                  child: TabBar(
+                    indicatorColor: theme.colorScheme.primary,
+                    indicatorWeight: 3,
+                    labelColor: theme.colorScheme.primary,
+                    unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.4),
+                    labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp),
+                    tabs: const [
+                      Tab(text: "Details"),
+                      Tab(text: "Requests"),
+                    ],
+                  ),
+                ),
+
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      /// DETAILS TAB
+                      _buildDetailsTab(theme, user),
+
+                      /// REQUESTS TAB
+                      _buildRequestsTab(theme, user.uid),
+                    ],
+                  ),
+                ),
+
+                /// BOTTOM ACTION BUTTONS
+                Container(
+                  padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 30.h),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4)),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChatScreen(
+                                  name: user.name.toString(),
+                                  receiverId: user.uid,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: Icon(Icons.message_rounded, color: theme.colorScheme.primary),
+                          label: Text('Message', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold)),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: theme.colorScheme.primary),
+                            padding: EdgeInsets.symmetric(vertical: 14.h),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: user.phone != null ? () {} : null,
+                          icon: const Icon(Icons.call_rounded, color: Colors.white),
+                          label: const Text('Call Donor', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            padding: EdgeInsets.symmetric(vertical: 14.h),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildQuickStat(ThemeData theme, String value, String label) {
+    return Column(
+      children: [
+        Text(value, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16.sp, color: theme.colorScheme.primary)),
+        Text(label, style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4), fontSize: 12.sp)),
+      ],
+    );
+  }
+
+  Widget _buildDetailsTab(ThemeData theme, user) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(20.r),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(color: Colors.grey)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+          _buildInfoSection(theme, 'Contact Information', [
+            _buildInfoTile(theme, Icons.phone_rounded, 'Mobile', user.phone ?? 'Not provided'),
+            _buildInfoTile(theme, Icons.email_rounded, 'Email', user.email),
+            _buildInfoTile(theme, Icons.location_city_rounded, 'City', user.city ?? 'Not provided'),
+          ]),
+          SizedBox(height: 24.h),
+          Text(
+            "About Donor",
+            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
+          ),
+          SizedBox(height: 12.h),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(16.r),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(16.r),
+              border: Border.all(color: theme.colorScheme.outline.withOpacity(0.1)),
+            ),
+            child: Text(
+              "Passionate about saving lives through blood donation. Ready to help whenever needed.",
+              style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontSize: 14.sp, height: 1.5),
+            ),
+          ),
+          SizedBox(height: 24.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildSocialIcon(theme, Icons.facebook, Colors.blue),
+              _buildSocialIcon(theme, Icons.alternate_email, theme.colorScheme.primary),
+              _buildSocialIcon(theme, Icons.send, Colors.blueAccent),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2, // Match TabBar tabs
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          elevation: 0,
-          backgroundColor: Colors.white,
-          leading: const BackButton(color: Colors.black),
-          title: const Text(
-            "Profile Details",
-            style: TextStyle(color: Colors.black),
+  Widget _buildInfoSection(ThemeData theme, String title, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
+        SizedBox(height: 12.h),
+        Container(
+          padding: EdgeInsets.all(16.r),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16.r),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+            ],
           ),
-          centerTitle: true,
+          child: Column(children: children),
         ),
-        body: Consumer<UserProvider>(
-          builder: (context, provider, child) {
-            if (provider.isLoading) {
-              return const Center(child: CircularProgressIndicator());
+      ],
+    );
+  }
+
+  Widget _buildInfoTile(ThemeData theme, IconData icon, String label, String value) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8.h),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8.r),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            child: Icon(icon, color: theme.colorScheme.onSurface.withOpacity(0.6), size: 18.sp),
+          ),
+          SizedBox(width: 12.w),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4), fontSize: 11.sp)),
+              Text(value, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14.sp, color: theme.colorScheme.onSurface)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSocialIcon(ThemeData theme, IconData icon, Color color) {
+    return Container(
+      padding: EdgeInsets.all(12.r),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, color: color, size: 22.sp),
+    );
+  }
+
+  Widget _buildRequestsTab(ThemeData theme, String userId) {
+    return Consumer<UserPostsProvider>(
+      builder: (context, provider, _) {
+        return StreamBuilder<List<BloodRequestModel>>(
+          stream: provider.posts(userId),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator(color: theme.colorScheme.primary));
             }
 
-            final user = provider.postUser;
-            if (user == null) {
-              return const Center(child: Text('User not found'));
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.post_add_rounded, size: 50.sp, color: theme.colorScheme.onSurface.withOpacity(0.1)),
+                    SizedBox(height: 12.h),
+                    Text("No blood requests yet", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4))),
+                  ],
+                ),
+              );
             }
 
-            return SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: 16.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(height: 10.h),
-
-                  /// PROFILE IMAGE
-                  CircleAvatar(
-                    radius: 45,
-                    backgroundImage: user.profileImage != null
-                        ? NetworkImage(user.profileImage!)
-                        : null,
-                  ),
-
-                  SizedBox(height: 12.h),
-
-                  /// NAME
-                  Text(
-                    user.name.toString(),
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                  ),
-
-                  SizedBox(height: 4.h),
-
-                  /// BLOOD GROUP
-                  Text(
-                    user.bloodGroup.toString(),
-                    style: TextStyle(color: Colors.grey),
-                  ),
-
-                  SizedBox(height: 16.h),
-
-                  /// CHAT & CALL BUTTONS
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ProfileDetailsScreen._actionButton(
-                        text: "Chat Now",
-                        color: Colors.red,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ChatScreen(
-                                name: user.name.toString(),
-                                receiverId: user.uid,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      SizedBox(width: 12.w),
-                      ProfileDetailsScreen._outlineButton(
-                        text: "Call",
-                        onTap: () {},
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: 20.h),
-
-                  /// TAB BAR
-                  const TabBar(
-                    indicatorColor: Colors.red,
-                    indicatorWeight: 2,
-                    labelColor: Colors.red,
-                    unselectedLabelColor: Colors.grey,
-                    tabs: [
-                      Tab(text: "About"),
-                      Tab(text: "Create Ads"),
-                    ],
-                  ),
-
-                  SizedBox(height: 16.h),
-
-                  /// TAB CONTENT
-                  SizedBox(
-                    height: 420.h,
-                    child: TabBarView(
-                      children: [
-                        /// ABOUT TAB
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.shade200,
-                                    blurRadius: 10,
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                children: [
-                                  // _infoRow("Age", "30"),
-                                  // _infoRow("Gender", "Male"),
-                                  _infoRow("City", user.city.toString()),
-                                  _infoRow("Country", user.country.toString()),
-                                  _infoRow("Mobile", user.phone.toString()),
-                                  _infoRow("Email", "demo@email.com"),
-                                ],
-                              ),
-                            ),
-
-                            SizedBox(height: 16.h),
-
-                            Text(
-                              "About User",
-                              style: TextStyle(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-
-                            SizedBox(height: 8.h),
-
-                            const Text(
-                              "Libero tempore, cum soluta nobis est eligendi optio "
-                              "cumque nihil impedit quo minus id quod maxime placeat "
-                              "facere possimus.",
-                              style: TextStyle(color: Colors.grey),
-                            ),
-
-                            SizedBox(height: 20.h),
-
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                ProfileDetailsScreen._socialIcon(
-                                  Icons.facebook,
-                                ),
-                                ProfileDetailsScreen._socialIcon(
-                                  Icons.alternate_email,
-                                ),
-                                ProfileDetailsScreen._socialIcon(Icons.send),
-                                ProfileDetailsScreen._socialIcon(
-                                  Icons.business,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-
-                        /// CREATE ADS TAB (show only user posts)
-                        /// CREATE ADS TAB (show only user posts)
-                        Consumer<UserPostsProvider>(
-                          builder: (context, provider, _) {
-                            return Column(
-                              children: [
-                                // ADD POST BUTTON
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8.0,
-                                  ),
-                                  child: ElevatedButton.icon(
-                                    onPressed: () {
-                                      // Navigate to the screen where user can create a post
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              CreateRequestScreen(),
-                                        ),
-                                      );
-                                    },
-                                    icon: const Icon(Icons.add),
-                                    label: const Text("Add Post"),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                // POSTS LIST
-                                Expanded(
-                                  child: StreamBuilder<List<BloodRequestModel>>(
-                                    stream: provider.posts(widget.userId),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState ==
-                                          ConnectionState.waiting) {
-                                        return const Center(
-                                          child: CircularProgressIndicator(),
-                                        );
-                                      }
-
-                                      if (!snapshot.hasData ||
-                                          snapshot.data!.isEmpty) {
-                                        return const Center(
-                                          child: Text("No requests found"),
-                                        );
-                                      }
-
-                                      final requests = snapshot.data!;
-
-                                      return ListView.builder(
-                                        itemCount: requests.length,
-                                        itemBuilder: (context, index) {
-                                          final req = requests[index];
-                                          return InkWell(
-                                            onTap: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      BloodrequestScreen(),
-                                                ),
-                                              );
-                                            },
-                                            child: HomeContainer(
-                                              bloodGroup: req.bloodGroup,
-                                              title: req.title,
-                                              hospital: req.hospital,
-                                              date: req.createdAt
-                                                  .toLocal()
-                                                  .toString()
-                                                  .split(' ')[0],
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ],
+            final requests = snapshot.data!;
+            return ListView.builder(
+              padding: EdgeInsets.all(16.r),
+              itemCount: requests.length,
+              itemBuilder: (context, index) {
+                final req = requests[index];
+                return Padding(
+                  padding: EdgeInsets.only(bottom: 12.h),
+                  child: InkWell(
+                    onTap: () {},
+                    child: HomeContainer(
+                      bloodGroup: req.bloodGroup,
+                      title: req.title,
+                      hospital: req.hospital,
+                      date: req.createdAt.toLocal().toString().split(' ')[0],
                     ),
                   ),
-                  // SizedBox(height: 20.h),
-                ],
-              ),
+                );
+              },
             );
           },
-        ),
-      ),
+        );
+      },
+    );
+  }
+
+  Widget tagChip(ThemeData theme, String label) {
+    return Chip(
+      label: Text(label, style: TextStyle(color: theme.colorScheme.primary)),
+      backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+      shape: const StadiumBorder(),
     );
   }
 }

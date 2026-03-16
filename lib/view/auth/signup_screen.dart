@@ -16,180 +16,163 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  TextEditingController email_controller = TextEditingController();
-  TextEditingController password_controller = TextEditingController();
-  TextEditingController phone_controller = TextEditingController();
+  final TextEditingController email_controller = TextEditingController();
+  final TextEditingController password_controller = TextEditingController();
+  final TextEditingController phone_controller = TextEditingController();
+
+  @override
+  void dispose() {
+    email_controller.dispose();
+    password_controller.dispose();
+    phone_controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final width = MediaQuery.of(context).size.width;
     final height = MediaQuery.of(context).size.height;
 
-    return SafeArea(
-      child: Scaffold(
-        body: Stack(
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SingleChildScrollView(
+        child: Column(
           children: [
-            Column(
-              children: [redContainer(height: height, width: width)],
-            ),
-
-            Positioned(
-              left: width * 0.05,
-              right: width * 0.05,
-              top: height * 0.2,
-              child: Container(
-                height: height * 0.30,
-                padding: EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Column(
-                  children: [
-                    CustomTextField(
-                      focusedBorderColor: Colors.red,
-                      controller: email_controller,
-                      hintText: 'Email',
-                      prefixIcon: Icons.mail,
-                    ),
-                    SizedBox(height: height * 0.03),
-                    CustomTextField(
-                      focusedBorderColor: Colors.red,
-                      controller: password_controller,
-                      prefixIcon: Icons.lock,
-                      hintText: 'Password',
-                    ),
-                    // SizedBox(height: height * 0.02),
-                    // ReusableTextField(
-                    //   hintText: 'Phone Number',
-                    //   icon: Icons.phone,
-                    //   controller: phone_controller,
-                    // ),
-                  ],
-                ),
-              ),
-            ),
-
-            Positioned(
-              left: width * 0.05,
-              right: width * 0.05,
-              top: height * 0.45,
-              child: Selector<AuthProviders, bool>(
-                selector: (_, auth) => auth.isLoading,
-                builder: (context, isLoading, _) {
-                  return InkWell(
-                    onTap: isLoading
-                        ? null
-                        : () async {
-                            final auth = context.read<AuthProviders>();
-
-                            try {
-                              await auth.signup(
-                                email_controller.text.trim(),
-                                password_controller.text.trim(),
-                              );
-
-                              if (!context.mounted) return;
-
-                              Navigator.of(context).pushReplacement(
-                                MaterialPageRoute(
-                                  builder: (_) => PersonelInformation(),
-                                ),
-                              );
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(e.toString()),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          },
-                    child: isLoading
-                        ? const Center(
-                            child: SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          )
-                        : ReusableButton(label: 'Sign up'),
-                  );
-                },
-              ),
-            ),
-
-            // // SIGN UP BUTTON
-            // Positioned(
-            //   left: width * 0.05,
-            //   right: width * 0.05,
-            //   top: height * 0.45,
-            //   child: Consumer<AuthProviders>(
-            //     builder:
-            //         (BuildContext context, AuthProviders auth, Widget? child) {
-            //           return InkWell(
-            //             onTap: auth.isLoading
-            //                 ? null
-            //                 : () async {
-            //                     try {
-            //                       await auth.Signup(
-            //                         email_controller.text.trim(),
-            //                         password_controller.text.trim(),
-            //                       );
-
-            //                       // ✅ SUCCESS → Navigate
-            //                       Navigator.push(
-            //                         context,
-            //                         MaterialPageRoute(
-            //                           builder: (_) => PersonelInformation(),
-            //                         ),
-            //                       );
-            //                     } catch (e) {
-            //                       ScaffoldMessenger.of(context).showSnackBar(
-            //                         SnackBar(
-            //                           content: Text('Signupo failed'),
-            //                           backgroundColor: Colors.red,
-            //                         ),
-            //                       );
-            //                     }
-            //                   },
-            //             child: auth.isLoading
-            //                 ? const CircularProgressIndicator()
-            //                 : ReusableButton(label: 'Sign up'),
-            //           );
-            //         },
-            //   ),
-            // ),
-            Positioned(
-              top: height * 0.60, //
-              left: 0,
-              right: 0,
-              child: Center(
-                child: RichText(
-                  text: TextSpan(
-                    text: 'Already have an account? ',
-                    style: const TextStyle(color: Colors.black, fontSize: 14),
-                    children: [
-                      TextSpan(
-                        text: 'Login',
-                        style: const TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+            Stack(
+              children: [
+                redContainer(height: height, width: width),
+                Padding(
+                  padding: EdgeInsets.only(top: height * 0.3),
+                  child: Container(
+                    width: width,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(30),
+                        topRight: Radius.circular(30),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.onSurface.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, -5),
                         ),
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => LoginScreen(),
-                              ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Create Account',
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Sign up to join our life-saving community',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+                        CustomTextField(
+                          controller: email_controller,
+                          hintText: 'Email Address',
+                          prefixIcon: Icons.email_outlined,
+                          keyboardType: TextInputType.emailAddress,
+                          borderRadius: 12,
+                        ),
+                        const SizedBox(height: 20),
+                        CustomTextField(
+                          controller: password_controller,
+                          prefixIcon: Icons.lock_outline,
+                          hintText: 'Password',
+                          isPassword: true,
+                          borderRadius: 12,
+                        ),
+                        const SizedBox(height: 40),
+                        Selector<AuthProviders, bool>(
+                          selector: (_, auth) => auth.isLoading,
+                          builder: (context, isLoading, _) {
+                            return InkWell(
+                              onTap: isLoading
+                                  ? null
+                                  : () async {
+                                      final auth = context.read<AuthProviders>();
+                                      try {
+                                        await auth.signup(
+                                          email_controller.text.trim(),
+                                          password_controller.text.trim(),
+                                        );
+                                        if (!context.mounted) return;
+                                        Navigator.of(context).pushReplacement(
+                                          MaterialPageRoute(
+                                            builder: (_) => const PersonelInformation(),
+                                          ),
+                                        );
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(e.toString()),
+                                            backgroundColor: theme.colorScheme.error,
+                                            behavior: SnackBarBehavior.floating,
+                                          ),
+                                        );
+                                      }
+                                    },
+                              child: isLoading
+                                  ? Center(
+                                      child: CircularProgressIndicator(
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                    )
+                                  : const ReusableButton(label: 'Sign up'),
                             );
                           },
-                      ),
-                    ],
+                        ),
+                        const SizedBox(height: 30),
+                        Center(
+                          child: RichText(
+                            text: TextSpan(
+                              text: 'Already have an account? ',
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                fontSize: 16,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: 'Login',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const LoginScreen(),
+                                        ),
+                                      );
+                                    },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
           ],
         ),

@@ -12,8 +12,8 @@ class CustomDropdownFormField<T> extends StatelessWidget {
   final bool isExpanded;
   final EdgeInsetsGeometry? contentPadding;
   final double borderRadius;
-  final Color borderColor;
-  final Color focusedBorderColor;
+  final Color? borderColor;
+  final Color? focusedBorderColor;
   final Color? backgroundColor;
   final String? errorText;
   final String? Function(T?)? validator;
@@ -37,9 +37,9 @@ class CustomDropdownFormField<T> extends StatelessWidget {
     this.hintText,
     this.isExpanded = true,
     this.contentPadding,
-    this.borderRadius = 5.0,
-    this.borderColor = Colors.grey,
-    this.focusedBorderColor = Colors.grey,
+    this.borderRadius = 12.0,
+    this.borderColor,
+    this.focusedBorderColor,
     this.backgroundColor,
     this.errorText,
     this.validator,
@@ -53,52 +53,59 @@ class CustomDropdownFormField<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final effectiveBorderColor = borderColor ?? theme.colorScheme.outline;
+    final effectiveFocusedBorderColor = focusedBorderColor ?? theme.colorScheme.primary;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // if (customLabel != null) ...[
-        //   customLabel!,
-        //   const SizedBox(height: 8),
-        // ] else if (labelText != null) ...[
-        //   Row(
-        //     children: [
-        //       if (labelPrefix != null) ...[
-        //         labelPrefix!,
-        //         const SizedBox(width: 8),
-        //       ],
-        //       CustomText(
-        //         text: labelText!,
-        //         fontSize: 16,
-        //         fontWeight: FontWeight.w400,
-        //         color: Colors.black,
-        //       ),
-        //     ],
-        //   ),
-        //   const SizedBox(height: 8),
-        // ],
+        if (customLabel != null) ...[
+          customLabel!,
+          const SizedBox(height: 8),
+        ] else if (labelText != null) ...[
+          Row(
+            children: [
+              if (labelPrefix != null) ...[
+                labelPrefix!,
+                const SizedBox(width: 8),
+              ],
+              Text(
+                labelText!,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
         DropdownButtonFormField<T>(
           value: value,
           isExpanded: isExpanded,
+          dropdownColor: theme.colorScheme.surface,
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(borderRadius),
-              borderSide: BorderSide(color: borderColor),
+              borderSide: BorderSide(color: effectiveBorderColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(borderRadius),
-              borderSide: BorderSide(color: borderColor),
+              borderSide: BorderSide(color: effectiveBorderColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(borderRadius),
-              borderSide: BorderSide(color: focusedBorderColor),
+              borderSide: BorderSide(color: effectiveFocusedBorderColor, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(borderRadius),
-              borderSide: const BorderSide(color: Colors.red),
+              borderSide: BorderSide(color: theme.colorScheme.error),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(borderRadius),
-              borderSide: const BorderSide(color: Colors.red),
+              borderSide: BorderSide(color: theme.colorScheme.error, width: 1.5),
             ),
             contentPadding:
                 contentPadding ??
@@ -106,17 +113,16 @@ class CustomDropdownFormField<T> extends StatelessWidget {
             filled: backgroundColor != null,
             fillColor: backgroundColor,
             prefixIcon: prefixIcon,
-            // suffixIcon: suffixIcon,
             hintText: hintText,
             hintStyle:
                 hintStyle ??
                 TextStyle(
-                  fontSize: (16),
-                  color: Colors.grey[500],
+                  fontSize: 16,
+                  color: theme.colorScheme.onSurface.withOpacity(0.4),
                   fontWeight: FontWeight.w400,
                 ),
             errorText: errorText,
-            errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
+            errorStyle: TextStyle(color: theme.colorScheme.error, fontSize: 12),
           ),
           selectedItemBuilder: (BuildContext context) {
             return items.map<Widget>((T item) {
@@ -126,10 +132,9 @@ class CustomDropdownFormField<T> extends StatelessWidget {
                   itemToString(item),
                   style:
                       textStyle ??
-                      const TextStyle(
+                      TextStyle(
                         fontSize: 16,
-                        color: Colors.black,
-                        fontFamily: "Poppins",
+                        color: theme.colorScheme.onSurface,
                         fontWeight: FontWeight.w400,
                       ),
                   overflow: TextOverflow.ellipsis,
@@ -143,13 +148,13 @@ class CustomDropdownFormField<T> extends StatelessWidget {
               value: item,
               child: Text(
                 itemToString(item),
-                style: const TextStyle(fontSize: 15, color: Colors.black),
+                style: TextStyle(fontSize: 15, color: theme.colorScheme.onSurface),
               ),
             );
           }).toList(),
           onChanged: enabled && !readOnly ? onChanged : null,
           validator: validator,
-          icon: suffixIcon,
+          icon: suffixIcon ?? Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurface.withOpacity(0.6)),
         ),
       ],
     );

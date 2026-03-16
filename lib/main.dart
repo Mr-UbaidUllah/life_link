@@ -13,7 +13,7 @@ import 'package:blood_donation/provider/volunteer_provider.dart';
 import 'package:blood_donation/provider/volunteer_storagar_provider.dart';
 import 'package:blood_donation/services/push_notification_service.dart';
 import 'package:blood_donation/theme/theme.dart';
-import 'package:blood_donation/view/auth/auth_wrappper.dart';
+import 'package:blood_donation/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -21,8 +21,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 import 'package:blood_donation/provider/ambulance_storage_provider.dart';
-
-
 
 /// Must be top-level & outside any class
 @pragma('vm:entry-point')
@@ -40,11 +38,6 @@ void main() async {
    final notificationService = NotificationService();
   await notificationService.initialize();
 
-  // await Supabase.initialize(
-  //   url: 'https://fjohvobuwontphqccgbo.supabase.co',
-  //   anonKey:
-  //       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqb2h2b2J1d29udHBocWNjZ2JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0ODgwMzIsImV4cCI6MjA4MjA2NDAzMn0.vaE6pNyg8dzU2zrxYKtMJUVWeEd0-dW_mSXjKnvbhNQ',
-  // );
   runApp(
     MultiProvider(
       providers: [
@@ -81,11 +74,11 @@ class MyApp extends StatelessWidget {
       builder: (context, themeProvider, child) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'Flutter Demo',
+          title: 'Life Link',
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
-          home: const AuthWrapper(),
+          home: const SplashScreen(),
         );
       },
     );

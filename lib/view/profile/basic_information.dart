@@ -1,14 +1,10 @@
 import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/view/profile/image_screen.dart';
-import 'package:blood_donation/view/profile/personel_information.dart';
 import 'package:blood_donation/widgets/custom_dropdown_form_field.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
-import 'package:blood_donation/widgets/dropdownheader.dart';
 import 'package:blood_donation/widgets/reusable_button.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 class BasicInformation extends StatefulWidget {
@@ -21,184 +17,208 @@ class BasicInformation extends StatefulWidget {
 class _BasicInformationState extends State<BasicInformation> {
   String? selectedGender;
   String? selectedOption;
-  final List<String> Genders = ['Male', 'Female', 'Others'];
-  final List<String> Options = ['Yes', 'No'];
+  final List<String> genders = ['Male', 'Female', 'Others'];
+  final List<String> options = ['Yes', 'No'];
   final TextEditingController dateController = TextEditingController();
-  final TextEditingController aboutcontroller = TextEditingController();
+  final TextEditingController aboutController = TextEditingController();
+
+  @override
+  void dispose() {
+    dateController.dispose();
+    aboutController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-
-        title: InkWell(
-          onTap: () {
-            Navigator.pop(context);
-          },
-          child: Icon(Icons.arrow_back_ios_new_outlined),
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new, color: theme.colorScheme.onSurface),
+          onPressed: () => Navigator.pop(context),
         ),
+        title: Text(
+          'Profile Setup',
+          style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            Divider(color: Colors.grey, thickness: 0.5),
-            SizedBox(height: 20.h),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20.h),
-              child: Text(
-                'Profile Setup',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 20.h,
-                  fontWeight: FontWeight.bold,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.05),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
                 ),
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20.h),
-              child: Text(
-                'Almost Done to set your profile,fill up below\ninformation, its easy just 3 steps',
-                style: TextStyle(color: Colors.black, fontSize: 12),
-              ),
-            ),
-            SizedBox(height: 20.h),
-
-            Divider(color: Colors.grey, thickness: 0.5.h),
-
-            profileContainer(
-              height: 900.h,
-              icon: Icons.perm_device_information_outlined,
-            ),
-            SizedBox(height: 10.h),
-            Align(
-              alignment: Alignment.center,
-              child: Text(
-                'Personel Information',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Column(
+                children: [
+                  Icon(Icons.info_outline, size: 80, color: theme.colorScheme.primary),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Step 2 of 3',
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Health Details',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
               ),
             ),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 10.w),
+              padding: const EdgeInsets.all(24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    'Personal Details',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   CustomTextField(
                     readOnly: true,
                     controller: dateController,
-                    hintText: 'Select Date',
-                    labelText: 'Date of Birth ',
-                    focusedBorderColor: Colors.red,
-                    suffixIcon: Icon(Icons.calendar_month),
+                    hintText: 'Date of Birth',
+                    prefixIcon: Icons.calendar_month_outlined,
+                    borderRadius: 12,
                     onTap: () async {
                       DateTime? pickDate = await showDatePicker(
                         context: context,
-                        firstDate: DateTime(1990),
-                        lastDate: DateTime(2100),
+                        initialDate: DateTime(2000),
+                        firstDate: DateTime(1950),
+                        lastDate: DateTime.now(),
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: theme.colorScheme,
+                            ),
+                            child: child!,
+                          );
+                        },
                       );
-                      dateController.text =
-                          "${pickDate?.day}/${pickDate?.month}/${pickDate?.year}";
+                      if (pickDate != null) {
+                        setState(() {
+                          dateController.text =
+                              "${pickDate.day}/${pickDate.month}/${pickDate.year}";
+                        });
+                      }
                     },
                   ),
-                  Dropdownheader(name: 'Gender'),
+                  const SizedBox(height: 16),
                   CustomDropdownFormField(
-                    hintText: 'Select gender',
+                    hintText: 'Select Gender',
                     value: selectedGender,
-                    items: Genders,
+                    items: genders,
                     itemToString: (item) => item,
+                    borderRadius: 12,
+                    focusedBorderColor: theme.colorScheme.primary,
+                    prefixIcon: Icon(Icons.person_outline, color: theme.colorScheme.onSurface.withOpacity(0.4)),
                     onChanged: (val) {
                       setState(() {
                         selectedGender = val;
                       });
                     },
                   ),
-                  Dropdownheader(name: 'I want to donate blood'),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Donation Preference',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   CustomDropdownFormField(
+                    hintText: 'I want to donate blood',
                     value: selectedOption,
-                    items: Options,
-                    itemToString: (items) => items,
+                    items: options,
+                    itemToString: (item) => item,
+                    borderRadius: 12,
+                    focusedBorderColor: theme.colorScheme.primary,
+                    prefixIcon: Icon(Icons.volunteer_activism_outlined, color: theme.colorScheme.onSurface.withOpacity(0.4)),
                     onChanged: (val) {
-                      selectedOption = val;
+                      setState(() {
+                        selectedOption = val;
+                      });
                     },
                   ),
-                  // Dropdownheader(name: 'About yourself'),
+                  const SizedBox(height: 16),
                   CustomTextField(
-                    hintText: 'Type about yourself',
-                    focusedBorderColor: Colors.red,
-                    labelText: "About Your Self",
-                    maxLines: 7,
-                    controller: aboutcontroller,
+                    hintText: 'Tell us a bit about yourself...',
+                    labelText: "About Yourself",
+                    maxLines: 4,
+                    borderRadius: 12,
+                    controller: aboutController,
                   ),
-                  SizedBox(height: 20.h),
+                  const SizedBox(height: 40),
                   Consumer<UserProvider>(
-                    builder:
-                        (
-                          BuildContext context,
-                          UserProvider users,
-                          Widget? child,
-                        ) {
-                          return GestureDetector(
-                            onTap: () async {
-                              final user = FirebaseAuth.instance.currentUser;
+                    builder: (context, users, _) {
+                      return InkWell(
+                        onTap: () async {
+                          final user = FirebaseAuth.instance.currentUser;
 
-                              if (user == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('User not logged in'),
-                                  ),
-                                );
-                                return;
-                              }
+                          if (user == null) return;
 
-                              if (dateController.text.isEmpty ||
-                                  selectedGender == null ||
-                                  selectedOption == null ||
-                                  aboutcontroller.text.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Please fill all fields'),
-                                  ),
-                                );
-                                return;
-                              }
+                          if (dateController.text.isEmpty ||
+                              selectedGender == null ||
+                              selectedOption == null ||
+                              aboutController.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text('Please fill all fields'),
+                                backgroundColor: theme.colorScheme.error,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                            return;
+                          }
 
-                              // Update basic info
-                              final success = await users.updateBasicInfo(
-                                uid: user.uid,
-                                dateOfBirth: dateController.text.trim(),
-                                gender: selectedGender!,
-                                wantToDonate: selectedOption!,
-                                about: aboutcontroller.text.trim(),
-                              );
-
-                              // ✅ Update profileCompleted field
-                              if (success) {
-                                await FirebaseFirestore.instance
-                                    .collection('users')
-                                    .doc(user.uid)
-                                    .update({'profileCompleted': true});
-                              }
-
-                              // Navigate to next screen
-                              if (success && context.mounted) {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ImageScreen(),
-                                  ),
-                                );
-                              }
-                            },
-                            child: ReusableButton(label: 'Next'),
+                          final success = await users.updateBasicInfo(
+                            uid: user.uid,
+                            dateOfBirth: dateController.text.trim(),
+                            gender: selectedGender!,
+                            wantToDonate: selectedOption!,
+                            about: aboutController.text.trim(),
                           );
-                        },
-                  ),
 
-                  SizedBox(height: 20.h),
+                          if (success && context.mounted) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (_) => const ImageScreen()),
+                            );
+                          }
+                        },
+                        child: users.isLoading 
+                          ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary))
+                          : const ReusableButton(label: 'Next'),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),

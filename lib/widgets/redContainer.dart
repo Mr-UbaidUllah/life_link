@@ -8,17 +8,18 @@ class redContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       height: height * 0.37,
       width: width,
-      decoration: const BoxDecoration(color: Colors.red),
+      decoration: BoxDecoration(color: theme.colorScheme.primary),
       child: Column(
         children: [
           SizedBox(height: height * 0.06),
           Image.asset('assets/images/water 1.png', height: height * 0.10),
-          const Text(
-            'Shifa Blood',
-            style: TextStyle(fontSize: 23, color: Colors.white),
+          Text(
+            'Life Link',
+            style: TextStyle(fontSize: 23, color: theme.colorScheme.onPrimary),
           ),
         ],
       ),

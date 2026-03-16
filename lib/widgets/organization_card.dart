@@ -17,109 +17,139 @@ class OrganizationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Colors.white,
-      elevation: .7,
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                image,
-                width: 60,
-                height: 60,
-                fit: BoxFit.cover,
+    final theme = Theme.of(context);
+    return Container(
+      margin: EdgeInsets.only(bottom: 16.h),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20.r),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              Container(
+                width: 6.w,
+                color: theme.colorScheme.primary,
               ),
-            ),
-
-            const SizedBox(width: 12),
-            Expanded(
-              child: Row(
-                children: [
-                  // column
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // name
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.all(12.w),
+                  child: Row(
+                    children: [
+                      // Image with loading indicator
+                      Container(
+                        width: 70.w,
+                        height: 70.w,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16.r),
+                          color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16.r),
+                          child: Image.network(
+                            image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Icon(Icons.business_rounded, color: theme.colorScheme.onSurface.withOpacity(0.4), size: 30.sp),
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              );
+                            },
                           ),
                         ),
-                        const SizedBox(height: 4),
-
-                        // location
-                        Row(
+                      ),
+                      SizedBox(width: 14.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
-                              Icons.location_on,
-                              size: 14,
-                              color: Colors.red,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                address,
-                                style: const TextStyle(fontSize: 12),
+                            Text(
+                              name,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16.sp,
+                                color: theme.colorScheme.onSurface,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            SizedBox(height: 6.h),
+                            Row(
+                              children: [
+                                Icon(Icons.location_on_rounded, size: 14.sp, color: theme.colorScheme.primary),
+                                SizedBox(width: 4.w),
+                                Expanded(
+                                  child: Text(
+                                    address,
+                                    style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 4.h),
+                            Row(
+                              children: [
+                                Icon(Icons.phone_rounded, size: 14.sp, color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                                SizedBox(width: 4.w),
+                                Text(
+                                  phone,
+                                  style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.w500),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-
-                        const SizedBox(height: 4),
-
-                        // phone
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.phone,
-                              size: 14,
-                              color: Colors.red,
+                      ),
+                      SizedBox(width: 8.w),
+                      // Action Button
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(10.r),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withOpacity(0.1),
+                              shape: BoxShape.circle,
                             ),
-                            const SizedBox(width: 4),
-                            Text(phone, style: const TextStyle(fontSize: 12)),
-                            SizedBox(width: 54.w),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                    ),
-                  ),
-
-                  // button
-                  SizedBox(
-                    width: 100,
-                    height: 36,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                            child: Icon(Icons.chat_bubble_rounded, color: theme.colorScheme.primary, size: 18.sp),
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            'Chat',
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                      onPressed: () {},
-                      child: Center(
-                        child: const Text(
-                          'Chat Now',
-                          style: TextStyle(fontSize: 11, color: Colors.white),
-                        ),
-                      ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

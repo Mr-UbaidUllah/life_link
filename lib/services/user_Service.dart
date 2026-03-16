@@ -62,6 +62,24 @@ class UserFirestoreService {
     await _firestore.collection('users').doc(uid).update({'isDonor': isDonor});
   }
 
+  Future<void> dismissRequest(String requestId) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    await _firestore.collection('users').doc(uid).update({
+      'dismissedRequests': FieldValue.arrayUnion([requestId]),
+    });
+  }
+
+  Future<void> dismissAllRequests(List<String> requestIds) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    await _firestore.collection('users').doc(uid).update({
+      'dismissedRequests': FieldValue.arrayUnion(requestIds),
+    });
+  }
+
   Stream<List<UserModel>> getDonors() {
     return _firestore
         .collection('users')

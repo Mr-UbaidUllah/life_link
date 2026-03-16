@@ -16,6 +16,7 @@ class ReuseablePasswordfield extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     // MediaQuery dimensions
     final width = MediaQuery.of(context).size.width;
     final height = MediaQuery.of(context).size.height;
@@ -25,16 +26,16 @@ class ReuseablePasswordfield extends StatelessWidget {
       child: TextField(
         controller: controller,
         obscureText: true,
-        style: TextStyle(fontSize: width * 0.04),
+        style: TextStyle(fontSize: width * 0.04, color: theme.colorScheme.onSurface),
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: TextStyle(
-            color: Color.fromRGBO(154, 154, 154, 1),
+            color: theme.colorScheme.onSurface.withOpacity(0.4),
             fontSize: width * 0.04,
           ),
-          prefixIcon: Icon(prefixIcon, color: Colors.black, size: width * 0.06),
+          prefixIcon: Icon(prefixIcon, color: theme.colorScheme.onSurface.withOpacity(0.6), size: width * 0.06),
           suffixIcon: suffixIcon != null
-              ? Icon(suffixIcon, color: Colors.black, size: width * 0.06)
+              ? Icon(suffixIcon, color: theme.colorScheme.onSurface.withOpacity(0.6), size: width * 0.06)
               : null,
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(

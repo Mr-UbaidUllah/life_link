@@ -18,19 +18,46 @@ class BloodrequestProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateStatus(String requestId, String status) async {
+    isLoading = true;
+    notifyListeners();
+
+    await _service.updateRequestStatus(requestId, status);
+
+    isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> deleteRequest(String requestId) async {
+    isLoading = true;
+    notifyListeners();
+
+    await _service.deleteRequest(requestId);
+
+    isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> clearAllRequests() async {
+    isLoading = true;
+    notifyListeners();
+
+    await _service.clearAllRequests();
+
+    isLoading = false;
+    notifyListeners();
+  }
+
   List<BloodRequestModel> get filteredrequests => _filteredRequests;
 
   Stream<List<BloodRequestModel>> get requests => _service.getRequets();
 
-  /// Called when Firestore sends data
-
   void setRequests(List<BloodRequestModel> list) {
     _allRequests = list;
-    _filteredRequests = list; // show all by default
+    _filteredRequests = list;
     notifyListeners();
   }
 
-  /// Filter by blood group
   void searchByBlood(String query) {
     if (query.isEmpty) {
       _filteredRequests = _allRequests;
@@ -40,7 +67,6 @@ class BloodrequestProvider with ChangeNotifier {
             (r) => r.bloodGroup.toLowerCase().contains(query.toLowerCase()),
           )
           .toList();
-      notifyListeners();
     }
     notifyListeners();
   }

@@ -17,119 +17,139 @@ class AmbulenceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Colors.white,
-      elevation: .7,
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                image,
-                width: 60.w,
-                height: 60.w,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 55.w, height: 55.w, color: Colors.grey[200],
-                  child: const Icon(Icons.person, color: Colors.grey),
-                ),
+    final theme = Theme.of(context);
+    return Container(
+      margin: EdgeInsets.only(bottom: 16.h),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20.r),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              Container(
+                width: 6.w,
+                color: theme.colorScheme.primary,
               ),
-            ),
-
-             SizedBox(width: 12.w),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.all(12.w),
+                  child: Row(
                     children: [
-                      // column
+                      // Image with loading indicator
+                      Container(
+                        width: 70.w,
+                        height: 70.w,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16.r),
+                          color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16.r),
+                          child: Image.network(
+                            image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Icon(Icons.emergency_rounded, color: theme.colorScheme.onSurface.withOpacity(0.4), size: 30.sp),
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 14.w),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // name
                             Text(
                               name,
-                              style:  TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 18.sp,
+                                fontSize: 16.sp,
+                                color: theme.colorScheme.onSurface,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                             SizedBox(height: 4.w),
-
-                            // location
+                            SizedBox(height: 6.h),
                             Row(
                               children: [
-                                 Icon(
-                                  Icons.bus_alert_outlined,
-                                  size: 14.sp,
-                                  color: Colors.red,
-                                ),
-                                const SizedBox(width: 4),
+                                Icon(Icons.location_on_rounded, size: 14.sp, color: theme.colorScheme.primary),
+                                SizedBox(width: 4.w),
                                 Expanded(
                                   child: Text(
                                     address,
-                                    style: const TextStyle(fontSize: 12),
+                                    style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],
                             ),
-
-                            const SizedBox(height: 4),
-
-                            // phone
+                            SizedBox(height: 4.h),
                             Row(
                               children: [
-                                const Icon(
-                                  Icons.location_on_sharp,
-                                  size: 14,
-                                  color: Colors.red,
+                                Icon(Icons.phone_rounded, size: 14.sp, color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                                SizedBox(width: 4.w),
+                                Text(
+                                  phone,
+                                  style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.w500),
                                 ),
-                                const SizedBox(width: 4),
-                                Text(phone, style: const TextStyle(fontSize: 12)),
-                                SizedBox(width: 54.w),
                               ],
                             ),
-                            const SizedBox(height: 8),
                           ],
                         ),
                       ),
-
-                      // button
-                      SizedBox(
-                        width: 100,
-                        height: 36,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                      SizedBox(width: 8.w),
+                      // Action Button
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(10.r),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.call_rounded, color: theme.colorScheme.primary, size: 18.sp),
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            'Call',
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          onPressed: () {},
-                          child: Center(
-                            child: const Text(
-                              'Chat Now',
-                              style: TextStyle(fontSize: 11, color: Colors.white),
-                            ),
-                          ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

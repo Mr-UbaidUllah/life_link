@@ -22,6 +22,7 @@ class CustomStackCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final width = MediaQuery.of(context).size.width;
 
     return Stack(
@@ -33,10 +34,17 @@ class CustomStackCard extends StatelessWidget {
           top: topOffset,
           child: Container(
             height: height,
-            padding: EdgeInsets.all(18),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: backgroundColor,
               borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.onSurface.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: child,
           ),

@@ -6,7 +6,7 @@ class MessageModel {
   final String receiverId;
   final String text;
   final Timestamp createdAt;
-  final bool isDelivered; // NEW
+  final bool isDelivered;
 
   MessageModel({
     required this.senderId,
@@ -14,7 +14,7 @@ class MessageModel {
     required this.receiverId,
     required this.text,
     required this.createdAt,
-    this.isDelivered = false, // default false
+    this.isDelivered = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -24,17 +24,17 @@ class MessageModel {
       'receiverId': receiverId,
       'text': text,
       'createdAt': createdAt,
-      'isDelivered': isDelivered, // save to Firestore
+      'isDelivered': isDelivered,
     };
   }
 
   factory MessageModel.fromMap(Map<String, dynamic> map) {
     return MessageModel(
-      senderId: map['senderId'],
-      senderEmail: map['senderEmail'],
-      receiverId: map['receiverId'],
-      text: map['text'],
-      createdAt: map['createdAt'],
+      senderId: map['senderId'] ?? '',
+      senderEmail: map['senderEmail'] ?? '',
+      receiverId: map['receiverId'] ?? '',
+      text: map['text'] ?? '',
+      createdAt: map['createdAt'] ?? Timestamp.now(),
       isDelivered: map['isDelivered'] ?? false,
     );
   }

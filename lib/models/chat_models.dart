@@ -6,6 +6,7 @@ class ChatModel {
   final String lastMessage;
   final Timestamp? createdAt;
   final Timestamp? updatedAt;
+  final Map<String, int> unreadCounts; // Added to track unread messages per user
 
   ChatModel({
     required this.id,
@@ -13,6 +14,7 @@ class ChatModel {
     required this.lastMessage,
     this.createdAt,
     this.updatedAt,
+    this.unreadCounts = const {},
   });
 
   Map<String, dynamic> toMap() {
@@ -21,6 +23,7 @@ class ChatModel {
       'lastMessage': lastMessage,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      'unreadCounts': unreadCounts,
     };
   }
 
@@ -31,6 +34,7 @@ class ChatModel {
       lastMessage: map['lastMessage'] ?? '',
       createdAt: map['createdAt'],
       updatedAt: map['updatedAt'],
+      unreadCounts: Map<String, int>.from(map['unreadCounts'] ?? {}),
     );
   }
 }
