@@ -20,7 +20,6 @@ class NotificationService {
     importance: Importance.high,
   );
 
-  // 🔹 CALL THIS AFTER LOGIN
   Future<void> initialize() async {
     print("🔔 Initializing notifications...");
 
@@ -68,7 +67,7 @@ class NotificationService {
     }
   }
 
-  // 🔹 SAVE TOKEN (FIXED)
+  // save token
   Future<void> _saveTokenToFirestore(String token) async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -84,7 +83,7 @@ class NotificationService {
     print("✅ Token saved to Firestore");
   }
 
-  // 🔹 LOCAL NOTIFICATION SETUP
+  //  LOCAL NOTIFICATION SETUP
   Future<void> _setupLocalNotifications() async {
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
@@ -104,7 +103,7 @@ class NotificationService {
     print("✅ Local notifications ready");
   }
 
-  // 🔹 FOREGROUND HANDLER
+  //  FOREGROUND HANDLER
   void _handleForegroundMessage(RemoteMessage message) {
     if (kDebugMode) {
       print("📬 Foreground notification");

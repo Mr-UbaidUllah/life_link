@@ -3,7 +3,11 @@ import 'package:blood_donation/provider/bloodRequest_provider.dart';
 import 'package:blood_donation/provider/storage_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/view/bloodrequest_screen.dart';
+import 'package:blood_donation/view/edit_profile_screen.dart';
+import 'package:blood_donation/view/home/donation_info_screen.dart';
+import 'package:blood_donation/view/profile/profile_details_scrren.dart';
 import 'package:blood_donation/view/request_screen.dart';
+import 'package:blood_donation/view/search_screen.dart';
 import 'package:blood_donation/view/specific_Bloodgroup_screen.dart';
 import 'package:blood_donation/view/post_details.dart';
 import 'package:blood_donation/widgets/contribution.dart';
@@ -68,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     imagePath: 'assets/images/blood.png',
                     title: 'Find Donors',
                     subtitle: 'Search nearby',
-                    onTap: () {},
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen())),
                   ),
                   ActivityCard(
                     imagePath: 'assets/images/blod.png',
@@ -86,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     imagePath: 'assets/images/drop.png',
                     title: 'Donation Info',
                     subtitle: "Tips & FAQs",
-                    onTap: () {},
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DonationInfoScreen())),
                   ),
                 ],
               ),
@@ -190,9 +194,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 Consumer<UserProvider>(
                   builder: (context, provider, _) {
-                    return Text(
-                      provider.user?.name ?? "User",
-                      style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface),
+                    final user = provider.user;
+                    return InkWell(
+                      onTap: user != null
+                          ? () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ProfileDetailsScreen(userId: user.uid),
+                                ),
+                              )
+                          : null,
+                      child: Text(
+                        user?.name ?? "User",
+                        style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface),
+                      ),
                     );
                   },
                 ),
@@ -200,7 +215,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+            },
             icon: Stack(
               children: [
                 Icon(Icons.notifications_outlined, size: 28.sp, color: theme.colorScheme.onSurface),
@@ -311,6 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildUrgentRequests(ThemeData theme) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     return Consumer2<BloodrequestProvider, UserProvider>(
       builder: (context, bloodProvider, userProvider, _) {
         final dismissedIds = userProvider.user?.dismissedRequests ?? [];
@@ -329,7 +346,11 @@ class _HomeScreenState extends State<HomeScreen> {
             }
 
             final requests = snapshot.data!
-                .where((req) => !dismissedIds.contains(req.id))
+                .where((req) {
+                  final isMine = req.userId == currentUserId;
+                  final isDismissed = dismissedIds.contains(req.id);
+                  return isMine || !isDismissed;
+                })
                 .take(3)
                 .toList();
 

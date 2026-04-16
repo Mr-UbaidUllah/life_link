@@ -28,6 +28,9 @@ class UserProvider extends ChangeNotifier {
     required String bloodGroup,
     required String country,
     required String city,
+    String? dateOfBirth,
+    String? gender,
+    String? about,
   }) async {
     try {
       _isLoading = true;
@@ -41,6 +44,9 @@ class UserProvider extends ChangeNotifier {
         bloodGroup: bloodGroup,
         country: country,
         city: city,
+        dateOfBirth: dateOfBirth,
+        gender: gender,
+        about: about,
       );
 
       _isLoading = false;

@@ -1,11 +1,15 @@
 import 'package:blood_donation/models/bloodrequest_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class BloodrequestService {
+class BloodRequestService {
   final _firestore = FirebaseFirestore.instance;
 
   Future<void> createRequest(BloodRequestModel request) async {
-    await _firestore.collection('Blood_request').add(request.toMap());
+    // Professional Fix: Use FieldValue.serverTimestamp() for createdAt 
+    // to ensure consistency across all user devices.
+    final data = request.toMap();
+    data['createdAt'] = FieldValue.serverTimestamp();
+    await _firestore.collection('Blood_request').add(data);
   }
 
   Future<void> updateRequestStatus(String requestId, String status) async {
@@ -27,19 +31,25 @@ class BloodrequestService {
     await batch.commit();
   }
 
-  Stream<List<BloodRequestModel>> getRequets() {
-    // We remove the server-side 'where' filter for 'status' temporarily 
-    // to ensure existing documents (without the status field) are still visible.
-    // We'll filter 'closed' requests in the mapping logic instead.
+  /// PROFESSIONAL FIX: 
+  /// We filter 'expiryDate' and 'status' on the client side within the stream.
+  /// This avoids the "disappearing" issue caused by missing Firestore Composite Indexes
+  /// and ensures the list is always up-to-date with the device's current time.
+  Stream<List<BloodRequestModel>> getRequests() {
     return _firestore
         .collection('Blood_request')
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => BloodRequestModel.fromMap(doc.id, doc.data()))
-              .where((req) => req.status != 'closed') // Filter out closed ones here
-              .toList();
+          final now = DateTime.now();
+          return snapshot.docs.map((doc) {
+            return BloodRequestModel.fromMap(doc.id, doc.data());
+          }).where((req) {
+            // Only show 'open' requests that haven't expired yet
+            final isOpen = req.status == 'open';
+            final isNotExpired = req.expiryDate.isAfter(now);
+            return isOpen && isNotExpired;
+          }).toList();
         });
   }
 }

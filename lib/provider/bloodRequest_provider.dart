@@ -3,7 +3,7 @@ import 'package:blood_donation/services/bloodrequesT_Service.dart';
 import 'package:flutter/material.dart';
 
 class BloodrequestProvider with ChangeNotifier {
-  final _service = BloodrequestService();
+  final _service = BloodRequestService();
   List<BloodRequestModel> _allRequests = [];
   List<BloodRequestModel> _filteredRequests = [];
   bool isLoading = false;
@@ -50,7 +50,7 @@ class BloodrequestProvider with ChangeNotifier {
 
   List<BloodRequestModel> get filteredrequests => _filteredRequests;
 
-  Stream<List<BloodRequestModel>> get requests => _service.getRequets();
+  Stream<List<BloodRequestModel>> get requests => _service.getRequests();
 
   void setRequests(List<BloodRequestModel> list) {
     _allRequests = list;

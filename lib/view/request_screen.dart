@@ -153,7 +153,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
               value: selectedCountry,
               items: countryCities.keys.toList(),
               itemToString: (e) => e,
-              prefixIcon: Icon(Icons.public_rounded, color: theme.colorScheme.onSurface.withOpacity(0.4), size: 22.sp),
+              prefixIcon: Icon(Icons.public_rounded, color: theme.colorScheme.onSurface.withValues(alpha: 0.4), size: 22.sp),
               onChanged: (val) => setState(() {
                 selectedCountry = val;
                 selectedCity = null;
@@ -168,7 +168,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
               value: selectedCity,
               items: selectedCountry == null ? [] : countryCities[selectedCountry] ?? [],
               itemToString: (e) => e,
-              prefixIcon: Icon(Icons.location_city_rounded, color: theme.colorScheme.onSurface.withOpacity(0.4), size: 22.sp),
+              prefixIcon: Icon(Icons.location_city_rounded, color: theme.colorScheme.onSurface.withValues(alpha: 0.4), size: 22.sp),
               enabled: selectedCountry != null,
               onChanged: (val) => setState(() => selectedCity = val),
               focusedBorderColor: theme.colorScheme.primary,
@@ -200,10 +200,20 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                                 hospitalController.text.isEmpty ||
                                 selectedCountry == null ||
                                 selectedCity == null ||
-                                phoneController.text.isEmpty) {
+                                phoneController.text.isEmpty ||
+                                selectedDate == null) {
                               _showSnackBar(context, theme, "Please fill all required fields", isError: true);
                               return;
                             }
+
+                            // Professional Fix: Set expiry to the very end of the selected day (23:59:59)
+                            // This prevents requests from expiring immediately if 'Today' is selected.
+                            final expiry = DateTime(
+                              selectedDate!.year,
+                              selectedDate!.month,
+                              selectedDate!.day,
+                              23, 59, 59,
+                            );
 
                             final request = BloodRequestModel(
                               id: '',
@@ -218,17 +228,18 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                               city: selectedCity ?? '',
                               userId: user.uid,
                               createdAt: DateTime.now(),
+                              expiryDate: expiry,
                               status: 'open',
                             );
 
                             try {
                               await provider.bloodRequest(request);
-                              if (mounted) {
+                              if (context.mounted) {
                                 _showSnackBar(context, theme, "Request submitted successfully!");
                                 Navigator.pop(context);
                               }
                             } catch (e) {
-                              if (mounted) {
+                              if (context.mounted) {
                                 _showSnackBar(context, theme, e.toString(), isError: true);
                               }
                             }
@@ -277,7 +288,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Requirement Date",
+          "Requirement Date (Expiry)",
           style: TextStyle(
             fontSize: 14.sp,
             fontWeight: FontWeight.w600,
@@ -289,9 +300,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           onTap: () async {
             final date = await showDatePicker(
               context: context,
-              initialDate: DateTime.now(),
+              initialDate: DateTime.now().add(const Duration(days: 1)),
               firstDate: DateTime.now(),
-              lastDate: DateTime(2030),
+              lastDate: DateTime.now().add(const Duration(days: 30)),
               builder: (context, child) {
                 return Theme(
                   data: Theme.of(context).copyWith(
@@ -311,27 +322,27 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
             decoration: BoxDecoration(
               color: Colors.transparent,
               borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(color: theme.colorScheme.outline, width: 1.0),
+              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.5), width: 1.0),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    Icon(Icons.calendar_today_rounded, size: 20.sp, color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                    Icon(Icons.calendar_today_rounded, size: 20.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
                     SizedBox(width: 12.w),
                     Text(
                       selectedDate == null
-                          ? "Select Date"
+                          ? "Select Expiry Date"
                           : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
                       style: TextStyle(
                         fontSize: 16.sp,
-                        color: selectedDate == null ? theme.colorScheme.onSurface.withOpacity(0.4) : theme.colorScheme.onSurface,
+                        color: selectedDate == null ? theme.colorScheme.onSurface.withValues(alpha: 0.4) : theme.colorScheme.onSurface,
                       ),
                     ),
                   ],
                 ),
-                Icon(Icons.arrow_drop_down_rounded, size: 24.sp, color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                Icon(Icons.arrow_drop_down_rounded, size: 24.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
               ],
             ),
           ),

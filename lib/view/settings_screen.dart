@@ -8,6 +8,8 @@ import 'package:blood_donation/provider/user_provider.dart';
 import '../widgets/user_tile_widget.dart';
 import 'auth/login_screen.dart';
 import 'edit_profile_screen.dart';
+import 'profile/personel_information.dart';
+import 'profile/basic_information.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -88,16 +90,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     _buildSettingsTile(
                       theme,
-                      icon: Icons.notifications_outlined,
-                      title: 'Notifications',
-                      onTap: () {},
+                      icon: Icons.person_outline_rounded,
+                      title: 'Edit Profile Information',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditProfileScreen(user: user),
+                          ),
+                        );
+                      },
                     ),
                     _buildDivider(theme),
                     _buildSettingsTile(
                       theme,
-                      icon: Icons.privacy_tip_outlined,
-                      title: 'Privacy & Security',
-                      onTap: () {},
+                      icon: Icons.health_and_safety_outlined,
+                      title: 'Update Health Details',
+                      onTap: () {
+                         Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const BasicInformation(),
+                          ),
+                        );
+                      },
                     ),
                     _buildDivider(theme),
                     Consumer<ThemeProvider>(
@@ -140,7 +156,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 
                 SizedBox(height: 30.h),
                 
-                _buildSectionHeader('More', theme),
+                _buildSectionHeader('Support & Info', theme),
                 _buildSettingsCard(
                   theme,
                   children: [
@@ -148,14 +164,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       theme,
                       icon: Icons.help_outline_rounded,
                       title: 'Help & Support',
-                      onTap: () {},
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Support center coming soon!'))
+                        );
+                      },
                     ),
                     _buildDivider(theme),
                     _buildSettingsTile(
                       theme,
                       icon: Icons.info_outline_rounded,
                       title: 'About App',
-                      onTap: () {},
+                      onTap: () {
+                        showAboutDialog(
+                          context: context,
+                          applicationName: 'Blood Donation',
+                          applicationVersion: '1.0.0',
+                          applicationLegalese: '© 2024 Blood Donation App',
+                          applicationIcon: Icon(Icons.bloodtype_rounded, size: 40.r, color: Colors.redAccent),
+                        );
+                      },
                     ),
                   ],
                 ),

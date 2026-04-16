@@ -13,6 +13,9 @@ class UserFirestoreService {
     required String bloodGroup,
     required String country,
     required String city,
+    String? dateOfBirth,
+    String? gender,
+    String? about,
   }) async {
     await _firestore.collection('users').doc(uid).update({
       'name': name,
@@ -20,6 +23,9 @@ class UserFirestoreService {
       'bloodGroup': bloodGroup,
       'country': country,
       'city': city,
+      'dateOfBirth': dateOfBirth,
+      'gender': gender,
+      'about': about,
     });
   }
 

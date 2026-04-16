@@ -121,13 +121,13 @@ class _SearchScreenState extends State<SearchScreen> {
                       borderRadius: BorderRadius.circular(16.r),
                       boxShadow: [
                         BoxShadow(
-                          color: isSelected ? theme.colorScheme.primary.withOpacity(0.2) : Colors.black.withOpacity(0.03),
+                          color: isSelected ? theme.colorScheme.primary.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.03),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
                       ],
                       border: Border.all(
-                        color: isSelected ? theme.colorScheme.primary : theme.colorScheme.outline.withOpacity(0.1),
+                        color: isSelected ? theme.colorScheme.primary : theme.colorScheme.outline.withValues(alpha: 0.1),
                         width: 1.5,
                       ),
                     ),
@@ -136,7 +136,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       children: [
                         Icon(
                           Icons.water_drop,
-                          color: isSelected ? Colors.white.withOpacity(0.2) : theme.colorScheme.primary.withOpacity(0.1),
+                          color: isSelected ? Colors.white.withValues(alpha: 0.2) : theme.colorScheme.primary.withValues(alpha: 0.1),
                           size: 40.sp,
                         ),
                         Text(
@@ -211,7 +211,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     if (!snapshot.hasData || snapshot.data!.isEmpty) {
                       return Padding(
                         padding: EdgeInsets.all(20.w),
-                        child: Text("No requests found", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4))),
+                        child: Text("No requests found", style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4))),
                       );
                     }
 
@@ -230,18 +230,21 @@ class _SearchScreenState extends State<SearchScreen> {
                       final isMine = req.userId == currentUserId;
                       final isDismissed = dismissedIds.contains(req.id);
 
+                      // PROFESSIONAL FIX: Always show user's own requests, even if they'd normally be "dismissed" or hidden by default filtering
+                      // but hide other people's dismissed requests.
                       return matchesQuery && matchesBlood && (isMine || !isDismissed);
                     }).toList();
 
                     if (filteredRequests.isEmpty) {
                       return Padding(
                         padding: EdgeInsets.all(20.w),
-                        child: Text("No requests match your search", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4))),
+                        child: Text("No requests match your search", style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4))),
                       );
                     }
 
+                    // Adjust display logic to prioritize mine or show a limited set when not searching
                     final displayRequests = (_searchQuery.isEmpty && selectedIndex == -1)
-                        ? filteredRequests.take(2).toList()
+                        ? filteredRequests.take(5).toList()
                         : filteredRequests;
 
                     return Column(
@@ -306,7 +309,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     return SliverToBoxAdapter(
                       child: Padding(
                         padding: EdgeInsets.all(20.w),
-                        child: Text('No donors available right now', style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4))),
+                        child: Text('No donors available right now', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4))),
                       ),
                     );
                   }
@@ -324,7 +327,8 @@ class _SearchScreenState extends State<SearchScreen> {
                     if (_searchQuery.isEmpty && selectedBlood == null) {
                       if (!isNearby) return false;
                     } else {
-                      if (!isNearby) return false;
+                      // Allow showing search results even if not nearby, but keep default view to nearby
+                      if (!isNearby && _searchQuery.isEmpty && selectedBlood == null) return false;
                     }
                     final matchesQuery = query.isEmpty ||
                         (user.name?.toLowerCase().contains(query) ?? false) ||
@@ -340,8 +344,8 @@ class _SearchScreenState extends State<SearchScreen> {
                         child: Text(
                           _searchQuery.isEmpty && selectedBlood == null 
                             ? 'No donors found in your city' 
-                            : 'No matching donors in your city', 
-                          style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4))
+                            : 'No matching donors found', 
+                          style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4))
                         ),
                       ),
                     );
@@ -367,7 +371,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               color: theme.colorScheme.surface,
                               borderRadius: BorderRadius.circular(16.r),
                               boxShadow: [
-                                BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+                                BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
                               ],
                             ),
                             child: ListTile(
@@ -376,7 +380,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                 radius: 25.r,
                                 backgroundColor: theme.colorScheme.surfaceContainerHighest,
                                 backgroundImage: user.profileImage != null ? NetworkImage(user.profileImage!) : null,
-                                child: user.profileImage == null ? Icon(Icons.person_rounded, color: theme.colorScheme.onSurface.withOpacity(0.4), size: 24.sp) : null,
+                                child: user.profileImage == null ? Icon(Icons.person_rounded, color: theme.colorScheme.onSurface.withValues(alpha: 0.4), size: 24.sp) : null,
                               ),
                               title: Text(
                                 user.name ?? 'Anonymous',
@@ -393,12 +397,12 @@ class _SearchScreenState extends State<SearchScreen> {
                                         SizedBox(width: 4.w),
                                         Text(
                                           user.bloodGroup ?? '--',
-                                          style: TextStyle(fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                                          style: TextStyle(fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                                         ),
                                         SizedBox(width: 12.w),
-                                        Icon(Icons.location_on_rounded, size: 14.sp, color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                                        Icon(Icons.location_on_rounded, size: 14.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
                                         SizedBox(width: 4.w),
-                                        Text(user.city ?? 'Unknown', style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5))),
+                                        Text(user.city ?? 'Unknown', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
                                       ],
                                     ),
                                   ],
@@ -407,7 +411,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               trailing: Container(
                                 padding: EdgeInsets.all(8.r),
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary.withOpacity(0.1),
+                                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(10.r),
                                 ),
                                 child: Icon(Icons.arrow_forward_ios_rounded, color: theme.colorScheme.primary, size: 16.sp),
