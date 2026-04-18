@@ -22,8 +22,6 @@ import 'package:provider/provider.dart';
 
 import 'package:blood_donation/provider/ambulance_storage_provider.dart';
 
-/// Must be top-level & outside any class
-@pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   debugPrint(' Background Message: ${message.messageId}');
@@ -35,7 +33,7 @@ void main() async {
 
   ///  Register background notification handler
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-   final notificationService = NotificationService();
+  final notificationService = NotificationService();
   await notificationService.initialize();
 
   runApp(
