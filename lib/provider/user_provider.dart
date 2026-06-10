@@ -28,8 +28,6 @@ class UserProvider extends ChangeNotifier {
     required String bloodGroup,
     required String country,
     required String city,
-    String? dateOfBirth,
-    String? gender,
     String? about,
   }) async {
     try {
@@ -44,8 +42,6 @@ class UserProvider extends ChangeNotifier {
         bloodGroup: bloodGroup,
         country: country,
         city: city,
-        dateOfBirth: dateOfBirth,
-        gender: gender,
         about: about,
       );
 
@@ -62,8 +58,6 @@ class UserProvider extends ChangeNotifier {
 
   Future<bool> updateBasicInfo({
     required String uid,
-    required String dateOfBirth,
-    required String gender,
     required String wantToDonate,
     required String about,
   }) async {
@@ -73,8 +67,6 @@ class UserProvider extends ChangeNotifier {
 
       await _firestoreService.updateBasicInfo(
         uid: uid,
-        dateOfBirth: dateOfBirth,
-        gender: gender,
         wantToDonate: wantToDonate,
         about: about,
       );
@@ -148,11 +140,9 @@ class UserProvider extends ChangeNotifier {
 
     await _firestoreService.updateDonateStatus(value);
 
-    if (value) {
-      _user = await _firestoreService.fetchCurrentUser();
-    } else {
-      _user = null;
-    }
+    // Re-fetch so the cached user reflects the new donate status.
+    // (Previously the `false` branch nulled `_user`, wiping profile data.)
+    _user = await _firestoreService.fetchCurrentUser();
 
     _isLoading = false;
     notifyListeners();

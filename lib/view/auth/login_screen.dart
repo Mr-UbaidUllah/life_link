@@ -16,6 +16,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController email_controller = TextEditingController();
   final TextEditingController password_controller = TextEditingController();
 
@@ -24,6 +25,25 @@ class _LoginScreenState extends State<LoginScreen> {
     email_controller.dispose();
     password_controller.dispose();
     super.dispose();
+  }
+
+  String? _validateEmail(String? value) {
+    final email = value?.trim() ?? '';
+    if (email.isEmpty) {
+      return 'Please enter your email';
+    }
+    final emailRegex = RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$');
+    if (!emailRegex.hasMatch(email)) {
+      return 'Please enter a valid email address';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter your password';
+    }
+    return null;
   }
 
   @override
@@ -59,7 +79,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-                    child: Column(
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -85,6 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIcon: Icons.email_outlined,
                           keyboardType: TextInputType.emailAddress,
                           borderRadius: 12,
+                          validator: _validateEmail,
                         ),
                         const SizedBox(height: 20),
                         CustomTextField(
@@ -93,6 +116,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           hintText: 'Password',
                           isPassword: true,
                           borderRadius: 12,
+                          textInputAction: TextInputAction.done,
+                          validator: _validatePassword,
                         ),
                         const SizedBox(height: 40),
                         Consumer<AuthProviders>(
@@ -101,6 +126,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               onTap: auth.isLoading
                                   ? null
                                   : () async {
+                                      FocusScope.of(context).unfocus();
+                                      if (!_formKey.currentState!.validate()) {
+                                        return;
+                                      }
                                       try {
                                         await auth.login(
                                           email_controller.text.trim(),
@@ -114,6 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           );
                                         }
                                       } catch (e) {
+                                        if (!context.mounted) return;
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
                                             content: Text(e.toString()),
@@ -152,10 +182,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   recognizer: TapGestureRecognizer()
                                     ..onTap = () {
-                                      Navigator.push(
+                                      Navigator.pushReplacement(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => SignupScreen(),
+                                          builder: (context) => const SignupScreen(),
                                         ),
                                       );
                                     },
@@ -166,6 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 20),
                       ],
+                    ),
                     ),
                   ),
                 ),

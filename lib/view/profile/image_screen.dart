@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:blood_donation/provider/storage_provider.dart';
 import 'package:blood_donation/view/bottmNavigation.dart';
 import 'package:blood_donation/widgets/reusable_button.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 class ImageScreen extends StatefulWidget {
   const ImageScreen({super.key});
@@ -17,7 +19,66 @@ class ImageScreen extends StatefulWidget {
 
 class _ImageScreenState extends State<ImageScreen> {
   File? selectedImage;
+  bool _isCompleting = false;
   final ImagePicker _picker = ImagePicker();
+
+  Future<void> _completeSetup() async {
+    if (_isCompleting) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final storageProvider = context.read<StorageProvider>();
+
+    setState(() => _isCompleting = true);
+    try {
+      // Upload the chosen profile photo first (if any). uploadImage also
+      // writes the download URL to users/{uid}.profileImage.
+      if (selectedImage != null) {
+        final uploaded =
+            await storageProvider.uploadImage(user.uid, selectedImage!);
+        if (!uploaded) {
+          throw Exception(
+              storageProvider.error ?? 'Could not upload your photo. Please try again.');
+        }
+      }
+
+      // set+merge (not update) so a missing/partial profile doc still completes.
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set({'profileCompleted': true}, SetOptions(merge: true));
+
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const MainScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isCompleting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_friendlyError(e)),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  String _friendlyError(Object e) {
+    if (e is FirebaseException &&
+        (e.code == 'unavailable' || e.code == 'network-request-failed')) {
+      return 'No internet connection. Check your network and try again.';
+    }
+    // Upload failures are rethrown as Exception(<friendly reason>); show that.
+    if (e is Exception) {
+      return e.toString().replaceFirst('Exception: ', '');
+    }
+    return 'Could not finish setup. Please try again.';
+  }
 
   Future<void> pickImage() async {
     final XFile? pickFile = await _picker.pickImage(
@@ -56,7 +117,7 @@ class _ImageScreenState extends State<ImageScreen> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new, color: theme.colorScheme.onSurface),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.maybePop(context),
         ),
         title: Text(
           'Profile Setup',
@@ -183,31 +244,14 @@ class _ImageScreenState extends State<ImageScreen> {
                   ),
                   const SizedBox(height: 60),
                   InkWell(
-                    onTap: () async {
-                      await FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(FirebaseAuth.instance.currentUser!.uid)
-                          .update({'profileCompleted': true});
-
-                      if (context.mounted) {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (_) => const MainScreen()),
-                          (route) => false,
-                        );
-                      }
-                    },
-                    child: const ReusableButton(label: 'Complete Setup'),
+                    onTap: _isCompleting ? null : _completeSetup,
+                    child: _isCompleting
+                        ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary))
+                        : const ReusableButton(label: 'Complete Setup'),
                   ),
                   const SizedBox(height: 16),
                   TextButton(
-                    onPressed: () {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (_) => const MainScreen()),
-                        (route) => false,
-                      );
-                    },
+                    onPressed: _isCompleting ? null : _completeSetup,
                     child: Text(
                       'Skip for now',
                       style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4), fontWeight: FontWeight.w500),

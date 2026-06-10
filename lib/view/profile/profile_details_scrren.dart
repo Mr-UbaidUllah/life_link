@@ -302,7 +302,9 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               border: Border.all(color: theme.colorScheme.outline.withOpacity(0.1)),
             ),
             child: Text(
-              "Regular blood donor committed to saving lives. I am usually available for urgent blood requests in my city. Feel free to contact me via message or call.",
+              (user.about != null && user.about!.trim().isNotEmpty)
+                  ? user.about!
+                  : "This donor hasn't added a bio yet.",
               style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontSize: 14.sp, height: 1.6),
             ),
           ),

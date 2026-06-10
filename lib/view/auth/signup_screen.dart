@@ -16,16 +16,38 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController email_controller = TextEditingController();
   final TextEditingController password_controller = TextEditingController();
-  final TextEditingController phone_controller = TextEditingController();
 
   @override
   void dispose() {
     email_controller.dispose();
     password_controller.dispose();
-    phone_controller.dispose();
     super.dispose();
+  }
+
+  String? _validateEmail(String? value) {
+    final email = value?.trim() ?? '';
+    if (email.isEmpty) {
+      return 'Please enter your email';
+    }
+    final emailRegex = RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$');
+    if (!emailRegex.hasMatch(email)) {
+      return 'Please enter a valid email address';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    final password = value ?? '';
+    if (password.isEmpty) {
+      return 'Please enter a password';
+    }
+    if (password.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+    return null;
   }
 
   @override
@@ -61,7 +83,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       ],
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-                    child: Column(
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -87,6 +111,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           prefixIcon: Icons.email_outlined,
                           keyboardType: TextInputType.emailAddress,
                           borderRadius: 12,
+                          validator: _validateEmail,
                         ),
                         const SizedBox(height: 20),
                         CustomTextField(
@@ -95,6 +120,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           hintText: 'Password',
                           isPassword: true,
                           borderRadius: 12,
+                          textInputAction: TextInputAction.done,
+                          validator: _validatePassword,
                         ),
                         const SizedBox(height: 40),
                         Selector<AuthProviders, bool>(
@@ -104,6 +131,10 @@ class _SignupScreenState extends State<SignupScreen> {
                               onTap: isLoading
                                   ? null
                                   : () async {
+                                      FocusScope.of(context).unfocus();
+                                      if (!_formKey.currentState!.validate()) {
+                                        return;
+                                      }
                                       final auth = context.read<AuthProviders>();
                                       try {
                                         await auth.signup(
@@ -117,6 +148,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                           ),
                                         );
                                       } catch (e) {
+                                        if (!context.mounted) return;
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
                                             content: Text(e.toString()),
@@ -155,7 +187,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   ),
                                   recognizer: TapGestureRecognizer()
                                     ..onTap = () {
-                                      Navigator.push(
+                                      Navigator.pushReplacement(
                                         context,
                                         MaterialPageRoute(
                                           builder: (context) => const LoginScreen(),
@@ -169,6 +201,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         const SizedBox(height: 20),
                       ],
+                    ),
                     ),
                   ),
                 ),

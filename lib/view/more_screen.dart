@@ -104,7 +104,18 @@ class _MoreScreenState extends State<MoreScreen> {
                               final file = await pickImage();
                               if (file == null) return;
                               final success = await storage.uploadImage(uid, file);
-                              if (success) await users.loadCurrentUser();
+                              if (!context.mounted) return;
+                              if (success) {
+                                await users.loadCurrentUser();
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(storage.error ?? 'Could not upload your photo.'),
+                                    backgroundColor: theme.colorScheme.error,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
                             },
                             onLongPress: imageUrl == null
                                 ? null

@@ -163,7 +163,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         final file = await pickImage();
                         if (file == null) return;
                         final success = await storage.uploadImage(uid, file);
-                        if (success) await userProvider.loadCurrentUser();
+                        if (!context.mounted) return;
+                        if (success) {
+                          await userProvider.loadCurrentUser();
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(storage.error ?? 'Could not upload your photo.'),
+                              backgroundColor: theme.colorScheme.error,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
                       },
                 child: Container(
                   padding: EdgeInsets.all(3.r),

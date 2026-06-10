@@ -14,8 +14,6 @@ class UserModel {
   final DateTime createdAt;
   final String? fcmToken;
   final List<String> dismissedRequests;
-  final String? dateOfBirth;
-  final String? gender;
   final String? about;
 
   UserModel({
@@ -32,8 +30,6 @@ class UserModel {
     required this.createdAt,
     this.fcmToken,
     this.dismissedRequests = const [],
-    this.dateOfBirth,
-    this.gender,
     this.about,
   });
 
@@ -51,8 +47,6 @@ class UserModel {
     DateTime? createdAt,
     String? fcmToken,
     List<String>? dismissedRequests,
-    String? dateOfBirth,
-    String? gender,
     String? about,
   }) {
     return UserModel(
@@ -69,8 +63,6 @@ class UserModel {
       createdAt: createdAt ?? this.createdAt,
       fcmToken: fcmToken ?? this.fcmToken,
       dismissedRequests: dismissedRequests ?? this.dismissedRequests,
-      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
-      gender: gender ?? this.gender,
       about: about ?? this.about,
     );
   }
@@ -90,8 +82,6 @@ class UserModel {
       'createdAt': createdAt, // Keep original createdAt if updating, or handle in service
       'fcmToken': fcmToken,
       'dismissedRequests': dismissedRequests,
-      'dateOfBirth': dateOfBirth,
-      'gender': gender,
       'about': about,
     };
   }
@@ -121,8 +111,6 @@ class UserModel {
       createdAt: createdAtDate,
       fcmToken: map['fcmToken'],
       dismissedRequests: dismissed != null ? List<String>.from(dismissed) : [],
-      dateOfBirth: map['dateOfBirth'],
-      gender: map['gender'],
       about: map['about'],
     );
   }

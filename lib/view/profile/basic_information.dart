@@ -3,6 +3,7 @@ import 'package:blood_donation/view/profile/image_screen.dart';
 import 'package:blood_donation/widgets/custom_dropdown_form_field.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
 import 'package:blood_donation/widgets/reusable_button.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -15,18 +16,54 @@ class BasicInformation extends StatefulWidget {
 }
 
 class _BasicInformationState extends State<BasicInformation> {
-  String? selectedGender;
   String? selectedOption;
-  final List<String> genders = ['Male', 'Female', 'Others'];
   final List<String> options = ['Yes', 'No'];
-  final TextEditingController dateController = TextEditingController();
   final TextEditingController aboutController = TextEditingController();
+  bool _loadingExisting = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillExisting();
+  }
 
   @override
   void dispose() {
-    dateController.dispose();
     aboutController.dispose();
     super.dispose();
+  }
+
+  /// Restore previously saved Step 2 values for a returning user so they don't
+  /// have to re-enter them.
+  Future<void> _prefillExisting() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      if (mounted) setState(() => _loadingExisting = false);
+      return;
+    }
+    try {
+      final doc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final data = doc.data();
+      if (data != null && mounted) {
+        if (data['isDonor'] is bool) {
+          selectedOption = (data['isDonor'] as bool) ? 'Yes' : 'No';
+        }
+        aboutController.text = (data['about'] ?? '') as String;
+      }
+    } catch (_) {
+      // Non-fatal: fall back to an empty form.
+    } finally {
+      if (mounted) setState(() => _loadingExisting = false);
+    }
+  }
+
+  // The provider stores errors as e.toString(); Firestore network failures
+  // surface as "[cloud_firestore/unavailable]" or contain "network".
+  bool _isNetworkError(String? error) {
+    if (error == null) return false;
+    final lower = error.toLowerCase();
+    return lower.contains('unavailable') || lower.contains('network');
   }
 
   @override
@@ -39,7 +76,7 @@ class _BasicInformationState extends State<BasicInformation> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new, color: theme.colorScheme.onSurface),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.maybePop(context),
         ),
         title: Text(
           'Profile Setup',
@@ -47,7 +84,9 @@ class _BasicInformationState extends State<BasicInformation> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
+      body: _loadingExisting
+          ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary))
+          : SingleChildScrollView(
         child: Column(
           children: [
             Container(
@@ -90,60 +129,6 @@ class _BasicInformationState extends State<BasicInformation> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Personal Details',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  CustomTextField(
-                    readOnly: true,
-                    controller: dateController,
-                    hintText: 'Date of Birth',
-                    prefixIcon: Icons.calendar_month_outlined,
-                    borderRadius: 12,
-                    onTap: () async {
-                      DateTime? pickDate = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime(2000),
-                        firstDate: DateTime(1950),
-                        lastDate: DateTime.now(),
-                        builder: (context, child) {
-                          return Theme(
-                            data: Theme.of(context).copyWith(
-                              colorScheme: theme.colorScheme,
-                            ),
-                            child: child!,
-                          );
-                        },
-                      );
-                      if (pickDate != null) {
-                        setState(() {
-                          dateController.text =
-                              "${pickDate.day}/${pickDate.month}/${pickDate.year}";
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  CustomDropdownFormField(
-                    hintText: 'Select Gender',
-                    value: selectedGender,
-                    items: genders,
-                    itemToString: (item) => item,
-                    borderRadius: 12,
-                    focusedBorderColor: theme.colorScheme.primary,
-                    prefixIcon: Icon(Icons.person_outline, color: theme.colorScheme.onSurface.withOpacity(0.4)),
-                    onChanged: (val) {
-                      setState(() {
-                        selectedGender = val;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
                     'Donation Preference',
                     style: TextStyle(
                       fontSize: 16,
@@ -169,7 +154,7 @@ class _BasicInformationState extends State<BasicInformation> {
                   const SizedBox(height: 16),
                   CustomTextField(
                     hintText: 'Tell us a bit about yourself...',
-                    labelText: "About Yourself",
+                    labelText: "About Yourself (Optional)",
                     maxLines: 4,
                     borderRadius: 12,
                     controller: aboutController,
@@ -183,13 +168,10 @@ class _BasicInformationState extends State<BasicInformation> {
 
                           if (user == null) return;
 
-                          if (dateController.text.isEmpty ||
-                              selectedGender == null ||
-                              selectedOption == null ||
-                              aboutController.text.isEmpty) {
+                          if (selectedOption == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: const Text('Please fill all fields'),
+                                content: const Text('Please select a donation preference'),
                                 backgroundColor: theme.colorScheme.error,
                                 behavior: SnackBarBehavior.floating,
                               ),
@@ -199,16 +181,27 @@ class _BasicInformationState extends State<BasicInformation> {
 
                           final success = await users.updateBasicInfo(
                             uid: user.uid,
-                            dateOfBirth: dateController.text.trim(),
-                            gender: selectedGender!,
                             wantToDonate: selectedOption!,
                             about: aboutController.text.trim(),
                           );
 
-                          if (success && context.mounted) {
+                          if (!context.mounted) return;
+                          if (success) {
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(builder: (_) => const ImageScreen()),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  _isNetworkError(users.error)
+                                      ? 'No internet connection. Check your network and try again.'
+                                      : 'Could not save your details. Please try again.',
+                                ),
+                                backgroundColor: theme.colorScheme.error,
+                                behavior: SnackBarBehavior.floating,
+                              ),
                             );
                           }
                         },

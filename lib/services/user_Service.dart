@@ -13,35 +13,35 @@ class UserFirestoreService {
     required String bloodGroup,
     required String country,
     required String city,
-    String? dateOfBirth,
-    String? gender,
     String? about,
   }) async {
-    await _firestore.collection('users').doc(uid).update({
+    // Use set+merge instead of update: if the profile doc is missing (e.g. a
+    // signup whose Firestore write failed), update() would throw not-found and
+    // the user could never complete setup.
+    await _firestore.collection('users').doc(uid).set({
       'name': name,
       'phone': phone,
       'bloodGroup': bloodGroup,
       'country': country,
       'city': city,
-      'dateOfBirth': dateOfBirth,
-      'gender': gender,
       'about': about,
-    });
+    }, SetOptions(merge: true));
   }
 
   Future<void> updateBasicInfo({
     required String uid,
-    required String dateOfBirth,
-    required String gender,
     required String wantToDonate,
     required String about,
   }) async {
-    await _firestore.collection('users').doc(uid).update({
-      'dateOfBirth': dateOfBirth,
-      'gender': gender,
-      'wantToDonate': wantToDonate,
+    await _firestore.collection('users').doc(uid).set({
+      // The whole app reads `isDonor` (donors query, profile, edit screen).
+      // Map the onboarding "Yes"/"No" choice onto it so donors actually appear.
+      'isDonor': wantToDonate.toLowerCase() == 'yes',
       'about': about,
-    });
+      // Marks Step 2 as done so AuthWrapper can resume a returning user on the
+      // first incomplete step instead of always starting at Step 1.
+      'basicInfoCompleted': true,
+    }, SetOptions(merge: true));
   }
 
   // fetch the current user details

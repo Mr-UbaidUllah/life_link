@@ -1,7 +1,9 @@
 import 'package:blood_donation/view/auth/auth_wrappper.dart';
+import 'package:blood_donation/view/auth/onboarding_Screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -44,21 +46,27 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _controller.forward();
 
-    // Navigate to AuthWrapper after a delay
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => const AuthWrapper(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-            transitionDuration: const Duration(milliseconds: 800),
-          ),
-        );
-      }
-    });
+    // After the splash delay, show onboarding on first launch, otherwise
+    // go straight to the auth flow.
+    Future.delayed(const Duration(seconds: 3), _navigateNext);
+  }
+
+  Future<void> _navigateNext() async {
+    final prefs = await SharedPreferences.getInstance();
+    final seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
+
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            seenOnboarding ? const AuthWrapper() : const OnboardingScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 800),
+      ),
+    );
   }
 
   @override

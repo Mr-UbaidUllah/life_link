@@ -1,6 +1,7 @@
-import 'package:blood_donation/view/auth/signup_screen.dart';
+import 'package:blood_donation/view/auth/auth_wrappper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -30,6 +31,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       "subtitle": "Join the community and help those who need you the most.",
     },
   ];
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _finishOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('seenOnboarding', true);
+
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const AuthWrapper()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,10 +106,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           GestureDetector(
             onTap: () {
               if (currentIndex == pages.length - 1) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SignupScreen()),
-                );
+                _finishOnboarding();
               } else {
                 _controller.nextPage(
                   duration: const Duration(milliseconds: 500),

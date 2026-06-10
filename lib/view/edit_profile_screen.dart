@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserModel user;
@@ -25,16 +24,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _cityController;
   late final TextEditingController _countryController;
   late final TextEditingController _aboutController;
-  late final TextEditingController _dobController;
-  
+
   String? _selectedBloodGroup;
-  String? _selectedGender;
   bool _isDonor = false;
   File? _image;
   bool _isLoading = false;
 
   final List<String> _bloodGroups = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
-  final List<String> _genders = ['Male', 'Female', 'Other'];
 
   @override
   void initState() {
@@ -44,9 +40,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _cityController = TextEditingController(text: widget.user.city);
     _countryController = TextEditingController(text: widget.user.country);
     _aboutController = TextEditingController(text: widget.user.about);
-    _dobController = TextEditingController(text: widget.user.dateOfBirth);
     _selectedBloodGroup = widget.user.bloodGroup;
-    _selectedGender = widget.user.gender;
     _isDonor = widget.user.isDonor;
   }
 
@@ -57,7 +51,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _cityController.dispose();
     _countryController.dispose();
     _aboutController.dispose();
-    _dobController.dispose();
     super.dispose();
   }
 
@@ -67,42 +60,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (pickedFile != null) {
       setState(() {
         _image = File(pickedFile.path);
-      });
-    }
-  }
-
-  Future<void> _selectDate() async {
-    DateTime initialDate = DateTime.now().subtract(const Duration(days: 365 * 18));
-    if (_dobController.text.isNotEmpty) {
-      try {
-        initialDate = DateFormat('yyyy-MM-dd').parse(_dobController.text);
-      } catch (e) {
-        // use default
-      }
-    }
-
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Theme.of(context).colorScheme.primary,
-              onPrimary: Colors.white,
-              onSurface: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null) {
-      setState(() {
-        _dobController.text = DateFormat('yyyy-MM-dd').format(picked);
       });
     }
   }
@@ -139,8 +96,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         bloodGroup: _selectedBloodGroup ?? '',
         country: _countryController.text.trim(),
         city: _cityController.text.trim(),
-        dateOfBirth: _dobController.text,
-        gender: _selectedGender,
         about: _aboutController.text.trim(),
       );
 
@@ -285,40 +240,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               
               SizedBox(height: 20.h),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: CustomDropdownFormField<String>(
-                      value: _selectedGender,
-                      items: _genders,
-                      itemToString: (value) => value,
-                      labelText: 'Gender',
-                      hintText: 'Select',
-                      onChanged: (val) => setState(() => _selectedGender = val),
-                      prefixIcon: Icon(Icons.wc_rounded, color: theme.colorScheme.primary, size: 22.sp),
-                      borderRadius: 16.r,
-                    ),
-                  ),
-                  SizedBox(width: 16.w),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: _selectDate,
-                      child: AbsorbPointer(
-                        child: CustomTextField(
-                          controller: _dobController,
-                          labelText: 'Date of Birth',
-                          hintText: 'YYYY-MM-DD',
-                          prefixIcon: Icons.calendar_today_rounded,
-                          borderRadius: 16.r,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              SizedBox(height: 20.h),
-              
               CustomTextField(
                 controller: _phoneController,
                 labelText: 'Phone Number',

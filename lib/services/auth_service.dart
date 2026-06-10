@@ -35,19 +35,31 @@ class AuthService {
       uid: userCredential.user!.uid,
       email: email,
       createdAt: DateTime.now(),
- 
       profileCompleted: false,
     );
 
-    // Save to Firestore
-    await _firestore
-        .collection('users')
-        .doc(userModel.uid)
-        .set(userModel.toMap());
+    try {
+      // Save to Firestore
+      await _firestore
+          .collection('users')
+          .doc(userModel.uid)
+          .set(userModel.toMap());
+    } catch (e) {
+      // The Auth account was created but the profile document couldn't be
+      // persisted (e.g. network dropped mid-signup). Roll back the orphaned
+      // account so the email is free to retry — otherwise the user is stuck
+      // with "email-already-in-use" and no profile doc.
+      try {
+        await userCredential.user?.delete();
+      } catch (_) {
+        // Best-effort rollback; surface the original failure regardless.
+      }
+      rethrow;
+    }
 
-    // SAVE FCM TOKEN AFTER SIGNUPx`
+    // Non-fatal: a missing FCM token must not block signup.
     await _saveFcmToken(userModel.uid);
-    // return credentialllls
+
     return userCredential;
   }
 

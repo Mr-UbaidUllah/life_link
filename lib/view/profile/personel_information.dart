@@ -4,7 +4,7 @@ import 'package:blood_donation/view/profile/basic_information.dart';
 import 'package:blood_donation/view/auth/login_screen.dart';
 import 'package:blood_donation/widgets/custom_dropdown_form_field.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
-import 'package:blood_donation/widgets/reusable_button.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,6 +26,58 @@ class _PersonelInformationState extends State<PersonelInformation> {
   String? selectedBloodGroup;
   String? selectedCountry;
   String? selectedCity;
+  bool _loadingExisting = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillExisting();
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    phoneController.dispose();
+    super.dispose();
+  }
+
+  /// A returning user with an incomplete profile is routed back here. Their
+  /// Step 1 data is already in Firestore (we write per-step), so load it and
+  /// pre-fill the form instead of making them type everything again.
+  Future<void> _prefillExisting() async {
+    final uid = user?.uid;
+    if (uid == null) {
+      if (mounted) setState(() => _loadingExisting = false);
+      return;
+    }
+    try {
+      final doc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final data = doc.data();
+      if (data != null && mounted) {
+        nameController.text = (data['name'] ?? '') as String;
+        phoneController.text = (data['phone'] ?? '') as String;
+
+        final bg = data['bloodGroup'];
+        if (bg is String && bloodGroups.contains(bg)) selectedBloodGroup = bg;
+
+        final country = data['country'];
+        if (country is String && countries.contains(country)) {
+          selectedCountry = country;
+          final city = data['city'];
+          // Only restore the city if it's valid for this country, otherwise
+          // the dropdown would assert on a value that isn't in its items.
+          if (city is String && getCityList().contains(city)) {
+            selectedCity = city;
+          }
+        }
+      }
+    } catch (_) {
+      // Non-fatal: fall back to an empty form the user can fill in.
+    } finally {
+      if (mounted) setState(() => _loadingExisting = false);
+    }
+  }
 
   final List<String> bloodGroups = [
     'A+',
@@ -37,27 +89,116 @@ class _PersonelInformationState extends State<PersonelInformation> {
     'O+',
     'O-',
   ];
-  final List<String> countries = ['Pakistan', 'India', 'USA', 'UAE', 'Canada'];
-  final List<String> citiesPakistan = [
-    'Peshawar',
-    'Lahore',
-    'Karachi',
-    'Islamabad',
-  ];
-  final List<String> citiesIndia = ['Delhi', 'Mumbai', 'Bangalore'];
-  final List<String> citiesUSA = ['New York', 'Los Angeles', 'Chicago'];
+  // Country -> cities. Add new countries/cities here only; the dropdowns and
+  // getCityList() derive everything from this single source of truth.
+  final Map<String, List<String>> citiesByCountry = {
+    'Pakistan': [
+      'Islamabad',
+      'Karachi',
+      'Lahore',
+      'Faisalabad',
+      'Rawalpindi',
+      'Multan',
+      'Peshawar',
+      'Quetta',
+      'Gujranwala',
+      'Sialkot',
+      'Hyderabad',
+      'Abbottabad',
+    ],
+    'India': [
+      'New Delhi',
+      'Mumbai',
+      'Bangalore',
+      'Hyderabad',
+      'Chennai',
+      'Kolkata',
+      'Pune',
+      'Ahmedabad',
+      'Jaipur',
+      'Lucknow',
+    ],
+    'USA': [
+      'New York',
+      'Los Angeles',
+      'Chicago',
+      'Houston',
+      'Phoenix',
+      'Philadelphia',
+      'San Antonio',
+      'San Diego',
+      'Dallas',
+      'San Francisco',
+    ],
+    'UAE': [
+      'Dubai',
+      'Abu Dhabi',
+      'Sharjah',
+      'Al Ain',
+      'Ajman',
+      'Ras Al Khaimah',
+      'Fujairah',
+    ],
+    'Canada': [
+      'Toronto',
+      'Montreal',
+      'Vancouver',
+      'Calgary',
+      'Ottawa',
+      'Edmonton',
+      'Winnipeg',
+      'Quebec City',
+    ],
+    'United Kingdom': [
+      'London',
+      'Birmingham',
+      'Manchester',
+      'Glasgow',
+      'Liverpool',
+      'Leeds',
+      'Bristol',
+      'Edinburgh',
+    ],
+    'Australia': [
+      'Sydney',
+      'Melbourne',
+      'Brisbane',
+      'Perth',
+      'Adelaide',
+      'Canberra',
+      'Gold Coast',
+    ],
+    'Saudi Arabia': [
+      'Riyadh',
+      'Jeddah',
+      'Mecca',
+      'Medina',
+      'Dammam',
+      'Khobar',
+      'Taif',
+    ],
+    'Bangladesh': [
+      'Dhaka',
+      'Chittagong',
+      'Khulna',
+      'Rajshahi',
+      'Sylhet',
+      'Barisal',
+    ],
+    'Germany': [
+      'Berlin',
+      'Munich',
+      'Hamburg',
+      'Frankfurt',
+      'Cologne',
+      'Stuttgart',
+    ],
+  };
+
+  List<String> get countries => citiesByCountry.keys.toList();
 
   List<String> getCityList() {
-    if (selectedCountry == 'Pakistan') {
-      return citiesPakistan;
-    }
-    if (selectedCountry == 'India') {
-      return citiesIndia;
-    }
-    if (selectedCountry == 'USA') {
-      return citiesUSA;
-    }
-    return [];
+    return citiesByCountry[selectedCountry] ?? [];
   }
 
   @override
@@ -99,7 +240,9 @@ class _PersonelInformationState extends State<PersonelInformation> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
+      body: _loadingExisting
+          ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary))
+          : SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Form(
           key: _formKey,
@@ -124,33 +267,6 @@ class _PersonelInformationState extends State<PersonelInformation> {
                 ),
                 child: Column(
                   children: [
-                    Stack(
-                      alignment: Alignment.bottomRight,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(4.r),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2), width: 2),
-                          ),
-                          child: CircleAvatar(
-                            radius: 50.r,
-                            backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                            child: Icon(Icons.person_rounded, size: 50.r, color: theme.colorScheme.onSurface.withOpacity(0.4)),
-                          ),
-                        ),
-                        Container(
-                          padding: EdgeInsets.all(8.r),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: theme.colorScheme.surface, width: 2),
-                          ),
-                          child: Icon(Icons.camera_alt_rounded, size: 18.sp, color: theme.colorScheme.onPrimary),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 20.h),
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
                       decoration: BoxDecoration(
@@ -309,13 +425,24 @@ class _PersonelInformationState extends State<PersonelInformation> {
                                   city: selectedCity!,
                                 );
                                 
-                                if (success && context.mounted) {
+                                if (!context.mounted) return;
+                                if (success) {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(builder: (_) => const BasicInformation()),
                                   );
-                                } else if (context.mounted) {
-                                  _showSnackBar(context, 'Something went wrong', theme.colorScheme.primary);
+                                } else {
+                                  final err = userProv.error;
+                                  final lower = (err ?? '').toLowerCase();
+                                  final isNetwork = lower.contains('unavailable') ||
+                                      lower.contains('network');
+                                  _showSnackBar(
+                                    context,
+                                    isNetwork
+                                        ? 'No internet connection. Check your network and try again.'
+                                        : 'Could not save your details. Please try again.',
+                                    theme.colorScheme.error,
+                                  );
                                 }
                               },
                             style: ElevatedButton.styleFrom(
