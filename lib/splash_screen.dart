@@ -80,7 +80,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     return Scaffold(
       extendBody: true,
       extendBodyBehindAppBar: true,
-      // Ensure the background color matches the bottom of your gradient to avoid black bars
       backgroundColor: const Color(0xFF8E0E00),
       body: Container(
         width: double.infinity,
@@ -97,7 +96,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         ),
         child: Stack(
           children: [
-            // Background decorative circles
             Positioned(
               top: -50.h,
               right: -50.w,
@@ -117,7 +115,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Logo Container
                       Container(
                         padding: EdgeInsets.all(25.r),
                         decoration: BoxDecoration(
@@ -140,7 +137,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       ),
                       SizedBox(height: 40.h),
     
-                      // App Name
                       Text(
                         'LIFE LINK',
                         style: TextStyle(
@@ -159,7 +155,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       ),
                       SizedBox(height: 12.h),
     
-                      // Tagline
                       Text(
                         'Donate Blood, Save Life',
                         style: TextStyle(
@@ -175,7 +170,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               ),
             ),
     
-            // Loading indicator at bottom
             Positioned(
               bottom: 60.h,
               left: 0,

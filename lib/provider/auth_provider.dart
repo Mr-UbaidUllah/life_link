@@ -5,18 +5,19 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class AuthProviders with ChangeNotifier {
-  final AuthService _authService = AuthService();
+  final AuthService _authService;
   bool isLoading = false;
   UserModel? user;
 
-  Future<UserCredential> signup(String email, String password) async {
+  AuthProviders({required AuthService authService}) : _authService = authService;
+
+  Future<String?> signup(String email, String password) async {
     try {
       isLoading = true;
       notifyListeners();
 
-      final credential = await _authService.signup(email, password);
-
-      return credential;
+      await _authService.signup(email, password);
+      return null; // Success
     } on FirebaseAuthException catch (e) {
       throw authErrorMessage(e);
     } on FirebaseException catch (e) {
@@ -31,13 +32,14 @@ class AuthProviders with ChangeNotifier {
     }
   }
 
-  Future<void> login(String email, String password) async {
+  Future<String?> login(String email, String password) async {
     try {
       isLoading = true;
       notifyListeners();
 
       await _authService.Login(email, password);
       user = await _authService.getCurrentUserData();
+      return null; // Success
     } on FirebaseAuthException catch (e) {
       throw authErrorMessage(e);
     } on FirebaseException catch (e) {

@@ -206,8 +206,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                               return;
                             }
 
-                            // Professional Fix: Set expiry to the very end of the selected day (23:59:59)
-                            // This prevents requests from expiring immediately if 'Today' is selected.
+
                             final expiry = DateTime(
                               selectedDate!.year,
                               selectedDate!.month,
