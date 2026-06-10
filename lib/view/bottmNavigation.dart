@@ -14,7 +14,11 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> pages = const [HomeScreen(), SearchScreen(), MoreScreen()];
+  final List<Widget> pages = [
+    HomeScreen(key: HomeScreen.homeKey),
+    const SearchScreen(),
+    const MoreScreen()
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -67,9 +71,14 @@ class _MainScreenState extends State<MainScreen> {
               ),
               elevation: 0,
               onTap: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
+                if (_currentIndex == index && index == 0) {
+                  // If tapping Home while already on Home, scroll to top
+                  HomeScreen.homeKey.currentState?.scrollToTop();
+                } else {
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                }
               },
               items: [
                 BottomNavigationBarItem(

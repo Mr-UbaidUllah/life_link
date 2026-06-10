@@ -1,3 +1,5 @@
+import 'dart:developer';
+import 'package:blood_donation/core/constants/firebase_constants.dart';
 import 'package:blood_donation/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -12,14 +14,19 @@ class AuthService {
       String? token = await FirebaseMessaging.instance.getToken();
       if (token == null) return;
 
-      await _firestore.collection('users').doc(uid).set({
+      await _firestore.collection(FirebaseConstants.users).doc(uid).set({
         'fcmTokens': FieldValue.arrayUnion([token]),
         'tokenUpdatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      print("✅ FCM Token saved for user");
-    } catch (e) {
-      print("❌ Error saving FCM token: $e");
+      log("FCM Token saved for user", name: 'AuthService');
+    } catch (e, stackTrace) {
+      log(
+        "Error saving FCM token",
+        name: 'AuthService',
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -41,7 +48,7 @@ class AuthService {
 
     // Save to Firestore
     await _firestore
-        .collection('users')
+        .collection(FirebaseConstants.users)
         .doc(userModel.uid)
         .set(userModel.toMap());
 
@@ -72,7 +79,7 @@ class AuthService {
     if (firebaseUser == null) return null;
 
     final doc = await _firestore
-        .collection('users')
+        .collection(FirebaseConstants.users)
         .doc(firebaseUser.uid)
         .get();
 

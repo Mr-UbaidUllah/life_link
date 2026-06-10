@@ -1,7 +1,8 @@
-import 'package:blood_donation/view/auth/auth_wrappper.dart';
+import 'package:blood_donation/core/constants/route_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -42,23 +43,16 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
     );
 
-    _controller.forward();
-
-    // Navigate to AuthWrapper after a delay
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => const AuthWrapper(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-            transitionDuration: const Duration(milliseconds: 800),
-          ),
-        );
+    // Listen for animation completion to navigate
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        if (mounted) {
+          context.go(RouteConstants.authWrapper);
+        }
       }
     });
+
+    _controller.forward();
   }
 
   @override
@@ -72,7 +66,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     return Scaffold(
       extendBody: true,
       extendBodyBehindAppBar: true,
-      // Ensure the background color matches the bottom of your gradient to avoid black bars
       backgroundColor: const Color(0xFF8E0E00),
       body: Container(
         width: double.infinity,
@@ -89,7 +82,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         ),
         child: Stack(
           children: [
-            // Background decorative circles
             Positioned(
               top: -50.h,
               right: -50.w,
@@ -109,7 +101,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Logo Container
                       Container(
                         padding: EdgeInsets.all(25.r),
                         decoration: BoxDecoration(
@@ -132,7 +123,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       ),
                       SizedBox(height: 40.h),
     
-                      // App Name
                       Text(
                         'LIFE LINK',
                         style: TextStyle(
@@ -151,7 +141,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       ),
                       SizedBox(height: 12.h),
     
-                      // Tagline
                       Text(
                         'Donate Blood, Save Life',
                         style: TextStyle(
@@ -167,7 +156,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               ),
             ),
     
-            // Loading indicator at bottom
             Positioned(
               bottom: 60.h,
               left: 0,

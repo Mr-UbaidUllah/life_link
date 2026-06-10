@@ -26,6 +26,25 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -101,24 +120,17 @@ class _LoginScreenState extends State<LoginScreen> {
                               onTap: auth.isLoading
                                   ? null
                                   : () async {
-                                      try {
-                                        await auth.login(
-                                          email_controller.text.trim(),
-                                          password_controller.text.trim(),
-                                        );
-                                        if (context.mounted) {
-                                          Navigator.of(context).pushReplacement(
-                                            MaterialPageRoute(
-                                              builder: (_) => AuthWrapper(),
-                                            ),
-                                          );
-                                        }
-                                      } catch (e) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text(e.toString()),
-                                            backgroundColor: theme.colorScheme.error,
-                                            behavior: SnackBarBehavior.floating,
+                                      final error = await auth.login(
+                                        email_controller.text.trim(),
+                                        password_controller.text.trim(),
+                                      );
+
+                                      if (error != null) {
+                                        _showErrorSnackBar(error);
+                                      } else if (context.mounted) {
+                                        Navigator.of(context).pushReplacement(
+                                          MaterialPageRoute(
+                                            builder: (_) => const AuthWrapper(),
                                           ),
                                         );
                                       }
@@ -155,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => SignupScreen(),
+                                          builder: (context) => const SignupScreen(),
                                         ),
                                       );
                                     },

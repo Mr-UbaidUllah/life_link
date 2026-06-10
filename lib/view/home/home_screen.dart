@@ -3,7 +3,6 @@ import 'package:blood_donation/provider/bloodRequest_provider.dart';
 import 'package:blood_donation/provider/storage_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/view/bloodrequest_screen.dart';
-import 'package:blood_donation/view/edit_profile_screen.dart';
 import 'package:blood_donation/view/home/donation_info_screen.dart';
 import 'package:blood_donation/view/profile/profile_details_scrren.dart';
 import 'package:blood_donation/view/request_screen.dart';
@@ -21,6 +20,7 @@ import 'package:provider/provider.dart';
 import '../user_donate_blood.dart';
 
 class HomeScreen extends StatefulWidget {
+  static final GlobalKey<_HomeScreenState> homeKey = GlobalKey<_HomeScreenState>();
   const HomeScreen({super.key});
 
   @override
@@ -29,6 +29,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final List<String> bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+  final ScrollController _scrollController = ScrollController();
+
+  void scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -41,12 +52,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
+      key: HomeScreen.homeKey,
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
+          controller: _scrollController,
           physics: const BouncingScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

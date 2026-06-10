@@ -59,7 +59,7 @@ class AuthWrapper extends StatelessWidget {
 
             final bool profileCompleted = data['profileCompleted'] == true;
 
-            // 🔹 Navigation decision
+            // Navigation decision
             return profileCompleted
                 ? const MainScreen()
                 : const PersonelInformation();

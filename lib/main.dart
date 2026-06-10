@@ -1,27 +1,19 @@
-import 'package:blood_donation/provider/ambulance_provider.dart';
-import 'package:blood_donation/provider/auth_provider.dart';
-import 'package:blood_donation/provider/bloodGroup_provider.dart';
-import 'package:blood_donation/provider/bloodRequest_provider.dart';
-import 'package:blood_donation/provider/chat_provider.dart';
-import 'package:blood_donation/provider/organization_provider.dart';
-import 'package:blood_donation/provider/organization_storage_provider.dart';
-import 'package:blood_donation/provider/storage_provider.dart';
+import 'package:blood_donation/core/providers/app_providers.dart';
+import 'package:blood_donation/core/providers/app_router.dart';
 import 'package:blood_donation/provider/theme_provider.dart';
-import 'package:blood_donation/provider/userPost_provider.dart';
-import 'package:blood_donation/provider/user_provider.dart';
-import 'package:blood_donation/provider/volunteer_provider.dart';
-import 'package:blood_donation/provider/volunteer_storagar_provider.dart';
 import 'package:blood_donation/services/push_notification_service.dart';
 import 'package:blood_donation/theme/theme.dart';
-import 'package:blood_donation/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
+<<<<<<< HEAD
 import 'package:blood_donation/provider/ambulance_storage_provider.dart';
 
+=======
+>>>>>>> 6bcaf47 (recent changes updated)
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   debugPrint(' Background Message: ${message.messageId}');
@@ -38,22 +30,7 @@ void main() async {
 
   runApp(
     MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProviders()),
-        ChangeNotifierProvider(create: (_) => StorageProvider()),
-        ChangeNotifierProvider(create: (_) => BloodrequestProvider()),
-        ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => UserPostsProvider()),
-        ChangeNotifierProvider(create: (_) => BloodGroupRequestProvider()),
-        ChangeNotifierProvider(create: (_) => OrganizationProvider()),
-        ChangeNotifierProvider(create: (_) => OrganizationStorageProvider()),
-        ChangeNotifierProvider(create: (_) => AmbulanceProvider()),
-        ChangeNotifierProvider(create: (_) => AmbulanceStorageProvider()),
-        ChangeNotifierProvider(create: (_) => VolunteerProvider()),
-        ChangeNotifierProvider(create: (_) => volunteerStorageProvider()),
-        ChangeNotifierProvider(create: (_) => MessageProvider()),
-      ],
+      providers: AppProviders.providers,
       child: ScreenUtilInit(
         designSize: const Size(375, 812),
         minTextAdapt: true,
@@ -70,13 +47,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        return MaterialApp(
+        return MaterialApp.router(
           debugShowCheckedModeBanner: false,
           title: 'Life Link',
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
-          home: const SplashScreen(),
+          routerConfig: AppRouter.router,
         );
       },
     );
