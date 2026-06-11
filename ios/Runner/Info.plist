@@ -45,5 +45,24 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!-- Photo library access for the image picker (profile photos, organization
+	     and ambulance images, etc.). Required or the app crashes on first pick. -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Life Link needs access to your photos so you can set a profile picture and attach images to your posts.</string>
+
+	<!-- Schemes the app probes with canLaunchUrl before opening the dialer or
+	     email composer (url_launcher). Without these, canLaunchUrl returns false. -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+		<string>mailto</string>
+	</array>
+
+	<!-- Allow Firebase Cloud Messaging to deliver pushes while backgrounded. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

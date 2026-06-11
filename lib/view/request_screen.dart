@@ -53,15 +53,6 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: theme.appBarTheme.backgroundColor,
-        centerTitle: true,
-        title: Text(
-          "Create Blood Request",
-          style: TextStyle(
-            color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.w900,
-            fontSize: 20.sp,
-          ),
-        ),
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.colorScheme.onSurface),

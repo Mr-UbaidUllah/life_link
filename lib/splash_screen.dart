@@ -1,5 +1,7 @@
+import 'package:blood_donation/theme/theme.dart';
 import 'package:blood_donation/view/auth/auth_wrappper.dart';
 import 'package:blood_donation/view/auth/onboarding_Screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -46,14 +48,24 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _controller.forward();
 
-    // After the splash delay, show onboarding on first launch, otherwise
-    // go straight to the auth flow.
-    Future.delayed(const Duration(seconds: 3), _navigateNext);
+    // Do all the startup work WHILE the animation plays, so leaving the
+    // splash never stalls on prefs/auth/profile fetches.
+    _bootstrap();
   }
 
-  Future<void> _navigateNext() async {
-    final prefs = await SharedPreferences.getInstance();
-    final seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
+  Future<void> _bootstrap() async {
+    final minSplash = Future.delayed(const Duration(milliseconds: 2500));
+    final prefsFuture = SharedPreferences.getInstance();
+
+    // Wait for Firebase to restore the session, then start fetching the
+    // user's profile document so AuthWrapper has it ready on arrival.
+    final user = await FirebaseAuth.instance.authStateChanges().first;
+    if (user != null) {
+      AuthWrapper.warmUp(user.uid);
+    }
+
+    final seenOnboarding = (await prefsFuture).getBool('seenOnboarding') ?? false;
+    await minSplash;
 
     if (!mounted) return;
     Navigator.pushReplacement(
@@ -64,7 +76,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
-        transitionDuration: const Duration(milliseconds: 800),
+        transitionDuration: const Duration(milliseconds: 450),
       ),
     );
   }
@@ -80,15 +92,15 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     return Scaffold(
       extendBody: true,
       extendBodyBehindAppBar: true,
-      backgroundColor: const Color(0xFF8E0E00),
+      backgroundColor: AppColors.primaryDeep,
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Colors.redAccent.shade400,
-              const Color(0xFF8E0E00),
+              AppColors.primary,
+              AppColors.primaryDeep,
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,

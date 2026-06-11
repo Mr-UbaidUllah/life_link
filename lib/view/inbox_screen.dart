@@ -1,6 +1,7 @@
 import 'package:blood_donation/models/chat_models.dart';
 import 'package:blood_donation/models/user_model.dart';
 import 'package:blood_donation/view/msg_screen.dart';
+import 'package:blood_donation/widgets/home_widgets.dart';
 import 'package:blood_donation/widgets/user_tile_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -26,31 +27,33 @@ class _UsersScreenState extends State<UsersScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text('Messages', style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold)),
         backgroundColor: theme.appBarTheme.backgroundColor,
-        elevation: 0.5,
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(60.h),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-            child: TextField(
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value.toLowerCase();
-                });
-              },
-              style: TextStyle(color: theme.colorScheme.onSurface),
-              decoration: InputDecoration(
-                hintText: 'Search chats...',
-                hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4)),
-                prefixIcon: Icon(Icons.search, color: theme.colorScheme.onSurface.withOpacity(0.4)),
-                filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 16.w),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide.none,
-                ),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        titleSpacing: 16.w,
+        // Search lives in the toolbar itself so there's no empty header band
+        // above it — the inbox is search-first.
+        title: SizedBox(
+          height: 42.h,
+          child: TextField(
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value.toLowerCase();
+              });
+            },
+            textAlignVertical: TextAlignVertical.center,
+            style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 14.sp),
+            decoration: InputDecoration(
+              hintText: 'Search messages',
+              hintStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4), fontSize: 14.sp),
+              prefixIcon: Icon(Icons.search_rounded, size: 20.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
+              filled: true,
+              fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24.r),
+                borderSide: BorderSide.none,
               ),
             ),
           ),
@@ -75,23 +78,11 @@ class _UsersScreenState extends State<UsersScreen> {
               }
 
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.chat_bubble_outline, size: 64, color: theme.colorScheme.onSurface.withOpacity(0.2)),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No conversations yet',
-                        style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface.withOpacity(0.4)),
-                      ),
-                    ],
-                  ),
-                );
+                return _buildEmptyState(theme);
               }
 
               final chats = snapshot.data!;
-              
+
               final filteredChats = chats.where((chat) {
                 if (chat.users.length == 2 && chat.users[0] == chat.users[1]) {
                   return false;
@@ -100,15 +91,13 @@ class _UsersScreenState extends State<UsersScreen> {
               }).toList();
 
               if (filteredChats.isEmpty) {
-                return Center(
-                  child: Text('No conversations yet', style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4))),
-                );
+                return _buildEmptyState(theme);
               }
 
               return ListView.separated(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
                 itemCount: filteredChats.length,
-                separatorBuilder: (context, index) => Divider(height: 1, color: theme.dividerColor.withOpacity(0.05)),
+                separatorBuilder: (context, index) => SizedBox(height: 8.h),
                 itemBuilder: (context, index) {
                   final chat = filteredChats[index];
                   final List<String> users = chat.users;
@@ -172,41 +161,27 @@ class _UsersScreenState extends State<UsersScreen> {
                             SnackBar(content: Text('Chat with $displayName deleted')),
                           );
                         },
-                        child: Stack(
-                          alignment: Alignment.centerRight,
-                          children: [
-                            UserTile(
-                              name: displayName,
-                              imageUrl: user.profileImage,
-                              subtitle: unreadCount > 0 
-                                  ? '$unreadCount unread messages' 
-                                  : chat.lastMessage,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ChatScreen(
-                                      name: user.name ?? 'Unknown',
-                                      imageUrl: user.profileImage,
-                                      receiverId: user.uid,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                            if (unreadCount > 0)
-                              Padding(
-                                padding: EdgeInsets.only(right: 20.w),
-                                child: Container(
-                                  width: 10.r,
-                                  height: 10.r,
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary,
-                                    shape: BoxShape.circle,
-                                  ),
+                        child: UserTile(
+                          dense: true,
+                          showChevron: false,
+                          name: displayName,
+                          imageUrl: user.profileImage,
+                          subtitle: chat.lastMessage.isEmpty ? 'Say hello 👋' : chat.lastMessage,
+                          time: chat.updatedAt != null ? relativeTime(chat.updatedAt!.toDate()) : null,
+                          unreadCount: unreadCount,
+                          highlightSubtitle: unreadCount > 0,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChatScreen(
+                                  name: user.name ?? 'Unknown',
+                                  imageUrl: user.profileImage,
+                                  receiverId: user.uid,
                                 ),
                               ),
-                          ],
+                            );
+                          },
                         ),
                       );
                     },
@@ -216,6 +191,47 @@ class _UsersScreenState extends State<UsersScreen> {
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(ThemeData theme) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.all(22.r),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.forum_outlined,
+              size: 44.sp,
+              color: theme.colorScheme.primary.withValues(alpha: 0.7),
+            ),
+          ),
+          SizedBox(height: 20.h),
+          Text(
+            'No conversations yet',
+            style: TextStyle(
+              fontSize: 17.sp,
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            'Your chats with donors and requesters\nwill appear here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13.sp,
+              height: 1.4,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
+        ],
       ),
     );
   }

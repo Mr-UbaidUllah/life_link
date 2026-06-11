@@ -1,6 +1,7 @@
 import 'package:blood_donation/models/message_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
 class MessageBubble extends StatelessWidget {
@@ -13,56 +14,52 @@ class MessageBubble extends StatelessWidget {
     final isMe = message.senderId == FirebaseAuth.instance.currentUser?.uid;
     final time = DateFormat('hh:mm a').format(message.createdAt.toDate());
 
+    final bubbleColor = isMe ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest;
+    final textColor = isMe ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Column(
-        crossAxisAlignment:
-            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.75,
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 3.h),
+      child: Align(
+        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          padding: EdgeInsets.fromLTRB(14.w, 9.h, 14.w, 7.h),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.78,
+          ),
+          decoration: BoxDecoration(
+            color: bubbleColor,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(18.r),
+              topRight: Radius.circular(18.r),
+              bottomLeft: Radius.circular(isMe ? 18.r : 4.r),
+              bottomRight: Radius.circular(isMe ? 4.r : 18.r),
             ),
-            decoration: BoxDecoration(
-              color: isMe 
-                  ? theme.colorScheme.primary 
-                  : theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(16),
-                topRight: const Radius.circular(16),
-                bottomLeft: Radius.circular(isMe ? 16 : 0),
-                bottomRight: Radius.circular(isMe ? 0 : 16),
+            // Received bubbles get a hairline border so they stay legible
+            // against the scaffold even when surfaces are close in tone.
+            border: isMe
+                ? null
+                : Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.06)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                message.text,
+                style: TextStyle(color: textColor, fontSize: 14.5.sp, height: 1.3),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
+              SizedBox(height: 3.h),
+              Text(
+                time,
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w500,
+                  color: textColor.withValues(alpha: 0.6),
                 ),
-              ],
-            ),
-            child: Text(
-              message.text,
-              style: TextStyle(
-                color: isMe 
-                    ? theme.colorScheme.onPrimary 
-                    : theme.colorScheme.onSurface,
-                fontSize: 15,
               ),
-            ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
-            child: Text(
-              time,
-              style: TextStyle(
-                fontSize: 10,
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

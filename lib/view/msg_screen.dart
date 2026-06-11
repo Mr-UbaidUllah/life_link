@@ -102,9 +102,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     if (!isSavedMessages)
                       Text(
-                        'Online',
+                        'Tap to view profile',
                         style: TextStyle(
-                          color: Colors.green,
+                          color: theme.colorScheme.onSurface.withOpacity(0.45),
                           fontSize: 11.sp,
                           fontWeight: FontWeight.w500,
                         ),
@@ -139,14 +139,33 @@ class _ChatScreenState extends State<ChatScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.chat_bubble_outline, size: 64.sp, color: theme.colorScheme.onSurface.withOpacity(0.1)),
-                            SizedBox(height: 16.h),
+                            Container(
+                              padding: EdgeInsets.all(20.r),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.waving_hand_rounded,
+                                size: 40.sp,
+                                color: theme.colorScheme.primary.withValues(alpha: 0.7),
+                              ),
+                            ),
+                            SizedBox(height: 18.h),
                             Text(
-                              'Start a conversation',
+                              'Say hello',
                               style: TextStyle(
-                                fontSize: 16.sp,
-                                color: theme.colorScheme.onSurface.withOpacity(0.4),
-                                fontWeight: FontWeight.w500,
+                                fontSize: 17.sp,
+                                color: theme.colorScheme.onSurface,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            SizedBox(height: 6.h),
+                            Text(
+                              'Send a message to start the conversation.',
+                              style: TextStyle(
+                                fontSize: 13.sp,
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                               ),
                             ),
                           ],
@@ -178,51 +197,61 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildInputSection(ThemeData theme) {
     return Container(
-      padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, MediaQuery.of(context).padding.bottom + 8.h),
+      padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, MediaQuery.of(context).padding.bottom + 8.h),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.onSurface.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
+        border: Border(
+          top: BorderSide(color: theme.colorScheme.onSurface.withValues(alpha: 0.06)),
+        ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Expanded(
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 16.w),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(24.r),
+                border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.06)),
               ),
               child: TextField(
                 controller: _controller,
-                maxLines: 4,
+                maxLines: 5,
                 minLines: 1,
                 style: TextStyle(fontSize: 15.sp, color: theme.colorScheme.onSurface),
                 decoration: InputDecoration(
-                  hintText: 'Type your message...',
-                  hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4), fontSize: 14.sp),
+                  hintText: 'Message',
+                  hintStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4), fontSize: 14.sp),
                   border: InputBorder.none,
+                  isCollapsed: true,
+                  contentPadding: EdgeInsets.symmetric(vertical: 11.h),
                 ),
                 textCapitalization: TextCapitalization.sentences,
               ),
             ),
           ),
-          SizedBox(width: 12.w),
-          GestureDetector(
-            onTap: () => _sendMessage(context),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.send_rounded, color: Colors.white, size: 22),
-            ),
+          SizedBox(width: 8.w),
+          // Send button reflects whether there's anything to send.
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: _controller,
+            builder: (context, value, _) {
+              final hasText = value.text.trim().isNotEmpty;
+              return GestureDetector(
+                onTap: hasText ? () => _sendMessage(context) : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: EdgeInsets.all(11.r),
+                  decoration: BoxDecoration(
+                    color: hasText
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.primary.withValues(alpha: 0.35),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.send_rounded, color: theme.colorScheme.onPrimary, size: 20.sp),
+                ),
+              );
+            },
           ),
         ],
       ),

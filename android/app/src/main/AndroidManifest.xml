@@ -1,20 +1,41 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
- <!-- Gallery permissions -->
+
+    <!-- Network access for Firebase (Auth, Firestore, Storage, Messaging).
+         Flutter only injects this into the debug manifest automatically, so it
+         must be declared here or release builds have no network access. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Reading images from the gallery for the image picker.
+         Android 13+ (API 33) uses the granular media permission; older versions
+         fall back to the legacy storage permission, capped at API 32 so it is
+         never requested on 13+. (No CAMERA permission: the app only picks from
+         the gallery, never captures with the camera.) -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-        <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Push & local notifications (FCM + flutter_local_notifications).
+         Required to show notifications on Android 13+ (API 33). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <queries>
+        <!-- Open external links (url_launcher https). -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />
         </intent>
+        <!-- Phone dialer (url_launcher tel:). -->
         <intent>
             <action android:name="android.intent.action.DIAL" />
             <data android:scheme="tel" />
         </intent>
+        <!-- Email composer (url_launcher mailto:). -->
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="mailto" />
+        </intent>
+        <!-- Share sheet. -->
         <intent>
             <action android:name="android.intent.action.SEND" />
             <data android:mimeType="*/*" />

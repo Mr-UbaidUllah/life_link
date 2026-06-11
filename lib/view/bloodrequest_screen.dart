@@ -52,8 +52,8 @@ class _BloodrequestScreenState extends State<BloodrequestScreen> {
           'Blood Requests',
           style: TextStyle(
             color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.w900,
-            fontSize: 20.sp,
+            fontWeight: FontWeight.w700,
+            fontSize: 19.sp,
           ),
         ),
         actions: [
@@ -113,14 +113,14 @@ class _BloodrequestScreenState extends State<BloodrequestScreen> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildCountBanner(theme, visible.length),
+                  _buildSummaryHeader(theme, requests.length, _selectedGroup),
                   _buildFilterChips(theme, userGroup),
                   Expanded(
                     child: requests.isEmpty
                         ? _buildEmptyState(theme)
                         : ListView.builder(
                             physics: const BouncingScrollPhysics(),
-                            padding: EdgeInsets.symmetric(vertical: 10.h),
+                            padding: EdgeInsets.only(top: 4.h, bottom: 96.h),
                             itemCount: requests.length,
                             itemBuilder: (context, index) {
                               final req = requests[index];
@@ -131,14 +131,28 @@ class _BloodrequestScreenState extends State<BloodrequestScreen> {
                                 direction: isMine ? DismissDirection.none : DismissDirection.endToStart,
                                 background: Container(
                                   alignment: Alignment.centerRight,
-                                  padding: EdgeInsets.only(right: 20.w),
-                                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                                  child: Icon(Icons.delete_outline, color: theme.colorScheme.primary),
+                                  padding: EdgeInsets.only(right: 24.w),
+                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.visibility_off_rounded,
+                                          size: 19.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                                      SizedBox(width: 8.w),
+                                      Text('Dismiss',
+                                          style: TextStyle(
+                                              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 13.sp)),
+                                    ],
+                                  ),
                                 ),
                                 onDismissed: isMine ? null : (direction) {
                                   userProvider.dismissRequest(req.id);
                                 },
-                                child: InkWell(
+                                child: HomeContainer(
+                                  request: req,
+                                  matchesUser: userGroup != null && userGroup.isNotEmpty && req.bloodGroup == userGroup,
                                   onTap: () {
                                     Navigator.push(
                                       context,
@@ -147,14 +161,6 @@ class _BloodrequestScreenState extends State<BloodrequestScreen> {
                                       ),
                                     );
                                   },
-                                  child: HomeContainer(
-                                    bloodGroup: req.bloodGroup,
-                                    title: req.title,
-                                    hospital: req.hospital,
-                                    date: req.createdAt.toLocal().toString().split(' ')[0],
-                                    ownerId: req.userId,
-                                    matchesUser: userGroup != null && userGroup.isNotEmpty && req.bloodGroup == userGroup,
-                                  ),
                                 ),
                               );
                             },
@@ -169,44 +175,45 @@ class _BloodrequestScreenState extends State<BloodrequestScreen> {
     );
   }
 
-  Widget _buildCountBanner(ThemeData theme, int openCount) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+  Widget _buildSummaryHeader(ThemeData theme, int count, String? activeFilter) {
+    final noun = count == 1 ? 'request' : 'requests';
+    final headline = activeFilter == null ? '$count open $noun' : '$count $activeFilter $noun';
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 4.h),
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(8.w),
+            padding: EdgeInsets.all(9.w),
             decoration: BoxDecoration(
               color: theme.colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10.r),
+              borderRadius: BorderRadius.circular(12.r),
             ),
             child: Icon(Icons.bloodtype_rounded, color: theme.colorScheme.primary, size: 20.sp),
           ),
           SizedBox(width: 12.w),
           Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: TextStyle(fontSize: 13.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.7), fontWeight: FontWeight.w500),
-                children: [
-                  TextSpan(
-                    text: '$openCount ',
-                    style: TextStyle(fontWeight: FontWeight.w900, color: theme.colorScheme.primary, fontSize: 14.sp),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  headline,
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w800,
+                    color: theme.colorScheme.onSurface,
                   ),
-                  TextSpan(text: openCount == 1 ? 'open request' : 'open requests'),
-                  const TextSpan(text: ' — swipe to dismiss, tap to help.'),
-                ],
-              ),
+                ),
+                SizedBox(height: 1.h),
+                Text(
+                  'Tap a card to help · swipe to dismiss',
+                  style: TextStyle(
+                    fontSize: 11.5.sp,
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -253,7 +260,7 @@ class _BloodrequestScreenState extends State<BloodrequestScreen> {
                       style: TextStyle(
                         fontSize: 13.sp,
                         fontWeight: FontWeight.w800,
-                        color: isSelected ? Colors.white : theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                     if (isUserGroup) ...[
@@ -261,7 +268,7 @@ class _BloodrequestScreenState extends State<BloodrequestScreen> {
                       Icon(
                         Icons.star_rounded,
                         size: 13.sp,
-                        color: isSelected ? Colors.white : theme.colorScheme.primary,
+                        color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
                       ),
                     ],
                   ],

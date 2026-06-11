@@ -1,3 +1,4 @@
+import 'package:blood_donation/theme/theme.dart';
 import 'package:blood_donation/view/auth/login_screen.dart';
 import 'package:blood_donation/view/bottmNavigation.dart';
 import 'package:blood_donation/view/profile/basic_information.dart';
@@ -8,8 +9,46 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
+
+  // Profile document prefetched by the splash screen while its animation
+  // plays, so arriving here doesn't stall on a network round trip.
+  static Future<DocumentSnapshot<Map<String, dynamic>>>? _warmDoc;
+  static String? _warmUid;
+
+  /// Start fetching [uid]'s profile ahead of time (called from the splash).
+  static void warmUp(String uid) {
+    _warmUid = uid;
+    _warmDoc = FirebaseFirestore.instance.collection('users').doc(uid).get();
+  }
+
+  /// Hand over the prefetched document once, then clear it so a later
+  /// login never routes off stale data.
+  static Future<DocumentSnapshot<Map<String, dynamic>>>? _takeWarmDoc(String uid) {
+    final doc = _warmUid == uid ? _warmDoc : null;
+    _warmDoc = null;
+    _warmUid = null;
+    return doc;
+  }
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  String? _uid;
+  Future<DocumentSnapshot<Map<String, dynamic>>>? _userDocFuture;
+
+  /// One fetch per signed-in user — never re-created on rebuilds.
+  Future<DocumentSnapshot<Map<String, dynamic>>> _userDocFor(String uid) {
+    if (_uid != uid || _userDocFuture == null) {
+      _uid = uid;
+      _userDocFuture = AuthWrapper._takeWarmDoc(uid) ??
+          FirebaseFirestore.instance.collection('users').doc(uid).get();
+    }
+    return _userDocFuture!;
+  }
 
   /// Maps the first incomplete setup step to its screen for a returning user
   /// whose profile isn't finished yet. The decision logic lives in
@@ -34,9 +73,7 @@ class AuthWrapper extends StatelessWidget {
       builder: (context, authSnapshot) {
         // 🔹 Loading auth state
         if (authSnapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return const _BrandedLoading();
         }
 
         // 🔹 Not logged in
@@ -46,14 +83,12 @@ class AuthWrapper extends StatelessWidget {
 
         final uid = authSnapshot.data!.uid;
 
-        return FutureBuilder<DocumentSnapshot>(
-          future: FirebaseFirestore.instance.collection('users').doc(uid).get(),
+        return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+          future: _userDocFor(uid),
           builder: (context, userSnapshot) {
             // 🔹 Loading Firestore
             if (userSnapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
+              return const _BrandedLoading();
             }
 
             // HANDLE FIRESTORE ERROR
@@ -70,7 +105,7 @@ class AuthWrapper extends StatelessWidget {
               return const PersonelInformation();
             }
 
-            final data = userSnapshot.data!.data() as Map<String, dynamic>?;
+            final data = userSnapshot.data!.data();
 
             if (data == null) {
               return const PersonelInformation();
@@ -87,6 +122,42 @@ class AuthWrapper extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+/// Loading screen that matches the splash branding, so any residual wait
+/// reads as a seamless continuation instead of a white flash.
+class _BrandedLoading extends StatelessWidget {
+  const _BrandedLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primary,
+              AppColors.primaryDeep,
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Center(
+          child: SizedBox(
+            width: 30,
+            height: 30,
+            child: CircularProgressIndicator(
+              color: Colors.white.withValues(alpha: 0.7),
+              strokeWidth: 2,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

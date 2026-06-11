@@ -1,5 +1,6 @@
 import 'package:blood_donation/models/bloodrequest_model.dart';
 import 'package:blood_donation/provider/bloodGroup_provider.dart';
+import 'package:blood_donation/view/post_details.dart';
 import 'package:blood_donation/widgets/home_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -71,10 +72,11 @@ class SpecificBloodgroupScreen extends StatelessWidget {
                   final req = requests[index];
 
                   return HomeContainer(
-                    bloodGroup: req.bloodGroup,
-                    title: req.title,
-                    hospital: req.hospital,
-                    date: req.createdAt.toLocal().toString().split(' ')[0],
+                    request: req,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => PostDetailsScreen(request: req)),
+                    ),
                   );
                 },
               );

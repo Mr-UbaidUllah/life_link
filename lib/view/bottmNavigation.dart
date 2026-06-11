@@ -3,6 +3,7 @@ import 'package:blood_donation/view/bloodrequest_screen.dart';
 import 'package:blood_donation/view/home/home_screen.dart';
 import 'package:blood_donation/view/inbox_screen.dart';
 import 'package:blood_donation/view/more_screen.dart';
+import 'package:blood_donation/view/request_screen.dart';
 import 'package:blood_donation/view/search_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -11,12 +12,43 @@ import 'package:provider/provider.dart';
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
+  /// Tab indices, so callers don't use magic numbers.
+  static const int tabHome = 0;
+  static const int tabRequests = 1;
+  static const int tabSearch = 2;
+  static const int tabInbox = 3;
+  static const int tabMore = 4;
+
+  static _MainScreenState? _active;
+
+  /// Switch the bottom-nav tab from anywhere inside the main shell
+  /// (e.g. Home's "See all" jumps to the Requests tab instead of pushing
+  /// a duplicate screen on top of it).
+  static void switchTab(int index) => _active?._setTab(index);
+
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    MainScreen._active = this;
+  }
+
+  @override
+  void dispose() {
+    if (MainScreen._active == this) MainScreen._active = null;
+    super.dispose();
+  }
+
+  void _setTab(int index) {
+    if (!mounted || index == _currentIndex) return;
+    setState(() => _currentIndex = index);
+  }
 
   final List<Widget> _pages = [
     HomeScreen(key: HomeScreen.homeKey),
@@ -46,10 +78,36 @@ class _MainScreenState extends State<MainScreen> {
       },
       child: Scaffold(
         body: IndexedStack(index: _currentIndex, children: _pages),
+        // Quick entry point for posting a request, shown only on the Requests
+        // tab where it's most contextually relevant.
+        floatingActionButton: _currentIndex == MainScreen.tabRequests
+            ? _NewRequestButton()
+            : null,
         bottomNavigationBar: _NavBar(
           currentIndex: _currentIndex,
           onTap: _onTap,
         ),
+      ),
+    );
+  }
+}
+
+class _NewRequestButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return FloatingActionButton.extended(
+      onPressed: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const CreateRequestScreen()),
+      ),
+      backgroundColor: theme.colorScheme.primary,
+      foregroundColor: theme.colorScheme.onPrimary,
+      elevation: 3,
+      icon: const Icon(Icons.add_rounded),
+      label: Text(
+        'New request',
+        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.sp),
       ),
     );
   }
@@ -94,31 +152,31 @@ class _NavBar extends StatelessWidget {
               onTap: () => onTap(0),
             ),
             _NavItem(
-              icon: Icons.bloodtype_outlined,
-              activeIcon: Icons.bloodtype_rounded,
+              icon: Icons.water_drop_outlined,
+              activeIcon: Icons.water_drop_rounded,
               label: 'Requests',
               selected: currentIndex == 1,
               onTap: () => onTap(1),
             ),
             _NavItem(
-              icon: Icons.search_rounded,
+              icon: Icons.search_outlined,
               activeIcon: Icons.search_rounded,
               label: 'Search',
               selected: currentIndex == 2,
               onTap: () => onTap(2),
             ),
             _NavItem(
-              icon: Icons.chat_bubble_outline_rounded,
-              activeIcon: Icons.chat_bubble_rounded,
+              icon: Icons.forum_outlined,
+              activeIcon: Icons.forum_rounded,
               label: 'Inbox',
               selected: currentIndex == 3,
               onTap: () => onTap(3),
               badgeStream: context.read<MessageProvider>().getTotalUnreadCount(),
             ),
             _NavItem(
-              icon: Icons.grid_view_outlined,
-              activeIcon: Icons.grid_view_rounded,
-              label: 'More',
+              icon: Icons.person_outline_rounded,
+              activeIcon: Icons.person_rounded,
+              label: 'Profile',
               selected: currentIndex == 4,
               onTap: () => onTap(4),
             ),

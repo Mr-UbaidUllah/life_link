@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
-import 'bloodrequest_screen.dart';
+import 'bottmNavigation.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -58,8 +58,8 @@ class _SearchScreenState extends State<SearchScreen> {
           'Find Donors',
           style: TextStyle(
             color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.w900,
-            fontSize: 20.sp,
+            fontWeight: FontWeight.w700,
+            fontSize: 19.sp,
           ),
         ),
       ),
@@ -80,6 +80,17 @@ class _SearchScreenState extends State<SearchScreen> {
                 },
                 prefixIcon: Icons.search_rounded,
                 hintText: 'Search by city, name or blood...',
+                suffixIcon: _searchQuery.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: Icon(Icons.close_rounded,
+                            size: 20.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                          FocusScope.of(context).unfocus();
+                        },
+                      ),
               ),
             ),
           ),
@@ -92,7 +103,8 @@ class _SearchScreenState extends State<SearchScreen> {
                 'Filter by Blood Group',
                 style: TextStyle(
                   fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
@@ -119,15 +131,19 @@ class _SearchScreenState extends State<SearchScreen> {
                     decoration: BoxDecoration(
                       color: isSelected ? theme.colorScheme.primary : theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(16.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isSelected ? theme.colorScheme.primary.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: theme.colorScheme.primary.withValues(alpha: 0.25),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : null,
                       border: Border.all(
-                        color: isSelected ? theme.colorScheme.primary : theme.colorScheme.outline.withValues(alpha: 0.1),
+                        color: isSelected
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.primary.withValues(alpha: 0.12),
                         width: 1.5,
                       ),
                     ),
@@ -136,13 +152,15 @@ class _SearchScreenState extends State<SearchScreen> {
                       children: [
                         Icon(
                           Icons.water_drop,
-                          color: isSelected ? Colors.white.withValues(alpha: 0.2) : theme.colorScheme.primary.withValues(alpha: 0.1),
+                          color: isSelected
+                              ? theme.colorScheme.onPrimary.withValues(alpha: 0.2)
+                              : theme.colorScheme.primary.withValues(alpha: 0.1),
                           size: 40.sp,
                         ),
                         Text(
                           bloodGroups[index],
                           style: TextStyle(
-                            color: isSelected ? Colors.white : theme.colorScheme.primary,
+                            color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
                             fontWeight: FontWeight.w900,
                             fontSize: 16.sp,
                           ),
@@ -172,23 +190,28 @@ class _SearchScreenState extends State<SearchScreen> {
                     'Recent Blood Requests',
                     style: TextStyle(
                       fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
                       color: theme.colorScheme.onSurface,
                     ),
                   ),
                   TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const BloodrequestScreen(),
+                    onPressed: () => MainScreen.switchTab(MainScreen.tabRequests),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'View All',
+                          style: TextStyle(fontSize: 13.sp, color: theme.colorScheme.primary, fontWeight: FontWeight.w700),
                         ),
-                      );
-                    },
-
-                    child: Text(
-                      'View All',
-                      style: TextStyle(fontSize: 13.sp, color: theme.colorScheme.primary, fontWeight: FontWeight.w600),
+                        SizedBox(width: 2.w),
+                        Icon(Icons.chevron_right_rounded, size: 16.sp, color: theme.colorScheme.primary),
+                      ],
                     ),
                   ),
                 ],
@@ -209,10 +232,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     }
 
                     if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return Padding(
-                        padding: EdgeInsets.all(20.w),
-                        child: Text("No requests found", style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4))),
-                      );
+                      return _emptyMessage(theme, "No requests found");
                     }
 
                     final allRequests = snapshot.data!;
@@ -236,10 +256,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     }).toList();
 
                     if (filteredRequests.isEmpty) {
-                      return Padding(
-                        padding: EdgeInsets.all(20.w),
-                        child: Text("No requests match your search", style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4))),
-                      );
+                      return _emptyMessage(theme, "No requests match your search");
                     }
 
                     // Adjust display logic to prioritize mine or show a limited set when not searching
@@ -249,7 +266,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
                     return Column(
                       children: displayRequests.map((req) {
-                        return InkWell(
+                        return HomeContainer(
+                          request: req,
                           onTap: () {
                             Navigator.push(
                               context,
@@ -258,13 +276,6 @@ class _SearchScreenState extends State<SearchScreen> {
                               ),
                             );
                           },
-                          child: HomeContainer(
-                            bloodGroup: req.bloodGroup,
-                            title: req.title,
-                            hospital: req.hospital,
-                            date: req.createdAt.toLocal().toString().split(' ')[0],
-                            ownerId: req.userId,
-                          ),
                         );
                       }).toList(),
                     );
@@ -285,7 +296,8 @@ class _SearchScreenState extends State<SearchScreen> {
                     city != null ? 'Donors in $city' : 'Nearby Blood Donors',
                     style: TextStyle(
                       fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
                       color: theme.colorScheme.onSurface,
                     ),
                   );
@@ -307,10 +319,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.all(20.w),
-                        child: Text('No donors available right now', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4))),
-                      ),
+                      child: _emptyMessage(theme, 'No donors available right now'),
                     );
                   }
 
@@ -339,14 +348,11 @@ class _SearchScreenState extends State<SearchScreen> {
 
                   if (filteredDonors.isEmpty) {
                     return SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.all(20.w),
-                        child: Text(
-                          _searchQuery.isEmpty && selectedBlood == null 
-                            ? 'No donors found in your city' 
-                            : 'No matching donors found', 
-                          style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4))
-                        ),
+                      child: _emptyMessage(
+                        theme,
+                        _searchQuery.isEmpty && selectedBlood == null
+                            ? 'No donors found in your city'
+                            : 'No matching donors found',
                       ),
                     );
                   }
@@ -402,7 +408,14 @@ class _SearchScreenState extends State<SearchScreen> {
                                         SizedBox(width: 12.w),
                                         Icon(Icons.location_on_rounded, size: 14.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
                                         SizedBox(width: 4.w),
-                                        Text(user.city ?? 'Unknown', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
+                                        Flexible(
+                                          child: Text(
+                                            user.city ?? 'Unknown',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ],
@@ -427,8 +440,25 @@ class _SearchScreenState extends State<SearchScreen> {
             },
           ),
 
-          SliverToBoxAdapter(child: SizedBox(height: 30.h)),
+          SliverToBoxAdapter(child: SizedBox(height: 90.h)),
         ],
+      ),
+    );
+  }
+
+  Widget _emptyMessage(ThemeData theme, String text) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
+      child: Center(
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13.5.sp,
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+          ),
+        ),
       ),
     );
   }
