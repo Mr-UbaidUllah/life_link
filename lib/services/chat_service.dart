@@ -66,8 +66,12 @@ class ChatService {
     String chatRoomId = ids.join('_');
 
     // Use set+merge so opening a brand-new conversation (no chat doc yet)
-    // doesn't throw a `not-found` from update().
+    // doesn't throw a `not-found` from update(). Include `users` so that when
+    // this is the create (empty conversation opened before any message), the
+    // doc carries the participant array the security rules require — otherwise
+    // the create is rejected with permission-denied.
     await _firestore.collection('chats').doc(chatRoomId).set({
+      'users': ids,
       'unreadCounts': {currentUserId: 0},
     }, SetOptions(merge: true));
   }

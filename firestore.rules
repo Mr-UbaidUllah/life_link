@@ -44,8 +44,20 @@ service cloud.firestore {
 
     // ---- Chats & messages ----
     match /chats/{chatRoomId} {
-      allow read, write: if isChatParticipant(chatRoomId);
+      // Gate on the `users` field, NOT the doc id. The inbox lists chats with
+      // a collection query (where('users', arrayContains: uid)); Firestore
+      // cannot evaluate a doc-id rule (chatRoomId.split('_')) for a list
+      // operation — there is no concrete id to split — so it rejects the whole
+      // query with permission-denied. Matching the query's filter on the
+      // `users` array lets the list succeed while still scoping to members.
+      allow read: if signedIn() && request.auth.uid in resource.data.users;
+      allow create: if signedIn()
+                    && request.auth.uid in request.resource.data.users;
+      allow update, delete: if signedIn()
+                            && request.auth.uid in resource.data.users;
 
+      // Messages live under a fully-specified chat id, so the doc-id check is
+      // evaluable here (chatRoomId is concrete in the path) for both get & list.
       match /messages/{messageId} {
         allow read, write: if isChatParticipant(chatRoomId);
       }

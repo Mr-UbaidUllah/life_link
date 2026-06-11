@@ -349,6 +349,47 @@ const {logger} = require("firebase-functions");
 admin.initializeApp();
 
 // ============================================
+// 🔎 MATCHING HELPERS (pure — unit-tested in matching.test.js)
+// ============================================
+
+/** Normalize a string for case/whitespace-insensitive comparison. */
+function norm(value) {
+  return (value || "").toString().trim().toLowerCase();
+}
+
+/**
+ * Whether a user should be notified about a blood request.
+ * Rules: exact blood group match AND same city, and never the request's own
+ * creator. Returns false if the request itself is missing bloodGroup/city, so
+ * an incomplete request never broadcasts to everyone.
+ *
+ * @param {object} requestData  The Blood_request document data.
+ * @param {string} userId       The candidate user's document id.
+ * @param {object} userData     The candidate user's document data.
+ * @param {string} creatorUserId  userId of the request's creator.
+ * @return {boolean}
+ */
+function shouldNotifyForRequest(requestData, userId, userData, creatorUserId) {
+  // Never notify the creator about their own request.
+  if (creatorUserId && userId === creatorUserId) return false;
+
+  const reqGroup = norm(requestData.bloodGroup);
+  const reqCity = norm(requestData.city);
+  // Incomplete request → no safe audience.
+  if (!reqGroup || !reqCity) return false;
+
+  // Exact blood group match.
+  if (norm(userData.bloodGroup) !== reqGroup) return false;
+
+  // Same city.
+  if (norm(userData.city) !== reqCity) return false;
+
+  return true;
+}
+
+exports.shouldNotifyForRequest = shouldNotifyForRequest;
+
+// ============================================
 // 🩸 BLOOD REQUEST NOTIFICATION
 // ============================================
 exports.sendBloodRequestNotification = onDocumentCreated(
@@ -382,42 +423,53 @@ exports.sendBloodRequestNotification = onDocumentCreated(
 
       logger.info(`✅ Found ${usersSnapshot.size} total users`);
 
-      // Collect tokens (skip creator)
+      // If the request is missing the fields we match on, there's no safe
+      // audience — bail rather than broadcasting to everyone.
+      if (!norm(requestData.bloodGroup) || !norm(requestData.city)) {
+        logger.warn(
+          "❌ Request missing bloodGroup or city — skipping notifications " +
+          `(bloodGroup="${requestData.bloodGroup}", city="${requestData.city}")`
+        );
+        return null;
+      }
+
+      // Collect tokens of MATCHING recipients only — exact blood group + same
+      // city, and never the creator (see shouldNotifyForRequest).
       const tokens = [];
-      let usersWithTokens = 0;
-      let creatorSkipped = false;
+      let matched = 0;
 
       usersSnapshot.forEach((doc) => {
         const userData = doc.data();
         const userId = doc.id;
 
-        // Skip the creator
-        if (creatorUserId && userId === creatorUserId) {
-          logger.info(`⏭️ Skipping creator: ${userId}`);
-          creatorSkipped = true;
+        if (!shouldNotifyForRequest(requestData, userId, userData, creatorUserId)) {
           return;
         }
+        matched++;
 
-        // Collect token
         if (userData.fcmToken) {
           tokens.push(userData.fcmToken);
-          usersWithTokens++;
-          logger.info(`✅ Added token for user: ${userId}`);
+          logger.info(`✅ Matched recipient: ${userId}`);
+        } else {
+          logger.info(`⚠️ Matched user ${userId} has no FCM token`);
         }
       });
 
       logger.info(
         `📊 Stats: Total users: ${usersSnapshot.size}, ` +
-        `With tokens: ${usersWithTokens}, ` +
-        `Creator skipped: ${creatorSkipped}`
+        `Matched: ${matched}, With tokens: ${tokens.length}`
       );
 
       if (tokens.length === 0) {
-        logger.warn("❌ No tokens found (excluding creator)");
+        logger.warn(
+          `❌ No matching recipients with tokens for ` +
+          `${norm(requestData.bloodGroup)} in ${norm(requestData.city)} ` +
+          `(excluding creator)`
+        );
         return null;
       }
 
-      logger.info(`✅ Sending to ${tokens.length} users`);
+      logger.info(`✅ Sending to ${tokens.length} matching users`);
 
       // Prepare notification
       const message = {

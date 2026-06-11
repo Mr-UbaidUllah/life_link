@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:blood_donation/provider/storage_provider.dart';
+import 'package:blood_donation/utils/image_limits.dart';
 import 'package:blood_donation/view/bottmNavigation.dart';
 import 'package:blood_donation/widgets/reusable_button.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -89,7 +90,7 @@ class _ImageScreenState extends State<ImageScreen> {
       final File imageFile = File(pickFile.path);
       final int imageSize = await imageFile.length();
       
-      if (imageSize <= 1048576) {
+      if (isAcceptableImageSize(imageSize)) {
         if (!mounted) return;
         setState(() {
           selectedImage = imageFile;
@@ -98,7 +99,7 @@ class _ImageScreenState extends State<ImageScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text("Image size must be less than or equal to 1 MB"),
+              content: Text("Image size must be less than or equal to 10 MB"),
               backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
             ),
@@ -219,7 +220,7 @@ class _ImageScreenState extends State<ImageScreen> {
                                   ),
                                   SizedBox(height: 4.h),
                                   Text(
-                                    "Maximum size 1MB",
+                                    "Maximum size 10MB",
                                     style: TextStyle(
                                       color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                                       fontSize: 12.sp,

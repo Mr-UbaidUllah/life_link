@@ -10,26 +10,26 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    function isImageUnder5MB() {
-      return request.resource.size < 5 * 1024 * 1024
+    function isImageUnder10MB() {
+      return request.resource.size < 10 * 1024 * 1024
              && request.resource.contentType.matches('image/.*');
     }
 
     match /profile_images/{fileName} {
       allow read: if true;
-      allow write: if signedIn() && isImageUnder5MB();
+      allow write: if signedIn() && isImageUnder10MB();
     }
     match /organization_images/{fileName} {
       allow read: if true;
-      allow write: if signedIn() && isImageUnder5MB();
+      allow write: if signedIn() && isImageUnder10MB();
     }
     match /ambulance_images/{fileName} {
       allow read: if true;
-      allow write: if signedIn() && isImageUnder5MB();
+      allow write: if signedIn() && isImageUnder10MB();
     }
     match /volunteer_images/{fileName} {
       allow read: if true;
-      allow write: if signedIn() && isImageUnder5MB();
+      allow write: if signedIn() && isImageUnder10MB();
     }
 
     // Everything else denied by default.
