@@ -12,6 +12,9 @@ All images live in the `images/` folder.
 | 2b | Use Case Diagram (Mermaid style, alternative) | `02_use_case.png` · `02_use_case.svg` |
 | 3 | **DFD — Level 0 (Context)** | `03_DFD_level0_context.png` · `.svg` |
 | 4 | **DFD — Level 1** | `04_DFD_level1.png` · `.svg` |
+| 5 | **Existing System** (current manual process) | `05_existing_system.png` · `.svg` |
+| 6 | **Proposed System** (Life Link app) | `06_proposed_system.png` · `.svg` |
+| 7 | **System Architecture** (layered / 3-tier) | `07_system_architecture.png` · `.svg` |
 
 > **PNG** = drop directly into Word / Google Docs.
 > **SVG** = vector, stays sharp at any zoom or print size — use it if your editor

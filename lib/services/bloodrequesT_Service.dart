@@ -1,5 +1,6 @@
 import 'package:blood_donation/models/bloodrequest_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class BloodRequestService {
   final _firestore = FirebaseFirestore.instance;
@@ -22,8 +23,18 @@ class BloodRequestService {
     await _firestore.collection('Blood_request').doc(requestId).delete();
   }
 
+  /// Deletes only the CURRENT user's own requests. Scoped by `userId` so it
+  /// complies with the security rule (a user may delete only their own
+  /// requests) — an unscoped batch-delete of the whole collection would be
+  /// rejected with permission-denied and let any user wipe everyone's data.
   Future<void> clearAllRequests() async {
-    final collection = await _firestore.collection('Blood_request').get();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final collection = await _firestore
+        .collection('Blood_request')
+        .where('userId', isEqualTo: uid)
+        .get();
     final batch = _firestore.batch();
     for (final doc in collection.docs) {
       batch.delete(doc.reference);

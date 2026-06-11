@@ -384,17 +384,23 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
   void _showCancelDialog(BuildContext context, ThemeData theme) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: theme.colorScheme.surface,
         title: Text('Close Request?', style: TextStyle(color: theme.colorScheme.onSurface)),
         content: Text('If you found a donor or want to stop this request, it will be hidden from other users.', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.8))),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('No', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)))),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text('No', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)))),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
-              await context.read<BloodrequestProvider>().updateStatus(widget.request.id, 'closed');
-              if (mounted) Navigator.pop(context);
+              // Capture provider + navigator from the SCREEN context (still mounted)
+              // BEFORE popping — popping deactivates the dialog's own context, and
+              // reading providers/Navigator off a deactivated context throws
+              // "Looking up a deactivated widget's ancestor is unsafe".
+              final provider = context.read<BloodrequestProvider>();
+              final navigator = Navigator.of(context);
+              Navigator.pop(dialogContext); // close the dialog
+              await provider.updateStatus(widget.request.id, 'closed');
+              if (mounted) navigator.pop(); // close the details screen
             },
             child: Text('Yes, Close it', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold)),
           ),
