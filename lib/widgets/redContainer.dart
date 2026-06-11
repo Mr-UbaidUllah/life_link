@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class redContainer extends StatelessWidget {
   const redContainer({super.key, required this.height, required this.width});
@@ -19,7 +20,7 @@ class redContainer extends StatelessWidget {
           Image.asset('assets/images/water 1.png', height: height * 0.10),
           Text(
             'Life Link',
-            style: TextStyle(fontSize: 23, color: theme.colorScheme.onPrimary),
+            style: TextStyle(fontSize: 23.sp, color: theme.colorScheme.onPrimary),
           ),
         ],
       ),

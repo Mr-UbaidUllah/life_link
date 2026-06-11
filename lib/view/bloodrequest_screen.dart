@@ -3,6 +3,7 @@ import 'package:blood_donation/provider/bloodRequest_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/view/post_details.dart';
 import 'package:blood_donation/widgets/home_widgets.dart';
+import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -86,7 +87,10 @@ class _BloodrequestScreenState extends State<BloodrequestScreen> {
             stream: bloodProvider.requests,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator(color: theme.colorScheme.primary));
+                return ShimmerList(
+                  padding: EdgeInsets.only(top: 8.h),
+                  itemBuilder: (_, __) => const BloodRequestSkeleton(),
+                );
               }
 
               // Requests the user is allowed to see (own posts + non-dismissed).

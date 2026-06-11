@@ -6,6 +6,7 @@ import 'package:blood_donation/widgets/redContainer.dart';
 import 'package:blood_donation/widgets/reusable_button.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -70,9 +71,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     width: width,
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surface,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(30),
-                        topRight: Radius.circular(30),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(30.r),
+                        topRight: Radius.circular(30.r),
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -82,7 +83,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                       ],
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                    padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 40.h),
                     child: Form(
                       key: _formKey,
                       child: Column(
@@ -91,20 +92,20 @@ class _SignupScreenState extends State<SignupScreen> {
                         Text(
                           'Create Account',
                           style: TextStyle(
-                            fontSize: 32,
+                            fontSize: 32.sp,
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.onSurface,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8.h),
                         Text(
                           'Sign up to join our life-saving community',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 16.sp,
                             color: theme.colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
-                        const SizedBox(height: 40),
+                        SizedBox(height: 40.h),
                         CustomTextField(
                           controller: email_controller,
                           hintText: 'Email Address',
@@ -113,7 +114,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: 12,
                           validator: _validateEmail,
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: 20.h),
                         CustomTextField(
                           controller: password_controller,
                           prefixIcon: Icons.lock_outline,
@@ -123,7 +124,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           textInputAction: TextInputAction.done,
                           validator: _validatePassword,
                         ),
-                        const SizedBox(height: 40),
+                        SizedBox(height: 40.h),
                         Selector<AuthProviders, bool>(
                           selector: (_, auth) => auth.isLoading,
                           builder: (context, isLoading, _) {
@@ -168,14 +169,14 @@ class _SignupScreenState extends State<SignupScreen> {
                             );
                           },
                         ),
-                        const SizedBox(height: 30),
+                        SizedBox(height: 30.h),
                         Center(
                           child: RichText(
                             text: TextSpan(
                               text: 'Already have an account? ',
                               style: TextStyle(
                                 color: theme.colorScheme.onSurface.withOpacity(0.6),
-                                fontSize: 16,
+                                fontSize: 16.sp,
                               ),
                               children: [
                                 TextSpan(
@@ -183,7 +184,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   style: TextStyle(
                                     color: theme.colorScheme.primary,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                    fontSize: 16.sp,
                                   ),
                                   recognizer: TapGestureRecognizer()
                                     ..onTap = () {
@@ -199,7 +200,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: 20.h),
                       ],
                     ),
                     ),

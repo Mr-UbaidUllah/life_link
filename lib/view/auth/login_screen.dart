@@ -6,6 +6,7 @@ import 'package:blood_donation/widgets/redContainer.dart';
 import 'package:blood_donation/widgets/reusable_button.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -66,9 +67,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: width,
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surface,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(30),
-                        topRight: Radius.circular(30),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(30.r),
+                        topRight: Radius.circular(30.r),
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -78,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                    padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 40.h),
                     child: Form(
                       key: _formKey,
                       child: Column(
@@ -87,20 +88,20 @@ class _LoginScreenState extends State<LoginScreen> {
                         Text(
                           'Welcome Back',
                           style: TextStyle(
-                            fontSize: 32,
+                            fontSize: 32.sp,
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.onSurface,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8.h),
                         Text(
                           'Login to continue saving lives',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 16.sp,
                             color: theme.colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
-                        const SizedBox(height: 40),
+                        SizedBox(height: 40.h),
                         CustomTextField(
                           controller: email_controller,
                           hintText: 'Email Address',
@@ -109,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: 12,
                           validator: _validateEmail,
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: 20.h),
                         CustomTextField(
                           controller: password_controller,
                           prefixIcon: Icons.lock_outline,
@@ -119,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           textInputAction: TextInputAction.done,
                           validator: _validatePassword,
                         ),
-                        const SizedBox(height: 40),
+                        SizedBox(height: 40.h),
                         Consumer<AuthProviders>(
                           builder: (context, auth, _) {
                             return InkWell(
@@ -163,14 +164,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             );
                           },
                         ),
-                        const SizedBox(height: 30),
+                        SizedBox(height: 30.h),
                         Center(
                           child: RichText(
                             text: TextSpan(
                               text: "Don't have an account? ",
                               style: TextStyle(
                                 color: theme.colorScheme.onSurface.withOpacity(0.6),
-                                fontSize: 16,
+                                fontSize: 16.sp,
                               ),
                               children: [
                                 TextSpan(
@@ -178,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: TextStyle(
                                     color: theme.colorScheme.primary,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                    fontSize: 16.sp,
                                   ),
                                   recognizer: TapGestureRecognizer()
                                     ..onTap = () {
@@ -194,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: 20.h),
                       ],
                     ),
                     ),

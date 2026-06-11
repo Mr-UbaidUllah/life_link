@@ -6,6 +6,7 @@ import 'package:blood_donation/view/post_details.dart';
 import 'package:blood_donation/view/profile/profile_details_scrren.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
 import 'package:blood_donation/widgets/home_widgets.dart';
+import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -228,7 +229,11 @@ class _SearchScreenState extends State<SearchScreen> {
                   stream: bloodProvider.requests,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(child: Padding(padding: const EdgeInsets.all(20), child: CircularProgressIndicator(color: theme.colorScheme.primary)));
+                      return AppShimmer(
+                        child: Column(
+                          children: List.generate(3, (_) => const BloodRequestSkeleton()),
+                        ),
+                      );
                     }
 
                     if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -313,7 +318,20 @@ class _SearchScreenState extends State<SearchScreen> {
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return SliverToBoxAdapter(
-                      child: Center(child: CircularProgressIndicator(color: theme.colorScheme.primary)),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20.w),
+                        child: AppShimmer(
+                          child: Column(
+                            children: List.generate(
+                              4,
+                              (_) => Padding(
+                                padding: EdgeInsets.only(bottom: 12.h),
+                                child: const UserTileSkeleton(),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     );
                   }
 

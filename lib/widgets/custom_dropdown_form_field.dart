@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class CustomDropdownFormField<T> extends StatelessWidget {
   final T? value;
@@ -62,25 +63,25 @@ class CustomDropdownFormField<T> extends StatelessWidget {
       children: [
         if (customLabel != null) ...[
           customLabel!,
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
         ] else if (labelText != null) ...[
           Row(
             children: [
               if (labelPrefix != null) ...[
                 labelPrefix!,
-                const SizedBox(width: 8),
+                SizedBox(width: 8.w),
               ],
               Text(
                 labelText!,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
         ],
         DropdownButtonFormField<T>(
           value: value,
@@ -109,7 +110,7 @@ class CustomDropdownFormField<T> extends StatelessWidget {
             ),
             contentPadding:
                 contentPadding ??
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
             filled: backgroundColor != null,
             fillColor: backgroundColor,
             prefixIcon: prefixIcon,
@@ -117,12 +118,12 @@ class CustomDropdownFormField<T> extends StatelessWidget {
             hintStyle:
                 hintStyle ??
                 TextStyle(
-                  fontSize: 16,
+                  fontSize: 16.sp,
                   color: theme.colorScheme.onSurface.withOpacity(0.4),
                   fontWeight: FontWeight.w400,
                 ),
             errorText: errorText,
-            errorStyle: TextStyle(color: theme.colorScheme.error, fontSize: 12),
+            errorStyle: TextStyle(color: theme.colorScheme.error, fontSize: 12.sp),
           ),
           selectedItemBuilder: (BuildContext context) {
             return items.map<Widget>((T item) {
@@ -133,7 +134,7 @@ class CustomDropdownFormField<T> extends StatelessWidget {
                   style:
                       textStyle ??
                       TextStyle(
-                        fontSize: 16,
+                        fontSize: 16.sp,
                         color: theme.colorScheme.onSurface,
                         fontWeight: FontWeight.w400,
                       ),
@@ -148,7 +149,7 @@ class CustomDropdownFormField<T> extends StatelessWidget {
               value: item,
               child: Text(
                 itemToString(item),
-                style: TextStyle(fontSize: 15, color: theme.colorScheme.onSurface),
+                style: TextStyle(fontSize: 15.sp, color: theme.colorScheme.onSurface),
               ),
             );
           }).toList(),

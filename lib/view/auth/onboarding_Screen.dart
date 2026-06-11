@@ -116,11 +116,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             },
             child: Container(
               margin: EdgeInsets.all(height * 0.03),
-              height: 55,
+              height: 55.h,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: theme.colorScheme.primary,
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(15.r),
                 boxShadow: [
                   BoxShadow(
                     color: theme.colorScheme.primary.withOpacity(0.3),
@@ -134,7 +134,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   currentIndex == pages.length - 1 ? "Get Started" : "Next",
                   style: TextStyle(
                     color: theme.colorScheme.onPrimary,
-                    fontSize: 18,
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -150,12 +150,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget buildDot(int index, ThemeData theme) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.symmetric(horizontal: 5),
-      height: 10,
-      width: currentIndex == index ? 30 : 10,
+      margin: EdgeInsets.symmetric(horizontal: 5.w),
+      height: 10.h,
+      width: currentIndex == index ? 30.w : 10.w,
       decoration: BoxDecoration(
         color: currentIndex == index ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.r),
       ),
     );
   }

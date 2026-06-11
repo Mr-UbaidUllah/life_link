@@ -2,6 +2,7 @@ import 'package:blood_donation/models/ambulance_model.dart';
 import 'package:blood_donation/provider/ambulance_provider.dart';
 import 'package:blood_donation/view/add_ambulence.dart';
 import 'package:blood_donation/widgets/ambulence_card.dart';
+import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -84,7 +85,10 @@ class _AmbulanceScreenState extends State<AmbulanceScreen> {
                   stream: ambulance.ambulanceRequest,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(child: CircularProgressIndicator(color: theme.colorScheme.primary));
+                      return ShimmerList(
+                        itemCount: 5,
+                        itemBuilder: (_, __) => const ContactCardSkeleton(),
+                      );
                     }
 
                     if (snapshot.hasError) {

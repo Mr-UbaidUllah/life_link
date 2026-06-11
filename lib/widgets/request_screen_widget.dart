@@ -1,4 +1,5 @@
   import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 Widget inputField(
     String label,
@@ -8,12 +9,12 @@ Widget inputField(
     TextInputType keyboard = TextInputType.text,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.only(bottom: 14.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 13)),
-          const SizedBox(height: 6),
+          Text(label, style: TextStyle(fontSize: 13.sp)),
+          SizedBox(height: 6.h),
           TextField(
             controller: controller,
             maxLines: maxLines,
@@ -23,7 +24,7 @@ Widget inputField(
               filled: true,
               fillColor: Colors.grey.shade100,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(10.r),
                 borderSide: BorderSide.none,
               ),
             ),
@@ -39,19 +40,19 @@ Widget inputField(
     required ValueChanged<String?> onChanged,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.only(bottom: 14.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 13)),
-          const SizedBox(height: 6),
+          Text(label, style: TextStyle(fontSize: 13.sp)),
+          SizedBox(height: 6.h),
           DropdownButtonFormField<String>(
             value: value,
             decoration: InputDecoration(
               filled: true,
               fillColor: Colors.grey.shade100,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(10.r),
                 borderSide: BorderSide.none,
               ),
             ),

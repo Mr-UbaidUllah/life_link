@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Reusable Info Row
 Widget infoRow(BuildContext context, IconData icon, String title, String value) {
   final theme = Theme.of(context);
   return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
+    padding: EdgeInsets.symmetric(vertical: 8.h),
     child: Row(
       children: [
-        Icon(icon, color: theme.colorScheme.primary, size: 20),
-        const SizedBox(width: 12),
+        Icon(icon, color: theme.colorScheme.primary, size: 20.sp),
+        SizedBox(width: 12.w),
         Expanded(
           child: Text(
-            title, 
+            title,
             style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6)),
           ),
         ),
         Text(
-          value, 
+          value,
           style: TextStyle(
             fontWeight: FontWeight.w500,
             color: theme.colorScheme.onSurface,

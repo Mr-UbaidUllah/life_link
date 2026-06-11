@@ -3,6 +3,7 @@ import 'package:blood_donation/models/user_model.dart';
 import 'package:blood_donation/view/msg_screen.dart';
 import 'package:blood_donation/widgets/home_widgets.dart';
 import 'package:blood_donation/widgets/user_tile_widget.dart';
+import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -65,7 +66,12 @@ class _UsersScreenState extends State<UsersScreen> {
             stream: chatProvider.getChatList(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator(color: theme.colorScheme.primary));
+                return ShimmerList(
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                  itemCount: 8,
+                  separator: 8.h,
+                  itemBuilder: (_, __) => const UserTileSkeleton(dense: true),
+                );
               }
 
               if (snapshot.hasError) {

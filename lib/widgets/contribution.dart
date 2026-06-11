@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Flat stat tile used inside the "Our Impact" card on Home:
 /// a bold accent-colored number over a muted label.
@@ -24,19 +25,19 @@ class ContributionCard extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
-            fontSize: 20,
+            fontSize: 20.sp,
             fontWeight: FontWeight.w900,
             color: color,
             letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4.h),
         Text(
           label,
           textAlign: TextAlign.center,
           maxLines: 2,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: 11.sp,
             color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
             fontWeight: FontWeight.w600,
           ),

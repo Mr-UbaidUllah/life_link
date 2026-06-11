@@ -7,6 +7,7 @@ import 'package:blood_donation/view/edit_profile_screen.dart';
 import 'package:blood_donation/view/msg_screen.dart';
 import 'package:blood_donation/view/post_details.dart';
 import 'package:blood_donation/widgets/home_widgets.dart';
+import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -444,7 +445,11 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
           stream: provider.posts(userId),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator(color: theme.colorScheme.primary));
+              return ShimmerList(
+                padding: EdgeInsets.symmetric(vertical: 10.h),
+                itemCount: 4,
+                itemBuilder: (_, __) => const BloodRequestSkeleton(),
+              );
             }
 
             if (!snapshot.hasData || snapshot.data!.isEmpty) {

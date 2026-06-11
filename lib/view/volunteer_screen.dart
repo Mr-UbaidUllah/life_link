@@ -2,6 +2,7 @@ import 'package:blood_donation/models/volunteer_model.dart';
 import 'package:blood_donation/provider/volunteer_provider.dart';
 import 'package:blood_donation/view/add_volunteer_screen.dart';
 import 'package:blood_donation/widgets/volunteer_card.dart';
+import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -138,7 +139,11 @@ class _VolunteerScreenState extends State<VolunteerScreen> {
                   stream: volunt.volunteerRequests,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(child: CircularProgressIndicator(color: theme.colorScheme.primary));
+                      return ShimmerList(
+                        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                        itemCount: 5,
+                        itemBuilder: (_, __) => const VolunteerCardSkeleton(),
+                      );
                     }
 
                     if (snapshot.hasError) {

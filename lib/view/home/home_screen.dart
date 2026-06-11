@@ -13,6 +13,7 @@ import 'package:blood_donation/view/specific_Bloodgroup_screen.dart';
 import 'package:blood_donation/view/post_details.dart';
 import 'package:blood_donation/widgets/contribution.dart';
 import 'package:blood_donation/widgets/home_widgets.dart';
+import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -117,7 +118,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           onSeeAll: () => MainScreen.switchTab(MainScreen.tabRequests),
                         ),
                         if (isLoading)
-                          const Column(children: [RequestCardSkeleton(), RequestCardSkeleton()])
+                          const AppShimmer(
+                            child: Column(children: [BloodRequestSkeleton(), BloodRequestSkeleton()]),
+                          )
                         else
                           _buildUrgentRequests(theme, visible, userGroup),
                         const HomeHeader(title: 'Find by Blood Group'),

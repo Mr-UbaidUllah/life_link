@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
-import 'package:shimmer/shimmer.dart';
 
 /// "Just now", "5m ago", "3h ago", "2d ago", then "14 Jun".
 String relativeTime(DateTime time) {
@@ -338,28 +337,6 @@ class ActivityCard extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Shimmer placeholder matching the request card footprint.
-class RequestCardSkeleton extends StatelessWidget {
-  const RequestCardSkeleton({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Shimmer.fromColors(
-      baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
-      highlightColor: isDark ? Colors.grey[800]! : Colors.grey[100]!,
-      child: Container(
-        height: 90.h,
-        margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 6.h),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18.r),
         ),
       ),
     );

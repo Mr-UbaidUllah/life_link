@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ReusableButton extends StatelessWidget {
   final String label;
@@ -8,16 +9,16 @@ class ReusableButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      height: 55,
+      height: 55.h,
       decoration: BoxDecoration(
         color: theme.colorScheme.primary,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(15.r),
       ),
       child: Center(
         child: Text(
-          label, 
-          style: const TextStyle(
-            fontSize: 16, 
+          label,
+          style: TextStyle(
+            fontSize: 16.sp,
             color: Colors.white,
             fontWeight: FontWeight.bold,
           ),

@@ -6,6 +6,7 @@ import 'package:blood_donation/widgets/reusable_button.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 class BasicInformation extends StatefulWidget {
@@ -91,31 +92,31 @@ class _BasicInformationState extends State<BasicInformation> {
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 20),
+              padding: EdgeInsets.symmetric(vertical: 20.h),
               decoration: BoxDecoration(
                 color: theme.colorScheme.primary.withOpacity(0.05),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30.r),
+                  bottomRight: Radius.circular(30.r),
                 ),
               ),
               child: Column(
                 children: [
-                  Icon(Icons.info_outline, size: 80, color: theme.colorScheme.primary),
-                  const SizedBox(height: 12),
+                  Icon(Icons.info_outline, size: 80.sp, color: theme.colorScheme.primary),
+                  SizedBox(height: 12.h),
                   Text(
                     'Step 2 of 3',
                     style: TextStyle(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                      fontSize: 14.sp,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4.h),
                   Text(
                     'Health Details',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 20.sp,
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
                     ),
@@ -124,19 +125,19 @@ class _BasicInformationState extends State<BasicInformation> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.all(24.0.r),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Donation Preference',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   CustomDropdownFormField(
                     hintText: 'I want to donate blood',
                     value: selectedOption,
@@ -151,7 +152,7 @@ class _BasicInformationState extends State<BasicInformation> {
                       });
                     },
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   CustomTextField(
                     hintText: 'Tell us a bit about yourself...',
                     labelText: "About Yourself (Optional)",
@@ -159,7 +160,7 @@ class _BasicInformationState extends State<BasicInformation> {
                     borderRadius: 12,
                     controller: aboutController,
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40.h),
                   Consumer<UserProvider>(
                     builder: (context, users, _) {
                       return InkWell(
@@ -211,7 +212,7 @@ class _BasicInformationState extends State<BasicInformation> {
                       );
                     },
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20.h),
                 ],
               ),
             ),

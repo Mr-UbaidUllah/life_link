@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class CustomTextField extends StatefulWidget {
   final TextEditingController? controller;
@@ -170,7 +171,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
         icon: Icon(
           _obscureText ? Icons.visibility_off : Icons.visibility,
           color: theme.colorScheme.onSurface.withOpacity(0.6),
-          size: 20,
+          size: 20.sp,
         ),
         onPressed: _toggleObscureText,
         splashRadius: 20,
@@ -190,7 +191,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
     return Container(
       width: widget.width,
-      constraints: BoxConstraints(minHeight: widget.height ?? 60),
+      constraints: BoxConstraints(minHeight: widget.height ?? 60.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -202,19 +203,19 @@ class _CustomTextFieldState extends State<CustomTextField> {
               children: [
                 if (widget.labelPrefix != null) ...[
                   widget.labelPrefix!,
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                 ],
                 Text(
                   widget.labelText!,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurface,
-                    fontSize: 14,
+                    fontSize: 14.sp,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
           ],
           Flexible(
             child: widget.prefixText != null
@@ -234,11 +235,11 @@ class _CustomTextFieldState extends State<CustomTextField> {
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: EdgeInsets.symmetric(horizontal: 12.w),
                           child: Text(
                             widget.prefixText!,
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               color: theme.colorScheme.onSurface.withOpacity(0.7),
                               fontWeight: FontWeight.w500,
                             ),
@@ -268,7 +269,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                             textCapitalization: widget.textCapitalization,
                             textAlign: widget.textAlign,
                             style: widget.textStyle ?? TextStyle(
-                              fontSize: 15,
+                              fontSize: 15.sp,
                               color: theme.colorScheme.onSurface,
                             ),
                             decoration: InputDecoration(
@@ -317,7 +318,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                     textCapitalization: widget.textCapitalization,
                     textAlign: widget.textAlign,
                     style: widget.textStyle ?? TextStyle(
-                      fontSize: 15,
+                      fontSize: 15.sp,
                       color: theme.colorScheme.onSurface,
                     ),
                     decoration: InputDecoration(
@@ -356,7 +357,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                         borderRadius: BorderRadius.circular(widget.borderRadius),
                         borderSide: BorderSide(color: theme.disabledColor.withOpacity(0.1)),
                       ),
-                      errorStyle: TextStyle(color: theme.colorScheme.error, fontSize: 12),
+                      errorStyle: TextStyle(color: theme.colorScheme.error, fontSize: 12.sp),
                       errorMaxLines: 2,
                       errorText: widget.errorText,
                       isDense: true,
@@ -365,10 +366,10 @@ class _CustomTextFieldState extends State<CustomTextField> {
           ),
           if (widget.prefixText != null && widget.errorText != null)
             Padding(
-              padding: const EdgeInsets.only(top: 8.0),
+              padding: EdgeInsets.only(top: 8.0.h),
               child: Text(
                 widget.errorText!,
-                style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
+                style: TextStyle(color: theme.colorScheme.error, fontSize: 12.sp),
               ),
             ),
         ],

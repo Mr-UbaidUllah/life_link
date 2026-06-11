@@ -457,9 +457,9 @@ class _PersonelInformationState extends State<PersonelInformation> {
                                   width: 24.h,
                                   child: CircularProgressIndicator(color: theme.colorScheme.onPrimary, strokeWidth: 2.5),
                                 )
-                              : const Text(
+                              : Text(
                                   'Continue',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
                                 ),
                           ),
                         );

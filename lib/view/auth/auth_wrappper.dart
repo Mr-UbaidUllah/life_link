@@ -1,4 +1,5 @@
 import 'package:blood_donation/theme/theme.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:blood_donation/view/auth/login_screen.dart';
 import 'package:blood_donation/view/bottmNavigation.dart';
 import 'package:blood_donation/view/profile/basic_information.dart';
@@ -149,8 +150,8 @@ class _BrandedLoading extends StatelessWidget {
         ),
         child: Center(
           child: SizedBox(
-            width: 30,
-            height: 30,
+            width: 30.r,
+            height: 30.r,
             child: CircularProgressIndicator(
               color: Colors.white.withValues(alpha: 0.7),
               strokeWidth: 2,

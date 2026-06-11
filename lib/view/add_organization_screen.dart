@@ -234,14 +234,14 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
                     ),
                     child: isLoading
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
+                        ? SizedBox(
+                            height: 24.r,
+                            width: 24.r,
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                           )
-                        : const Text(
+                        : Text(
                             'Save Organization',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
                           ),
                   ),
                 );

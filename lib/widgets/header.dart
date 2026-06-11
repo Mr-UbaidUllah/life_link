@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // ignore: must_be_immutable
 class header extends StatelessWidget {
@@ -21,7 +22,7 @@ class header extends StatelessWidget {
           Text(
             name,
             style: TextStyle(
-              fontSize: 14, 
+              fontSize: 14.sp,
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.onSurface,
             ),
@@ -31,7 +32,7 @@ class header extends StatelessWidget {
           Container(
             height: height * 0.05,
             decoration: BoxDecoration(
-              borderRadius: const BorderRadius.all(Radius.circular(10)),
+              borderRadius: BorderRadius.all(Radius.circular(10.r)),
               border: Border.all(color: theme.colorScheme.outline),
             ),
             child: Center(

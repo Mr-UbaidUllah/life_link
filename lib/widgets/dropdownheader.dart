@@ -15,7 +15,7 @@ class Dropdownheader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(height: 10.h),
-        Text(name, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        Text(name, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold)),
       ],
     );
   }

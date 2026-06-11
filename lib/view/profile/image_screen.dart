@@ -141,20 +141,20 @@ class _ImageScreenState extends State<ImageScreen> {
               child: Column(
                 children: [
                   Icon(Icons.camera_alt_outlined, size: 80, color: theme.colorScheme.primary),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   Text(
                     'Step 3 of 3',
                     style: TextStyle(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                      fontSize: 14.sp,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4.h),
                   Text(
                     'Profile Photo',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 20.sp,
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
                     ),
@@ -169,9 +169,9 @@ class _ImageScreenState extends State<ImageScreen> {
                   Text(
                     'Add a photo so your community can recognize you.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                    style: TextStyle(fontSize: 16.sp, color: theme.colorScheme.onSurface.withOpacity(0.6)),
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40.h),
                   GestureDetector(
                     onTap: pickImage,
                     child: DottedBorder(
@@ -203,7 +203,7 @@ class _ImageScreenState extends State<ImageScreen> {
                                     size: 64.sp,
                                     color: theme.colorScheme.primary.withOpacity(0.5),
                                   ),
-                                  const SizedBox(height: 12),
+                                  SizedBox(height: 12.h),
                                   Text(
                                     "Tap to upload photo",
                                     style: TextStyle(
@@ -211,12 +211,12 @@ class _ImageScreenState extends State<ImageScreen> {
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: 4.h),
                                   Text(
                                     "Maximum size 1MB",
                                     style: TextStyle(
                                       color: theme.colorScheme.onSurface.withOpacity(0.4),
-                                      fontSize: 12,
+                                      fontSize: 12.sp,
                                     ),
                                   ),
                                 ],
@@ -242,14 +242,14 @@ class _ImageScreenState extends State<ImageScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 60),
+                  SizedBox(height: 60.h),
                   InkWell(
                     onTap: _isCompleting ? null : _completeSetup,
                     child: _isCompleting
                         ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary))
                         : const ReusableButton(label: 'Complete Setup'),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   TextButton(
                     onPressed: _isCompleting ? null : _completeSetup,
                     child: Text(

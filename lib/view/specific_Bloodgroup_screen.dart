@@ -2,6 +2,7 @@ import 'package:blood_donation/models/bloodrequest_model.dart';
 import 'package:blood_donation/provider/bloodGroup_provider.dart';
 import 'package:blood_donation/view/post_details.dart';
 import 'package:blood_donation/widgets/home_widgets.dart';
+import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -39,7 +40,10 @@ class SpecificBloodgroupScreen extends StatelessWidget {
             stream: provider.postsByBloodGroup(bloodGroup!),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator(color: theme.colorScheme.primary));
+                return ShimmerList(
+                  padding: EdgeInsets.symmetric(vertical: 10.h),
+                  itemBuilder: (_, __) => const BloodRequestSkeleton(),
+                );
               }
 
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
