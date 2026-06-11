@@ -1,3 +1,4 @@
+import 'package:blood_donation/models/organization_model.dart';
 import 'package:blood_donation/provider/organization_provider.dart';
 import 'package:blood_donation/view/add_organization_screen.dart';
 import 'package:blood_donation/widgets/organization_card.dart';
@@ -6,8 +7,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
-class OrganizationScreen extends StatelessWidget {
+class OrganizationScreen extends StatefulWidget {
   const OrganizationScreen({super.key});
+
+  @override
+  State<OrganizationScreen> createState() => _OrganizationScreenState();
+}
+
+class _OrganizationScreenState extends State<OrganizationScreen> {
+  // Cache the stream so returning from the add screen (which notifies the
+  // provider) doesn't resubscribe and flash the shimmer.
+  late final Stream<List<OrganizationModel>> _orgStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _orgStream = context.read<OrganizationProvider>().requests;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +57,7 @@ class OrganizationScreen extends StatelessWidget {
               color: theme.colorScheme.surface,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
+                  color: Colors.black.withValues(alpha: 0.03),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -52,7 +68,7 @@ class OrganizationScreen extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.all(8.w),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.1),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10.r),
                   ),
                   child: Icon(Icons.info_outline_rounded, color: theme.colorScheme.primary, size: 20.sp),
@@ -63,7 +79,7 @@ class OrganizationScreen extends StatelessWidget {
                     'Discover partner organizations supporting blood donation causes.',
                     style: TextStyle(
                       fontSize: 13.sp,
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -74,9 +90,9 @@ class OrganizationScreen extends StatelessWidget {
           
           Expanded(
             child: Consumer<OrganizationProvider>(
-              builder: (context, provider, _) {
-                return StreamBuilder(
-                  stream: provider.requests,
+              builder: (context, _, __) {
+                return StreamBuilder<List<OrganizationModel>>(
+                  stream: _orgStream,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return ShimmerList(
@@ -90,11 +106,11 @@ class OrganizationScreen extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.business_outlined, size: 80.sp, color: theme.colorScheme.onSurface.withOpacity(0.1)),
+                            Icon(Icons.business_outlined, size: 80.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
                             SizedBox(height: 16.h),
                             Text(
                               "No organizations found",
-                              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                             ),
                           ],
                         ),

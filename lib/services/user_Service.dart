@@ -63,9 +63,13 @@ class UserFirestoreService {
   }
 
   Future<void> updateDonateStatus(bool isDonor) async {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
 
-    await _firestore.collection('users').doc(uid).update({'isDonor': isDonor});
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .set({'isDonor': isDonor}, SetOptions(merge: true));
   }
 
   Future<void> dismissRequest(String requestId) async {

@@ -8,7 +8,6 @@ import 'package:blood_donation/provider/user_provider.dart';
 import '../widgets/user_tile_widget.dart';
 import 'auth/login_screen.dart';
 import 'edit_profile_screen.dart';
-import 'profile/personel_information.dart';
 import 'profile/basic_information.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -59,7 +58,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             return Center(
               child: Text(
                 'User not found.',
-                style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 16.sp),
+                style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 16.sp),
               ),
             );
           }
@@ -83,8 +82,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 SizedBox(height: 30.h),
-                
-                _buildSectionHeader('Preferences', theme),
+
+                // User-profile-related data — everything that edits the
+                // person's own profile / health record lives here.
+                _buildSectionHeader('Profile', theme),
                 _buildSettingsCard(
                   theme,
                   children: [
@@ -115,7 +116,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         );
                       },
                     ),
-                    _buildDivider(theme),
+                  ],
+                ),
+
+                SizedBox(height: 30.h),
+
+                // App-related data — preferences that affect the app itself,
+                // not the user's profile.
+                _buildSectionHeader('App Settings', theme),
+                _buildSettingsCard(
+                  theme,
+                  children: [
                     Consumer<ThemeProvider>(
                       builder: (context, themeProvider, child) {
                         final isDark = themeProvider.themeMode == ThemeMode.dark;
@@ -124,7 +135,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           leading: Container(
                             padding: EdgeInsets.all(8.r),
                             decoration: BoxDecoration(
-                              color: Colors.blueAccent.withOpacity(0.1),
+                              color: Colors.blueAccent.withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -142,7 +153,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                           trailing: Switch.adaptive(
-                            activeColor: theme.colorScheme.primary,
+                            activeThumbColor: theme.colorScheme.primary,
                             value: isDark,
                             onChanged: (value) {
                               themeProvider.toggleTheme();
@@ -153,9 +164,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                 ),
-                
+
                 SizedBox(height: 30.h),
-                
+
                 _buildSectionHeader('Support & Info', theme),
                 _buildSettingsCard(
                   theme,
@@ -239,7 +250,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         style: TextStyle(
           fontSize: 12.sp,
           fontWeight: FontWeight.w800,
-          color: theme.colorScheme.onSurface.withOpacity(0.4),
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
           letterSpacing: 1.2,
         ),
       ),
@@ -253,7 +264,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderRadius: BorderRadius.circular(24.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 15,
             offset: const Offset(0, 6),
           ),
@@ -270,7 +281,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required VoidCallback onTap,
     Color? iconColor,
   }) {
-    final effectiveIconColor = iconColor ?? theme.colorScheme.onSurface.withOpacity(0.4);
+    final effectiveIconColor = iconColor ?? theme.colorScheme.onSurface.withValues(alpha: 0.4);
     return ListTile(
       onTap: onTap,
       contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
@@ -278,7 +289,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       leading: Container(
         padding: EdgeInsets.all(8.r),
         decoration: BoxDecoration(
-          color: effectiveIconColor.withOpacity(0.1),
+          color: effectiveIconColor.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
         child: Icon(icon, size: 20.sp, color: effectiveIconColor),
@@ -291,12 +302,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           color: theme.colorScheme.onSurface,
         ),
       ),
-      trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14.sp, color: theme.colorScheme.onSurface.withOpacity(0.2)),
+      trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.2)),
     );
   }
 
   Widget _buildDivider(ThemeData theme) {
-    return Divider(height: 1, indent: 56.w, endIndent: 16.w, color: theme.dividerColor.withOpacity(0.05));
+    return Divider(height: 1, indent: 56.w, endIndent: 16.w, color: theme.dividerColor.withValues(alpha: 0.05));
   }
 
   Future<bool?> _showLogoutDialog(BuildContext context, ThemeData theme) {
@@ -306,11 +317,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: theme.colorScheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: Text('Log Out', style: TextStyle(color: theme.colorScheme.onSurface)),
-        content: Text('Are you sure you want to log out from your account?', style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.8))),
+        content: Text('Are you sure you want to log out from your account?', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.8))),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5))),
+            child: Text('Cancel', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),

@@ -1,3 +1,4 @@
+import 'package:blood_donation/provider/auth_provider.dart';
 import 'package:blood_donation/provider/chat_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/view/ambulance_screen.dart';
@@ -8,12 +9,9 @@ import 'package:blood_donation/view/settings_screen.dart';
 import 'package:blood_donation/view/user_donate_blood.dart';
 import 'package:blood_donation/view/volunteer_screen.dart';
 import 'package:blood_donation/widgets/menu_tile.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
-
-import 'auth/login_screen.dart';
 
 class MoreScreen extends StatefulWidget {
   const MoreScreen({super.key});
@@ -23,9 +21,14 @@ class MoreScreen extends StatefulWidget {
 }
 
 class _MoreScreenState extends State<MoreScreen> {
+  // Cache once — this screen lives in the nav IndexedStack and rebuilds on
+  // every tab change, so an inline getTotalUnreadCount() would resubscribe.
+  late final Stream<int> _unreadStream;
+
   @override
   void initState() {
     super.initState();
+    _unreadStream = context.read<MessageProvider>().getTotalUnreadCount();
     Future.microtask(() {
       context.read<UserProvider>().loadCurrentUser();
     });
@@ -76,7 +79,7 @@ class _MoreScreenState extends State<MoreScreen> {
             MenuGroup(
               children: [
                 StreamBuilder<int>(
-                  stream: context.read<MessageProvider>().getTotalUnreadCount(),
+                  stream: _unreadStream,
                   builder: (context, snapshot) {
                     final unreadCount = snapshot.data ?? 0;
                     return MenuTile(
@@ -195,9 +198,12 @@ class _MoreScreenState extends State<MoreScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
-              await FirebaseAuth.instance.signOut();
+              // Sign out through the provider so AuthProviders.user is cleared.
+              // AuthWrapper's auth stream then renders LoginScreen; pop back to
+              // that root rather than stacking a second login screen on top.
+              await context.read<AuthProviders>().logout();
               if (context.mounted) {
-                Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+                Navigator.of(context).popUntil((route) => route.isFirst);
               }
             },
             child: Text('Sign Out', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w700)),

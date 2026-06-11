@@ -1,7 +1,6 @@
 import 'package:blood_donation/provider/auth_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/view/profile/basic_information.dart';
-import 'package:blood_donation/view/auth/login_screen.dart';
 import 'package:blood_donation/widgets/custom_dropdown_form_field.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -217,14 +216,13 @@ class _PersonelInformationState extends State<PersonelInformation> {
               onPressed: auth.isLoading
                   ? null
                   : () async {
-                      await FirebaseAuth.instance.signOut();
+                      // Sign out through the provider so AuthProviders.user is
+                      // cleared (not left stale). AuthWrapper's auth stream then
+                      // renders LoginScreen; pop any pushed setup routes back to
+                      // that root so we don't stack a second login screen.
+                      await auth.logout();
                       if (context.mounted) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const LoginScreen(),
-                          ),
-                        );
+                        Navigator.of(context).popUntil((route) => route.isFirst);
                       }
                     },
             );
@@ -259,7 +257,7 @@ class _PersonelInformationState extends State<PersonelInformation> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: theme.colorScheme.onSurface.withOpacity(0.03),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.03),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -270,7 +268,7 @@ class _PersonelInformationState extends State<PersonelInformation> {
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.1),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20.r),
                       ),
                       child: Text(
@@ -297,7 +295,7 @@ class _PersonelInformationState extends State<PersonelInformation> {
                       'Tell us a bit about yourself',
                       style: TextStyle(
                         fontSize: 14.sp,
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -357,7 +355,7 @@ class _PersonelInformationState extends State<PersonelInformation> {
                       itemToString: (item) => item,
                       borderRadius: 16.r,
                       focusedBorderColor: theme.colorScheme.primary,
-                      prefixIcon: Icon(Icons.bloodtype_rounded, color: theme.colorScheme.primary.withOpacity(0.6), size: 22.sp),
+                      prefixIcon: Icon(Icons.bloodtype_rounded, color: theme.colorScheme.primary.withValues(alpha: 0.6), size: 22.sp),
                       validator: (value) => value == null ? 'Please select blood group' : null,
                       onChanged: (value) {
                         setState(() {
@@ -373,7 +371,7 @@ class _PersonelInformationState extends State<PersonelInformation> {
                       itemToString: (item) => item,
                       borderRadius: 16.r,
                       focusedBorderColor: theme.colorScheme.primary,
-                      prefixIcon: Icon(Icons.public_rounded, color: theme.colorScheme.onSurface.withOpacity(0.4), size: 22.sp),
+                      prefixIcon: Icon(Icons.public_rounded, color: theme.colorScheme.onSurface.withValues(alpha: 0.4), size: 22.sp),
                       validator: (value) => value == null ? 'Please select country' : null,
                       onChanged: (val) {
                         setState(() {
@@ -390,7 +388,7 @@ class _PersonelInformationState extends State<PersonelInformation> {
                       itemToString: (item) => item,
                       borderRadius: 16.r,
                       focusedBorderColor: theme.colorScheme.primary,
-                      prefixIcon: Icon(Icons.location_city_rounded, color: theme.colorScheme.onSurface.withOpacity(0.4), size: 22.sp),
+                      prefixIcon: Icon(Icons.location_city_rounded, color: theme.colorScheme.onSurface.withValues(alpha: 0.4), size: 22.sp),
                       enabled: selectedCountry != null,
                       validator: (value) => value == null ? 'Please select city' : null,
                       onChanged: (val) {

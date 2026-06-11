@@ -40,7 +40,7 @@ class CustomStackCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(15),
               boxShadow: [
                 BoxShadow(
-                  color: theme.colorScheme.onSurface.withOpacity(0.05),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),

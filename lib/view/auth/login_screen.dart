@@ -73,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: theme.colorScheme.onSurface.withOpacity(0.1),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, -5),
                         ),
@@ -98,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           'Login to continue saving lives',
                           style: TextStyle(
                             fontSize: 16.sp,
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                         SizedBox(height: 40.h),
@@ -170,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             text: TextSpan(
                               text: "Don't have an account? ",
                               style: TextStyle(
-                                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                                 fontSize: 16.sp,
                               ),
                               children: [

@@ -20,6 +20,27 @@ class UsersScreen extends StatefulWidget {
 class _UsersScreenState extends State<UsersScreen> {
   String _searchQuery = '';
 
+  // Cache the chat-list stream so the Consumer rebuilding (e.g. after a
+  // deleteChat notify) doesn't resubscribe and flash the skeleton.
+  late final Stream<List<ChatModel>> _chatListStream;
+
+  // Memoize per-user lookups; without this the FutureBuilder re-fetches every
+  // user's doc on each chat-list snapshot emission.
+  final Map<String, Future<UserModel?>> _userCache = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _chatListStream = context.read<MessageProvider>().getChatList();
+  }
+
+  Future<UserModel?> _userFor(String uid) {
+    return _userCache.putIfAbsent(
+      uid,
+      () => context.read<MessageProvider>().getUserData(uid),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -63,7 +84,7 @@ class _UsersScreenState extends State<UsersScreen> {
       body: Consumer<MessageProvider>(
         builder: (context, chatProvider, _) {
           return StreamBuilder<List<ChatModel>>(
-            stream: chatProvider.getChatList(),
+            stream: _chatListStream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return ShimmerList(
@@ -114,7 +135,7 @@ class _UsersScreenState extends State<UsersScreen> {
                   );
 
                   return FutureBuilder<UserModel?>(
-                    future: chatProvider.getUserData(otherUserId),
+                    future: _userFor(otherUserId),
                     builder: (context, userSnapshot) {
                       if (userSnapshot.connectionState == ConnectionState.waiting) {
                         return const SizedBox.shrink();
@@ -147,11 +168,11 @@ class _UsersScreenState extends State<UsersScreen> {
                             builder: (context) => AlertDialog(
                               backgroundColor: theme.colorScheme.surface,
                               title: Text('Delete Chat', style: TextStyle(color: theme.colorScheme.onSurface)),
-                              content: Text('Are you sure you want to delete your conversation with $displayName?', style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.8))),
+                              content: Text('Are you sure you want to delete your conversation with $displayName?', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.8))),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context, false),
-                                  child: Text('Cancel', style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5))),
+                                  child: Text('Cancel', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
                                 ),
                                 TextButton(
                                   onPressed: () => Navigator.pop(context, true),

@@ -9,7 +9,7 @@ Widget userTile(ThemeData theme, String title, String value, IconData icon) {
         Container(
           padding: EdgeInsets.all(8.r),
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.1),
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, size: 18.sp, color: theme.colorScheme.primary),
@@ -23,7 +23,7 @@ Widget userTile(ThemeData theme, String title, String value, IconData icon) {
               style: TextStyle(
                 fontSize: 12.sp,
                 fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface.withOpacity(0.4),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
               ),
             ),
             SizedBox(height: 2.h),

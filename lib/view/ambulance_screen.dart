@@ -15,6 +15,16 @@ class AmbulanceScreen extends StatefulWidget {
 }
 
 class _AmbulanceScreenState extends State<AmbulanceScreen> {
+  // Cache the stream so a provider notifyListeners() (fired by the add screen)
+  // doesn't resubscribe and flash the shimmer when returning to this list.
+  late final Stream<List<AmbulanceModel>> _ambulanceStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _ambulanceStream = context.read<AmbulanceProvider>().ambulanceRequest;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -47,7 +57,7 @@ class _AmbulanceScreenState extends State<AmbulanceScreen> {
               color: theme.colorScheme.surface,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
+                  color: Colors.black.withValues(alpha: 0.03),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -58,7 +68,7 @@ class _AmbulanceScreenState extends State<AmbulanceScreen> {
                 Container(
                   padding: EdgeInsets.all(8.w),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.1),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10.r),
                   ),
                   child: Icon(Icons.emergency_rounded, color: theme.colorScheme.primary, size: 20.sp),
@@ -69,7 +79,7 @@ class _AmbulanceScreenState extends State<AmbulanceScreen> {
                     'Quickly find and contact nearby ambulance services for emergencies.',
                     style: TextStyle(
                       fontSize: 13.sp,
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -80,9 +90,9 @@ class _AmbulanceScreenState extends State<AmbulanceScreen> {
 
           Expanded(
             child: Consumer<AmbulanceProvider>(
-              builder: (context, ambulance, _) {
+              builder: (context, _, __) {
                 return StreamBuilder<List<AmbulanceModel>>(
-                  stream: ambulance.ambulanceRequest,
+                  stream: _ambulanceStream,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return ShimmerList(
@@ -93,7 +103,7 @@ class _AmbulanceScreenState extends State<AmbulanceScreen> {
 
                     if (snapshot.hasError) {
                       return Center(
-                        child: Text('Something went wrong', style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))),
+                        child: Text('Something went wrong', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
                       );
                     }
 
@@ -102,11 +112,11 @@ class _AmbulanceScreenState extends State<AmbulanceScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.bus_alert_rounded, size: 80.sp, color: theme.colorScheme.onSurface.withOpacity(0.1)),
+                            Icon(Icons.bus_alert_rounded, size: 80.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
                             SizedBox(height: 16.h),
                             Text(
                               "No ambulances found",
-                              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
                             ),
                           ],
                         ),

@@ -20,12 +20,12 @@ class OrganizationModel {
   factory OrganizationModel.fromMap(String id, Map<String, dynamic> map) {
     return OrganizationModel(
       id: id,
-      name: map['name'],
-      image: map['image'],
-      address: map['address'],
-      phone: map['phone'],
-      country: map['country'],
-      city: map['city'],
+      name: map['name'] ?? '',
+      image: map['image'] ?? '',
+      address: map['address'] ?? '',
+      phone: map['phone'] ?? '',
+      country: map['country'] ?? '',
+      city: map['city'] ?? '',
     );
   }
 

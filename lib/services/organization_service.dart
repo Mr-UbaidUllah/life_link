@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class OrganizationService {
   final _firestore = FirebaseFirestore.instance;
   Future<void> addOrganization(OrganizationModel orgmodel) async {
-    _firestore
+    await _firestore
         .collection('organizations')
         .doc(orgmodel.id)
         .set(orgmodel.toMap());

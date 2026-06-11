@@ -173,10 +173,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       padding: EdgeInsets.all(4.r),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2), width: 2),
+                        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2), width: 2),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 5),
                           ),
@@ -191,7 +191,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 ? NetworkImage(widget.user.profileImage!)
                                 : null) as ImageProvider?,
                         child: _image == null && (widget.user.profileImage == null || widget.user.profileImage!.isEmpty)
-                            ? Icon(Icons.person_rounded, size: 60.r, color: theme.colorScheme.onSurface.withOpacity(0.4))
+                            ? Icon(Icons.person_rounded, size: 60.r, color: theme.colorScheme.onSurface.withValues(alpha: 0.4))
                             : null,
                       ),
                     ),
@@ -205,7 +205,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           border: Border.all(color: theme.colorScheme.surface, width: 3),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 5,
                               offset: const Offset(0, 2),
                             ),
@@ -283,7 +283,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           padding: EdgeInsets.symmetric(horizontal: 12.w),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16.r),
-                            border: Border.all(color: theme.colorScheme.outline.withOpacity(0.5)),
+                            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.5)),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -291,7 +291,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               Text(_isDonor ? 'Yes' : 'No', style: TextStyle(fontSize: 15.sp)),
                               Switch.adaptive(
                                 value: _isDonor,
-                                activeColor: theme.colorScheme.primary,
+                                activeThumbColor: theme.colorScheme.primary,
                                 onChanged: (val) => setState(() => _isDonor = val),
                               ),
                             ],

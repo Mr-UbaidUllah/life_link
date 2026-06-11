@@ -100,14 +100,14 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
                     padding: EdgeInsets.all(4.r),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2), width: 2),
+                      border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2), width: 2),
                     ),
                     child: CircleAvatar(
                       radius: 50.r,
                       backgroundColor: theme.colorScheme.surfaceContainerHighest,
                       backgroundImage: selectedImage != null ? FileImage(selectedImage!) : null,
                       child: selectedImage == null
-                          ? Icon(Icons.business_rounded, size: 40.r, color: theme.colorScheme.onSurface.withOpacity(0.4))
+                          ? Icon(Icons.business_rounded, size: 40.r, color: theme.colorScheme.onSurface.withValues(alpha: 0.4))
                           : null,
                     ),
                   ),

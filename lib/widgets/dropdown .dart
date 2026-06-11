@@ -38,9 +38,9 @@ class CustomDropdown extends StatelessWidget {
           dropdownColor: theme.colorScheme.surface,
           hint: Text(
             hint,
-            style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6)),
+            style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
           ),
-          icon: Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+          icon: Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
           decoration: const InputDecoration(border: InputBorder.none),
           items: items.map((String value) {
             return DropdownMenuItem<String>(

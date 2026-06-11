@@ -170,7 +170,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
       return IconButton(
         icon: Icon(
           _obscureText ? Icons.visibility_off : Icons.visibility,
-          color: theme.colorScheme.onSurface.withOpacity(0.6),
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
           size: 20.sp,
         ),
         onPressed: _toggleObscureText,
@@ -187,7 +187,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
     final effectiveFocusedBorderColor = widget.focusedBorderColor ?? theme.colorScheme.primary;
     final effectiveErrorBorderColor = widget.errorBorderColor ?? theme.colorScheme.error;
     final effectiveBackgroundColor = widget.backgroundColor ?? Colors.transparent;
-    final effectiveFillColor = widget.fillColor ?? theme.colorScheme.surfaceContainerHighest.withOpacity(0.3);
+    final effectiveFillColor = widget.fillColor ?? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3);
 
     return Container(
       width: widget.width,
@@ -240,7 +240,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                             widget.prefixText!,
                             style: TextStyle(
                               fontSize: 14.sp,
-                              color: theme.colorScheme.onSurface.withOpacity(0.7),
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -275,11 +275,11 @@ class _CustomTextFieldState extends State<CustomTextField> {
                             decoration: InputDecoration(
                               hintText: widget.hintText,
                               hintStyle: widget.hintStyle ?? TextStyle(
-                                color: theme.colorScheme.onSurface.withOpacity(0.4),
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                               ),
                               suffixText: widget.suffixText,
                               suffixIcon: widget.suffixText == null ? _buildSuffixIcon(theme) : null,
-                              prefixIcon: widget.prefixIconWidget ?? (widget.prefixIcon == null ? null : Icon(widget.prefixIcon, color: theme.colorScheme.onSurface.withOpacity(0.6))),
+                              prefixIcon: widget.prefixIconWidget ?? (widget.prefixIcon == null ? null : Icon(widget.prefixIcon, color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
                               filled: false,
                               counterText: widget.showCharacterCount ? null : '',
                               border: InputBorder.none,
@@ -324,12 +324,12 @@ class _CustomTextFieldState extends State<CustomTextField> {
                     decoration: InputDecoration(
                       hintText: widget.hintText,
                       hintStyle: widget.hintStyle ?? TextStyle(
-                        color: theme.colorScheme.onSurface.withOpacity(0.4),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                       ),
                       prefix: widget.prefix,
                       suffixText: widget.suffixText,
                       suffixIcon: widget.suffixText == null ? _buildSuffixIcon(theme) : null,
-                      prefixIcon: widget.prefixIconWidget ?? (widget.prefixIcon == null ? null : Icon(widget.prefixIcon, color: theme.colorScheme.onSurface.withOpacity(0.6))),
+                      prefixIcon: widget.prefixIconWidget ?? (widget.prefixIcon == null ? null : Icon(widget.prefixIcon, color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
                       filled: widget.isFilled,
                       fillColor: effectiveFillColor,
                       counterText: widget.showCharacterCount ? null : '',
@@ -355,7 +355,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                       ),
                       disabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(widget.borderRadius),
-                        borderSide: BorderSide(color: theme.disabledColor.withOpacity(0.1)),
+                        borderSide: BorderSide(color: theme.disabledColor.withValues(alpha: 0.1)),
                       ),
                       errorStyle: TextStyle(color: theme.colorScheme.error, fontSize: 12.sp),
                       errorMaxLines: 2,

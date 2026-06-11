@@ -8,9 +8,12 @@ class AmbulanceProvider with ChangeNotifier {
   Future<void> addAmbulance(AmbulanceModel ambulance) async {
     isLoading = true;
     notifyListeners();
-    await _service.addAmbulance(ambulance);
-    isLoading = false;
-    notifyListeners();
+    try {
+      await _service.addAmbulance(ambulance);
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   Stream<List<AmbulanceModel>> get ambulanceRequest => _service.getAmbulances();

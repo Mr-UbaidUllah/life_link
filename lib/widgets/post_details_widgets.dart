@@ -13,7 +13,7 @@ Widget infoRow(BuildContext context, IconData icon, String title, String value) 
         Expanded(
           child: Text(
             title,
-            style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6)),
+            style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
           ),
         ),
         Text(
@@ -36,7 +36,7 @@ Widget tagChip(BuildContext context, String label) {
       label, 
       style: TextStyle(color: theme.colorScheme.primary),
     ),
-    backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+    backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
     side: BorderSide.none,
     shape: const StadiumBorder(),
   );

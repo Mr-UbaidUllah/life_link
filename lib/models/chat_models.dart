@@ -30,7 +30,7 @@ class ChatModel {
   factory ChatModel.fromMap(String id, Map<String, dynamic> map) {
     return ChatModel(
       id: id,
-      users: List<String>.from(map['users']),
+      users: List<String>.from(map['users'] ?? const []),
       lastMessage: map['lastMessage'] ?? '',
       createdAt: map['createdAt'],
       updatedAt: map['updatedAt'],

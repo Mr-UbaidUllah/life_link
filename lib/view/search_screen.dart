@@ -28,9 +28,17 @@ class _SearchScreenState extends State<SearchScreen> {
 
   final List<String> bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
+  // Cache the streams once — the search field calls setState on every keystroke,
+  // which would otherwise resubscribe both Firestore streams (and flash the
+  // skeletons) on each character typed.
+  late final Stream<List<BloodRequestModel>> _requestStream;
+  late final Stream<List<UserModel>> _donorStream;
+
   @override
   void initState() {
     super.initState();
+    _requestStream = context.read<BloodrequestProvider>().requests;
+    _donorStream = context.read<UserProvider>().donors;
     Future.microtask(() {
       if (mounted) {
         context.read<UserProvider>().loadCurrentUser();
@@ -222,11 +230,11 @@ class _SearchScreenState extends State<SearchScreen> {
 
           SliverToBoxAdapter(
             child: Consumer2<BloodrequestProvider, UserProvider>(
-              builder: (context, bloodProvider, userProvider, _) {
+              builder: (context, _, userProvider, __) {
                 final dismissedIds = userProvider.user?.dismissedRequests ?? [];
 
                 return StreamBuilder<List<BloodRequestModel>>(
-                  stream: bloodProvider.requests,
+                  stream: _requestStream,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return AppShimmer(
@@ -314,7 +322,7 @@ class _SearchScreenState extends State<SearchScreen> {
           Consumer<UserProvider>(
             builder: (context, provider, child) {
               return StreamBuilder<List<UserModel>>(
-                stream: provider.donors,
+                stream: _donorStream,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return SliverToBoxAdapter(

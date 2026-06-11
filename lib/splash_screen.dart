@@ -55,16 +55,28 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   Future<void> _bootstrap() async {
     final minSplash = Future.delayed(const Duration(milliseconds: 2500));
-    final prefsFuture = SharedPreferences.getInstance();
+    bool seenOnboarding = false;
 
-    // Wait for Firebase to restore the session, then start fetching the
-    // user's profile document so AuthWrapper has it ready on arrival.
-    final user = await FirebaseAuth.instance.authStateChanges().first;
-    if (user != null) {
-      AuthWrapper.warmUp(user.uid);
+    try {
+      final prefsFuture = SharedPreferences.getInstance();
+
+      // Wait for Firebase to restore the session, then start fetching the
+      // user's profile document so AuthWrapper has it ready on arrival.
+      // Bound the wait so a stalled auth stream can't trap us on the splash.
+      final user = await FirebaseAuth.instance
+          .authStateChanges()
+          .first
+          .timeout(const Duration(seconds: 8), onTimeout: () => null);
+      if (user != null) {
+        AuthWrapper.warmUp(user.uid);
+      }
+
+      seenOnboarding = (await prefsFuture).getBool('seenOnboarding') ?? false;
+    } catch (_) {
+      // Any startup failure (prefs, auth) should still let the user in —
+      // AuthWrapper re-checks auth and will route to login if needed.
     }
 
-    final seenOnboarding = (await prefsFuture).getBool('seenOnboarding') ?? false;
     await minSplash;
 
     if (!mounted) return;

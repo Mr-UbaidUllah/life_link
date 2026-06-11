@@ -30,12 +30,12 @@ class ReuseablePasswordfield extends StatelessWidget {
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: TextStyle(
-            color: theme.colorScheme.onSurface.withOpacity(0.4),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             fontSize: width * 0.04,
           ),
-          prefixIcon: Icon(prefixIcon, color: theme.colorScheme.onSurface.withOpacity(0.6), size: width * 0.06),
+          prefixIcon: Icon(prefixIcon, color: theme.colorScheme.onSurface.withValues(alpha: 0.6), size: width * 0.06),
           suffixIcon: suffixIcon != null
-              ? Icon(suffixIcon, color: theme.colorScheme.onSurface.withOpacity(0.6), size: width * 0.06)
+              ? Icon(suffixIcon, color: theme.colorScheme.onSurface.withValues(alpha: 0.6), size: width * 0.06)
               : null,
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(

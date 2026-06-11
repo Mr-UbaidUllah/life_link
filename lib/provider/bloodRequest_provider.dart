@@ -11,41 +11,45 @@ class BloodrequestProvider with ChangeNotifier {
   Future<void> bloodRequest(BloodRequestModel request) async {
     isLoading = true;
     notifyListeners();
-
-    await _service.createRequest(request);
-
-    isLoading = false;
-    notifyListeners();
+    try {
+      await _service.createRequest(request);
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> updateStatus(String requestId, String status) async {
     isLoading = true;
     notifyListeners();
-
-    await _service.updateRequestStatus(requestId, status);
-
-    isLoading = false;
-    notifyListeners();
+    try {
+      await _service.updateRequestStatus(requestId, status);
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> deleteRequest(String requestId) async {
     isLoading = true;
     notifyListeners();
-
-    await _service.deleteRequest(requestId);
-
-    isLoading = false;
-    notifyListeners();
+    try {
+      await _service.deleteRequest(requestId);
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> clearAllRequests() async {
     isLoading = true;
     notifyListeners();
-
-    await _service.clearAllRequests();
-
-    isLoading = false;
-    notifyListeners();
+    try {
+      await _service.clearAllRequests();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   List<BloodRequestModel> get filteredrequests => _filteredRequests;

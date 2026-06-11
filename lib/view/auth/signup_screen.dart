@@ -77,7 +77,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: theme.colorScheme.onSurface.withOpacity(0.1),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, -5),
                         ),
@@ -102,7 +102,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           'Sign up to join our life-saving community',
                           style: TextStyle(
                             fontSize: 16.sp,
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                         SizedBox(height: 40.h),
@@ -175,7 +175,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             text: TextSpan(
                               text: 'Already have an account? ',
                               style: TextStyle(
-                                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                                 fontSize: 16.sp,
                               ),
                               children: [

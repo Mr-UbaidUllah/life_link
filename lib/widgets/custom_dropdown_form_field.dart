@@ -119,7 +119,7 @@ class CustomDropdownFormField<T> extends StatelessWidget {
                 hintStyle ??
                 TextStyle(
                   fontSize: 16.sp,
-                  color: theme.colorScheme.onSurface.withOpacity(0.4),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   fontWeight: FontWeight.w400,
                 ),
             errorText: errorText,
@@ -155,7 +155,7 @@ class CustomDropdownFormField<T> extends StatelessWidget {
           }).toList(),
           onChanged: enabled && !readOnly ? onChanged : null,
           validator: validator,
-          icon: suffixIcon ?? Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+          icon: suffixIcon ?? Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
         ),
       ],
     );

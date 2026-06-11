@@ -22,9 +22,15 @@ class _BloodrequestScreenState extends State<BloodrequestScreen> {
   // null == "All"
   String? _selectedGroup;
 
+  // Cache the requests stream once — the provider getter opens a new Firestore
+  // subscription per access, so the two StreamBuilders below (app-bar + body)
+  // would otherwise double-subscribe and resubscribe on every filter tap.
+  late final Stream<List<BloodRequestModel>> _requestStream;
+
   @override
   void initState() {
     super.initState();
+    _requestStream = context.read<BloodrequestProvider>().requests;
     Future.microtask(() {
       context.read<UserProvider>().loadCurrentUser();
     });
@@ -59,9 +65,9 @@ class _BloodrequestScreenState extends State<BloodrequestScreen> {
         ),
         actions: [
           Consumer<BloodrequestProvider>(
-            builder: (context, bloodProvider, _) {
+            builder: (context, _, __) {
               return StreamBuilder<List<BloodRequestModel>>(
-                stream: bloodProvider.requests,
+                stream: _requestStream,
                 builder: (context, snapshot) {
                   final allRequests = snapshot.data ?? [];
                   return IconButton(
@@ -79,12 +85,12 @@ class _BloodrequestScreenState extends State<BloodrequestScreen> {
         ],
       ),
       body: Consumer2<BloodrequestProvider, UserProvider>(
-        builder: (context, bloodProvider, userProvider, _) {
+        builder: (context, _, userProvider, __) {
           final dismissedIds = userProvider.user?.dismissedRequests ?? [];
           final userGroup = userProvider.user?.bloodGroup;
 
           return StreamBuilder<List<BloodRequestModel>>(
-            stream: bloodProvider.requests,
+            stream: _requestStream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return ShimmerList(

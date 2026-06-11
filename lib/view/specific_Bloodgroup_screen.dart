@@ -51,13 +51,13 @@ class SpecificBloodgroupScreen extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.bloodtype_outlined, size: 80.sp, color: theme.colorScheme.onSurface.withOpacity(0.1)),
+                      Icon(Icons.bloodtype_outlined, size: 80.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
                       SizedBox(height: 16.h),
                       Text(
                         "No $bloodGroup requests found",
                         style: TextStyle(
                           fontSize: 16.sp,
-                          color: theme.colorScheme.onSurface.withOpacity(0.4),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                           fontWeight: FontWeight.w500,
                         ),
                       ),

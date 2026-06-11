@@ -85,14 +85,14 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                     padding: EdgeInsets.all(4.r),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2), width: 2),
+                      border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2), width: 2),
                     ),
                     child: CircleAvatar(
                       radius: 55.r,
                       backgroundColor: theme.colorScheme.surfaceContainerHighest,
                       backgroundImage: selectedImage != null ? FileImage(selectedImage!) : null,
                       child: selectedImage == null
-                          ? Icon(Icons.person_add_alt_1_rounded, size: 45.r, color: theme.colorScheme.onSurface.withOpacity(0.4))
+                          ? Icon(Icons.person_add_alt_1_rounded, size: 45.r, color: theme.colorScheme.onSurface.withValues(alpha: 0.4))
                           : null,
                     ),
                   ),

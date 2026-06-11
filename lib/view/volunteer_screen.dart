@@ -15,6 +15,16 @@ class VolunteerScreen extends StatefulWidget {
 }
 
 class _VolunteerScreenState extends State<VolunteerScreen> {
+  // Cache the stream so returning from the add screen (which notifies the
+  // provider) doesn't resubscribe and flash the shimmer.
+  late final Stream<List<VolunteerModel>> _volunteerStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _volunteerStream = context.read<VolunteerProvider>().volunteerRequests;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -47,14 +57,14 @@ class _VolunteerScreenState extends State<VolunteerScreen> {
               padding: EdgeInsets.all(24.w),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.8)],
+                  colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.8)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(24.r),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.3),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
                     blurRadius: 15,
                     offset: const Offset(0, 8),
                   ),
@@ -75,7 +85,7 @@ class _VolunteerScreenState extends State<VolunteerScreen> {
                   Text(
                     'Join our community of volunteers and help us save more lives every day.',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 14.sp,
                       fontWeight: FontWeight.w400,
                       height: 1.4,
@@ -124,7 +134,7 @@ class _VolunteerScreenState extends State<VolunteerScreen> {
                   'Dedicated individuals working hard for the cause.',
                   style: TextStyle(
                     fontSize: 13.sp,
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -134,9 +144,9 @@ class _VolunteerScreenState extends State<VolunteerScreen> {
 
           Expanded(
             child: Consumer<VolunteerProvider>(
-              builder: (context, volunt, _) {
+              builder: (context, _, __) {
                 return StreamBuilder<List<VolunteerModel>>(
-                  stream: volunt.volunteerRequests,
+                  stream: _volunteerStream,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return ShimmerList(
@@ -147,7 +157,7 @@ class _VolunteerScreenState extends State<VolunteerScreen> {
                     }
 
                     if (snapshot.hasError) {
-                      return Center(child: Text('Something went wrong', style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))));
+                      return Center(child: Text('Something went wrong', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6))));
                     }
 
                     if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -155,9 +165,9 @@ class _VolunteerScreenState extends State<VolunteerScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.volunteer_activism_outlined, size: 80.sp, color: theme.colorScheme.onSurface.withOpacity(0.1)),
+                            Icon(Icons.volunteer_activism_outlined, size: 80.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
                             SizedBox(height: 16.h),
-                            Text("No volunteers yet", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4), fontSize: 16.sp)),
+                            Text("No volunteers yet", style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4), fontSize: 16.sp)),
                           ],
                         ),
                       );

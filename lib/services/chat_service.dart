@@ -1,23 +1,11 @@
-import 'dart:convert';
 import 'package:blood_donation/models/message_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
 class ChatService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
-  /// Fetch all chats for the current user
-  Stream<QuerySnapshot> getChats() {
-    final uid = _auth.currentUser?.uid;
-    return _firestore
-        .collection('chats')
-        .where('users', arrayContains: uid)
-        .orderBy('updatedAt', descending: true)
-        .snapshots();
-  }
 
   /// Send message
   Future<void> sendMessage({
@@ -72,9 +60,11 @@ class ChatService {
     ids.sort();
     String chatRoomId = ids.join('_');
 
-    await _firestore.collection('chats').doc(chatRoomId).update({
-      'unreadCounts.$currentUserId': 0,
-    });
+    // Use set+merge so opening a brand-new conversation (no chat doc yet)
+    // doesn't throw a `not-found` from update().
+    await _firestore.collection('chats').doc(chatRoomId).set({
+      'unreadCounts': {currentUserId: 0},
+    }, SetOptions(merge: true));
   }
 
   Future<void> _sendNotification(String receiverId, String text, String senderId) async {
@@ -89,12 +79,19 @@ class ChatService {
 
       if (fcmToken == null) return;
 
-      await _firestore.collection('notifications').add({
+      // Write to the receiver's notifications subcollection — this is the path
+      // NotificationDatabaseService.getNotifications() reads from.
+      await _firestore
+          .collection('users')
+          .doc(receiverId)
+          .collection('notifications')
+          .add({
         'receiverId': receiverId,
         'title': senderName,
         'body': text,
         'senderId': senderId,
         'type': 'chat',
+        'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
       });
       

@@ -25,7 +25,7 @@ class OrganizationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -51,7 +51,7 @@ class OrganizationCard extends StatelessWidget {
                         height: 70.w,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16.r),
-                          color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16.r),
@@ -59,7 +59,7 @@ class OrganizationCard extends StatelessWidget {
                             image,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) =>
-                                Icon(Icons.business_rounded, color: theme.colorScheme.onSurface.withOpacity(0.4), size: 30.sp),
+                                Icon(Icons.business_rounded, color: theme.colorScheme.onSurface.withValues(alpha: 0.4), size: 30.sp),
                             loadingBuilder: (context, child, loadingProgress) {
                               if (loadingProgress == null) return child;
                               return Center(
@@ -99,7 +99,7 @@ class OrganizationCard extends StatelessWidget {
                                 Expanded(
                                   child: Text(
                                     address,
-                                    style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                                    style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -109,11 +109,11 @@ class OrganizationCard extends StatelessWidget {
                             SizedBox(height: 4.h),
                             Row(
                               children: [
-                                Icon(Icons.phone_rounded, size: 14.sp, color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                                Icon(Icons.phone_rounded, size: 14.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
                                 SizedBox(width: 4.w),
                                 Text(
                                   phone,
-                                  style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.w500),
+                                  style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.5), fontWeight: FontWeight.w500),
                                 ),
                               ],
                             ),
@@ -128,7 +128,7 @@ class OrganizationCard extends StatelessWidget {
                           Container(
                             padding: EdgeInsets.all(10.r),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.primary.withOpacity(0.1),
+                              color: theme.colorScheme.primary.withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(Icons.chat_bubble_rounded, color: theme.colorScheme.primary, size: 18.sp),

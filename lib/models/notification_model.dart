@@ -23,7 +23,11 @@ class NotificationModel {
       title: map['title'] ?? '',
       body: map['body'] ?? '',
       type: map['type'] ?? '',
-      createdAt: (map['createdAt'] as Timestamp).toDate(),
+      // createdAt is null in the local snapshot of a serverTimestamp write
+      // until the server resolves it — fall back instead of crashing.
+      createdAt: map['createdAt'] is Timestamp
+          ? (map['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
       isRead: map['isRead'] ?? false,
     );
   }

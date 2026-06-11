@@ -28,11 +28,11 @@ class _ContactscontainerState extends State<Contactscontainer> {
         height: 100.h,
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
-          border: Border.all(color: theme.colorScheme.outline.withOpacity(0.5)),
+          border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.5)),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -58,7 +58,7 @@ class _ContactscontainerState extends State<Contactscontainer> {
                         alignment: Alignment.center,
                         children: [
                           SizedBox(height: 10.h),
-                          Icon(Icons.water_drop, color: theme.colorScheme.primary.withOpacity(0.1), size: 35.h),
+                          Icon(Icons.water_drop, color: theme.colorScheme.primary.withValues(alpha: 0.1), size: 35.h),
                           Text(
                             bloodGroups[2],
                             style: TextStyle(
@@ -94,7 +94,7 @@ class _ContactscontainerState extends State<Contactscontainer> {
                           Text(
                             '+92308880098',
                             style: TextStyle(
-                              color: theme.colorScheme.onSurface.withOpacity(0.6),
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                               fontSize: 12.sp,
                             ),
                           ),

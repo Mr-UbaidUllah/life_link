@@ -28,9 +28,15 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+  // Cache the messages stream once — the provider getter opens a NEW Firestore
+  // subscription on each call, so building it inline would resubscribe (and
+  // flash the loading skeleton) every time the Consumer rebuilds on send.
+  late final Stream<List<MessageModel>> _messagesStream;
+
   @override
   void initState() {
     super.initState();
+    _messagesStream = context.read<MessageProvider>().getMessages(widget.receiverId);
     // Mark as read when entering the chat
     Future.microtask(() {
       if (mounted) {
@@ -84,7 +90,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ? NetworkImage(widget.imageUrl!)
                     : null,
                 child: widget.imageUrl == null || widget.imageUrl!.isEmpty
-                    ? Icon(Icons.person, color: theme.colorScheme.onSurface.withOpacity(0.4), size: 20.sp)
+                    ? Icon(Icons.person, color: theme.colorScheme.onSurface.withValues(alpha: 0.4), size: 20.sp)
                     : null,
               ),
               SizedBox(width: 12.w),
@@ -105,7 +111,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       Text(
                         'Tap to view profile',
                         style: TextStyle(
-                          color: theme.colorScheme.onSurface.withOpacity(0.45),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                           fontSize: 11.sp,
                           fontWeight: FontWeight.w500,
                         ),
@@ -118,7 +124,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.more_vert, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+            icon: Icon(Icons.more_vert, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
             onPressed: () => _showChatOptions(context, theme),
           ),
         ],
@@ -127,9 +133,9 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           Expanded(
             child: Consumer<MessageProvider>(
-              builder: (context, messageProvider, _) {
+              builder: (context, _, __) {
                 return StreamBuilder<List<MessageModel>>(
-                  stream: messageProvider.getMessages(widget.receiverId),
+                  stream: _messagesStream,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const MessageListSkeleton();
@@ -298,7 +304,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 height: 4.h,
                 width: 40.w,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurface.withOpacity(0.1),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(2.r),
                 ),
               ),
@@ -332,11 +338,11 @@ class _ChatScreenState extends State<ChatScreen> {
       builder: (dialogContext) => AlertDialog(
         backgroundColor: theme.colorScheme.surface,
         title: Text('Delete Chat', style: TextStyle(color: theme.colorScheme.onSurface)),
-        content: Text('Are you sure you want to delete all messages?', style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.8))),
+        content: Text('Are you sure you want to delete all messages?', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.8))),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Cancel', style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5))),
+            child: Text('Cancel', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
           ),
           TextButton(
             onPressed: () async {

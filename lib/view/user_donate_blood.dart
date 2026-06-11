@@ -57,7 +57,7 @@ class _UserDonateBloodState extends State<UserDonateBlood> {
                     borderRadius: BorderRadius.circular(24.r),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 15,
                         offset: const Offset(0, 8),
                       ),
@@ -82,7 +82,7 @@ class _UserDonateBloodState extends State<UserDonateBlood> {
                               'Enable this to show your profile to those in need of blood.',
                               style: TextStyle(
                                 fontSize: 13.sp,
-                                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                                 height: 1.4,
                               ),
                             ),
@@ -91,7 +91,7 @@ class _UserDonateBloodState extends State<UserDonateBlood> {
                       ),
                       SizedBox(width: 10.w),
                       Switch.adaptive(
-                        activeColor: theme.colorScheme.primary,
+                        activeThumbColor: theme.colorScheme.primary,
                         value: provider.isWilling,
                         onChanged: (val) {
                           provider.toggleDonate(val);
@@ -133,7 +133,7 @@ class _UserDonateBloodState extends State<UserDonateBlood> {
             style: TextStyle(
               fontSize: 12.sp,
               fontWeight: FontWeight.w800,
-              color: theme.colorScheme.onSurface.withOpacity(0.4),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
               letterSpacing: 1.2,
             ),
           ),
@@ -145,7 +145,7 @@ class _UserDonateBloodState extends State<UserDonateBlood> {
             borderRadius: BorderRadius.circular(24.r),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -170,7 +170,7 @@ class _UserDonateBloodState extends State<UserDonateBlood> {
         SizedBox(height: 20.h),
         Text(
           'Note: Only this information will be visible to seekers.',
-          style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.onSurface.withOpacity(0.5), fontStyle: FontStyle.italic),
+          style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.5), fontStyle: FontStyle.italic),
         ),
       ],
     );
@@ -180,9 +180,9 @@ class _UserDonateBloodState extends State<UserDonateBlood> {
     return Container(
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.05),
+        color: theme.colorScheme.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
@@ -193,7 +193,7 @@ class _UserDonateBloodState extends State<UserDonateBlood> {
               'When disabled, your profile will be hidden from donor search results.',
               style: TextStyle(
                 fontSize: 13.sp,
-                color: theme.colorScheme.primary.withOpacity(0.8),
+                color: theme.colorScheme.primary.withValues(alpha: 0.8),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -204,6 +204,6 @@ class _UserDonateBloodState extends State<UserDonateBlood> {
   }
 
   Widget _buildDivider(ThemeData theme) {
-    return Divider(height: 1, indent: 50.w, color: theme.dividerColor.withOpacity(0.05));
+    return Divider(height: 1, indent: 50.w, color: theme.dividerColor.withValues(alpha: 0.05));
   }
 }

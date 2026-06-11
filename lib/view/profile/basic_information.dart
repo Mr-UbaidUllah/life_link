@@ -75,10 +75,17 @@ class _BasicInformationState extends State<BasicInformation> {
       appBar: AppBar(
         backgroundColor: theme.appBarTheme.backgroundColor,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: theme.colorScheme.onSurface),
-          onPressed: () => Navigator.maybePop(context),
-        ),
+        // Only show a back button when there's actually a previous step to
+        // return to. When this screen is the resumed entry point (rendered
+        // directly by AuthWrapper) nothing is on the stack, so a back button
+        // would be a dead control — hide it instead.
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: Icon(Icons.arrow_back_ios_new, color: theme.colorScheme.onSurface),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
         title: Text(
           'Profile Setup',
           style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold),
@@ -94,7 +101,7 @@ class _BasicInformationState extends State<BasicInformation> {
               width: double.infinity,
               padding: EdgeInsets.symmetric(vertical: 20.h),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.05),
+                color: theme.colorScheme.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(30.r),
                   bottomRight: Radius.circular(30.r),
@@ -145,7 +152,7 @@ class _BasicInformationState extends State<BasicInformation> {
                     itemToString: (item) => item,
                     borderRadius: 12,
                     focusedBorderColor: theme.colorScheme.primary,
-                    prefixIcon: Icon(Icons.volunteer_activism_outlined, color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                    prefixIcon: Icon(Icons.volunteer_activism_outlined, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
                     onChanged: (val) {
                       setState(() {
                         selectedOption = val;
@@ -164,7 +171,11 @@ class _BasicInformationState extends State<BasicInformation> {
                   Consumer<UserProvider>(
                     builder: (context, users, _) {
                       return InkWell(
-                        onTap: () async {
+                        // Disable the tap while saving so a fast double-tap
+                        // can't fire two updateBasicInfo writes.
+                        onTap: users.isLoading
+                            ? null
+                            : () async {
                           final user = FirebaseAuth.instance.currentUser;
 
                           if (user == null) return;
@@ -188,7 +199,9 @@ class _BasicInformationState extends State<BasicInformation> {
 
                           if (!context.mounted) return;
                           if (success) {
-                            Navigator.pushReplacement(
+                            // push (not pushReplacement) so the back stack stays
+                            // Step1 → Step2 → Step3 and the back arrow walks it.
+                            Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => const ImageScreen()),
                             );
@@ -206,7 +219,7 @@ class _BasicInformationState extends State<BasicInformation> {
                             );
                           }
                         },
-                        child: users.isLoading 
+                        child: users.isLoading
                           ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary))
                           : const ReusableButton(label: 'Next'),
                       );

@@ -1,7 +1,7 @@
 import 'package:blood_donation/core/providers/app_providers.dart';
-import 'package:blood_donation/core/providers/app_router.dart';
 import 'package:blood_donation/provider/theme_provider.dart';
 import 'package:blood_donation/services/push_notification_service.dart';
+import 'package:blood_donation/splash_screen.dart';
 import 'package:blood_donation/theme/theme.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -42,13 +42,16 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        return MaterialApp.router(
+        // A plain Navigator (no URL-based routing) — every screen is reached
+        // through the SplashScreen → AuthWrapper gate via Navigator.push, so
+        // there is no deep-link/web URL that can bypass the auth check.
+        return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Life Link',
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
-          routerConfig: AppRouter.router,
+          home: const SplashScreen(),
         );
       },
     );

@@ -21,7 +21,7 @@ class NotificationService {
   );
 
   Future<void> initialize() async {
-    print("🔔 Initializing notifications...");
+    debugPrint("🔔 Initializing notifications...");
 
     // 1️ Request permission
     NotificationSettings settings = await _messaging.requestPermission(
@@ -31,15 +31,15 @@ class NotificationService {
     );
 
     if (settings.authorizationStatus != AuthorizationStatus.authorized) {
-      print("❌ Permission denied");
+      debugPrint("❌ Permission denied");
       return;
     }
 
-    print("✅ Permission granted");
+    debugPrint("✅ Permission granted");
 
     // 2️ Get FCM token
     String? token = await _messaging.getToken();
-    print("✅ FCM Token: $token");
+    debugPrint("✅ FCM Token: $token");
 
     if (token != null) {
       await _saveTokenToFirestore(token);
@@ -56,14 +56,14 @@ class NotificationService {
 
     // 6️ When notification is tapped
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
-      print("📲 Notification clicked");
+      debugPrint("📲 Notification clicked");
     });
 
     // 7️ App opened from terminated state
     RemoteMessage? initialMessage = await FirebaseMessaging.instance
         .getInitialMessage();
     if (initialMessage != null) {
-      print("🚀 App opened from terminated state");
+      debugPrint("🚀 App opened from terminated state");
     }
   }
 
@@ -72,7 +72,7 @@ class NotificationService {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      print("❌ User not logged in");
+      debugPrint("❌ User not logged in");
       return;
     }
 
@@ -80,7 +80,7 @@ class NotificationService {
       'fcmToken': token,
     }, SetOptions(merge: true));
 
-    print("✅ Token saved to Firestore");
+    debugPrint("✅ Token saved to Firestore");
   }
 
   //  LOCAL NOTIFICATION SETUP
@@ -100,15 +100,15 @@ class NotificationService {
         >()
         ?.createNotificationChannel(_channel);
 
-    print("✅ Local notifications ready");
+    debugPrint("✅ Local notifications ready");
   }
 
   //  FOREGROUND HANDLER
   void _handleForegroundMessage(RemoteMessage message) {
     if (kDebugMode) {
-      print("📬 Foreground notification");
-      print(message.notification?.title);
-      print(message.notification?.body);
+      debugPrint("📬 Foreground notification");
+      debugPrint(message.notification?.title);
+      debugPrint(message.notification?.body);
     }
 
     _showLocalNotification(message);
@@ -138,5 +138,5 @@ class NotificationService {
 //  BACKGROUND / TERMINATED HANDLER
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print("📬 Background notification: ${message.notification?.title}");
+  debugPrint("📬 Background notification: ${message.notification?.title}");
 }

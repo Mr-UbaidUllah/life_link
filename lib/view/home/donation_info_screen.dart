@@ -75,7 +75,7 @@ class DonationInfoScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -103,7 +103,7 @@ class DonationInfoScreen extends StatelessWidget {
             content,
             style: TextStyle(
               fontSize: 14.sp,
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               height: 1.5,
             ),
           ),

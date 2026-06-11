@@ -90,6 +90,7 @@ class _ImageScreenState extends State<ImageScreen> {
       final int imageSize = await imageFile.length();
       
       if (imageSize <= 1048576) {
+        if (!mounted) return;
         setState(() {
           selectedImage = imageFile;
         });
@@ -115,10 +116,15 @@ class _ImageScreenState extends State<ImageScreen> {
       appBar: AppBar(
         backgroundColor: theme.appBarTheme.backgroundColor,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: theme.colorScheme.onSurface),
-          onPressed: () => Navigator.maybePop(context),
-        ),
+        // Hide the back arrow when this is the resumed entry point (no
+        // previous step on the stack) so it isn't a dead control.
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: Icon(Icons.arrow_back_ios_new, color: theme.colorScheme.onSurface),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
         title: Text(
           'Profile Setup',
           style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold),
@@ -132,7 +138,7 @@ class _ImageScreenState extends State<ImageScreen> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 20),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.05),
+                color: theme.colorScheme.primary.withValues(alpha: 0.05),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(30),
                   bottomRight: Radius.circular(30),
@@ -169,14 +175,14 @@ class _ImageScreenState extends State<ImageScreen> {
                   Text(
                     'Add a photo so your community can recognize you.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16.sp, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                    style: TextStyle(fontSize: 16.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                   ),
                   SizedBox(height: 40.h),
                   GestureDetector(
                     onTap: pickImage,
                     child: DottedBorder(
                       options: RoundedRectDottedBorderOptions(
-                        color: theme.colorScheme.primary.withOpacity(0.5),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.5),
                         strokeWidth: 2,
                         dashPattern: const [8, 4],
                         radius: const Radius.circular(20),
@@ -185,7 +191,7 @@ class _ImageScreenState extends State<ImageScreen> {
                         height: 250.h,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withOpacity(0.02),
+                          color: theme.colorScheme.primary.withValues(alpha: 0.02),
                           borderRadius: BorderRadius.circular(20),
                           image: selectedImage != null
                               ? DecorationImage(
@@ -201,7 +207,7 @@ class _ImageScreenState extends State<ImageScreen> {
                                   Icon(
                                     Icons.cloud_upload_outlined,
                                     size: 64.sp,
-                                    color: theme.colorScheme.primary.withOpacity(0.5),
+                                    color: theme.colorScheme.primary.withValues(alpha: 0.5),
                                   ),
                                   SizedBox(height: 12.h),
                                   Text(
@@ -215,7 +221,7 @@ class _ImageScreenState extends State<ImageScreen> {
                                   Text(
                                     "Maximum size 1MB",
                                     style: TextStyle(
-                                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                                       fontSize: 12.sp,
                                     ),
                                   ),
@@ -254,7 +260,7 @@ class _ImageScreenState extends State<ImageScreen> {
                     onPressed: _isCompleting ? null : _completeSetup,
                     child: Text(
                       'Skip for now',
-                      style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4), fontWeight: FontWeight.w500),
+                      style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4), fontWeight: FontWeight.w500),
                     ),
                   ),
                 ],

@@ -23,12 +23,12 @@ class NotificationServices {
       sound: true,
     );
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print(' Permission granted');
+      debugPrint(' Permission granted');
     } else if (settings.authorizationStatus ==
         AuthorizationStatus.provisional) {
-      print(' Provisional permission granted');
+      debugPrint(' Provisional permission granted');
     } else {
-      print('  Permission denied — opening settings');
+      debugPrint('  Permission denied — opening settings');
       openNotificationSettings();
     }
   }

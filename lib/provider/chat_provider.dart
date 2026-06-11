@@ -10,8 +10,6 @@ class MessageProvider extends ChangeNotifier {
   final ChatService _service = ChatService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Stream<QuerySnapshot> get chats => _service.getChats();
-
   Stream<List<ChatModel>> getChatList() {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return Stream.value([]);

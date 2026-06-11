@@ -33,10 +33,16 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
+  // Cache the unread-count stream once. getTotalUnreadCount() opens a new
+  // Firestore subscription per call, and _NavBar rebuilds on every tab tap,
+  // so building it inline would resubscribe and flicker the badge each tap.
+  late final Stream<int> _unreadStream;
+
   @override
   void initState() {
     super.initState();
     MainScreen._active = this;
+    _unreadStream = context.read<MessageProvider>().getTotalUnreadCount();
   }
 
   @override
@@ -86,6 +92,7 @@ class _MainScreenState extends State<MainScreen> {
         bottomNavigationBar: _NavBar(
           currentIndex: _currentIndex,
           onTap: _onTap,
+          unreadStream: _unreadStream,
         ),
       ),
     );
@@ -114,10 +121,15 @@ class _NewRequestButton extends StatelessWidget {
 }
 
 class _NavBar extends StatelessWidget {
-  const _NavBar({required this.currentIndex, required this.onTap});
+  const _NavBar({
+    required this.currentIndex,
+    required this.onTap,
+    required this.unreadStream,
+  });
 
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final Stream<int> unreadStream;
 
   @override
   Widget build(BuildContext context) {
@@ -171,7 +183,7 @@ class _NavBar extends StatelessWidget {
               label: 'Inbox',
               selected: currentIndex == 3,
               onTap: () => onTap(3),
-              badgeStream: context.read<MessageProvider>().getTotalUnreadCount(),
+              badgeStream: unreadStream,
             ),
             _NavItem(
               icon: Icons.person_outline_rounded,

@@ -132,20 +132,25 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> toggleDonate(bool value) async {
+    final previous = isWilling;
     isWilling = value;
-    notifyListeners();
-
     _isLoading = true;
     notifyListeners();
 
-    await _firestoreService.updateDonateStatus(value);
+    try {
+      await _firestoreService.updateDonateStatus(value);
 
-    // Re-fetch so the cached user reflects the new donate status.
-    // (Previously the `false` branch nulled `_user`, wiping profile data.)
-    _user = await _firestoreService.fetchCurrentUser();
-
-    _isLoading = false;
-    notifyListeners();
+      // Re-fetch so the cached user reflects the new donate status.
+      // (Previously the `false` branch nulled `_user`, wiping profile data.)
+      _user = await _firestoreService.fetchCurrentUser();
+    } catch (e) {
+      // Revert the optimistic flip so the switch matches the real state.
+      isWilling = previous;
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> dismissRequest(String requestId) async {

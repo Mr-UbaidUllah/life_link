@@ -9,9 +9,12 @@ class OrganizationProvider with ChangeNotifier {
   Future<void> addOraganization(OrganizationModel orgmodel) async {
     isLoading = true;
     notifyListeners();
-    await _service.addOrganization(orgmodel);
-    isLoading = false;
-    notifyListeners();
+    try {
+      await _service.addOrganization(orgmodel);
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   Stream<List<OrganizationModel>> get requests => _service.getOrganizations();
