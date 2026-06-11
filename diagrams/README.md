@@ -15,6 +15,7 @@ All images live in the `images/` folder.
 | 5 | **Existing System** (current manual process) | `05_existing_system.png` · `.svg` |
 | 6 | **Proposed System** (Life Link app) | `06_proposed_system.png` · `.svg` |
 | 7 | **System Architecture** (layered / 3-tier) | `07_system_architecture.png` · `.svg` |
+| 8 | **Database Design** (Firestore NoSQL schema) | `08_database_design.png` · `.svg` |
 
 > **PNG** = drop directly into Word / Google Docs.
 > **SVG** = vector, stays sharp at any zoom or print size — use it if your editor
