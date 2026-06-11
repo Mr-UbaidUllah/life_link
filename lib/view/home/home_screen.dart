@@ -2,15 +2,16 @@ import 'package:blood_donation/models/bloodrequest_model.dart';
 import 'package:blood_donation/provider/bloodRequest_provider.dart';
 import 'package:blood_donation/provider/storage_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
+import 'package:blood_donation/services/stats_service.dart';
+import 'package:blood_donation/view/ambulance_screen.dart';
 import 'package:blood_donation/view/bloodrequest_screen.dart';
 import 'package:blood_donation/view/home/donation_info_screen.dart';
 import 'package:blood_donation/view/profile/profile_details_scrren.dart';
 import 'package:blood_donation/view/request_screen.dart';
-import 'package:blood_donation/view/search_screen.dart';
 import 'package:blood_donation/view/specific_Bloodgroup_screen.dart';
 import 'package:blood_donation/view/post_details.dart';
 import 'package:blood_donation/widgets/contribution.dart';
-import 'package:blood_donation/widgets/home_widgets.dart' hide ContributionCard;
+import 'package:blood_donation/widgets/home_widgets.dart';
 import 'package:blood_donation/widgets/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +31,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final List<String> bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
   final ScrollController _scrollController = ScrollController();
+  late Future<CommunityStats> _statsFuture;
 
   void scrollToTop() {
     if (_scrollController.hasClients) {
@@ -44,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _statsFuture = StatsService().fetchCommunityStats();
     Future.microtask(() {
       if (mounted) {
         context.read<UserProvider>().loadCurrentUser();
@@ -61,7 +64,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      key: HomeScreen.homeKey,
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -88,27 +90,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
                   ActivityCard(
-                    imagePath: 'assets/images/blood.png',
-                    title: 'Find Donors',
-                    subtitle: 'Search nearby',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen())),
-                  ),
-                  ActivityCard(
-                    imagePath: 'assets/images/blod.png',
-                    title: 'Requests',
-                    subtitle: 'View all needs',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BloodrequestScreen())),
-                  ),
-                  ActivityCard(
-                    imagePath: 'assets/images/drop.png',
+                    icon: Icons.add_circle_outline_rounded,
                     title: 'Request Blood',
-                    subtitle: "Create post",
+                    subtitle: 'Create a request',
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateRequestScreen())),
                   ),
                   ActivityCard(
-                    imagePath: 'assets/images/drop.png',
+                    icon: Icons.volunteer_activism_rounded,
+                    title: 'Donate Blood',
+                    subtitle: 'Register to give',
+                    color: Colors.green.shade600,
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserDonateBlood())),
+                  ),
+                  ActivityCard(
+                    icon: Icons.local_hospital_rounded,
+                    title: 'Ambulance',
+                    subtitle: 'Emergency help',
+                    color: Colors.blue.shade600,
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AmbulanceScreen())),
+                  ),
+                  ActivityCard(
+                    icon: Icons.menu_book_rounded,
                     title: 'Donation Info',
-                    subtitle: "Tips & FAQs",
+                    subtitle: 'Tips & FAQs',
+                    color: Colors.orange.shade700,
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DonationInfoScreen())),
                   ),
                 ],
@@ -118,12 +123,18 @@ class _HomeScreenState extends State<HomeScreen> {
               const HomeHeader(title: 'Find by Blood Group'),
               SizedBox(
                 height: 100.h,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: EdgeInsets.symmetric(horizontal: 16.w),
-                  itemCount: bloodGroups.length,
-                  itemBuilder: (context, index) {
-                    return _buildBloodGroupItem(context, theme, bloodGroups[index]);
+                child: Consumer<UserProvider>(
+                  builder: (context, provider, _) {
+                    final userGroup = provider.user?.bloodGroup;
+                    return ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: EdgeInsets.symmetric(horizontal: 16.w),
+                      itemCount: bloodGroups.length,
+                      itemBuilder: (context, index) {
+                        final group = bloodGroups[index];
+                        return _buildBloodGroupItem(context, theme, group, group == userGroup);
+                      },
+                    );
                   },
                 ),
               ),
@@ -135,29 +146,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               _buildUrgentRequests(theme),
 
-              // --- Impact / Contribution ---
+              // --- Impact / Contribution (live Firestore counts) ---
               const HomeHeader(title: 'Our Impact'),
-              GridView.builder(
-                physics: const NeverScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 30.h),
-                itemCount: contributionData.length,
-                shrinkWrap: true,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 16.w,
-                  crossAxisSpacing: 16.w,
-                  childAspectRatio: 0.85,
-                ),
-                itemBuilder: (context, index) {
-                  final item = contributionData[index];
-                  return ContributionCard(
-                    number: item.number,
-                    title: item.title,
-                    bgColor: item.bgColor,
-                    textColor: item.textColor,
-                  );
-                },
-              ),
+              _buildImpactGrid(),
             ],
           ),
         ),
@@ -215,17 +206,19 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           SizedBox(width: 15.w),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Welcome back,',
-                  style: TextStyle(fontSize: 14.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.6), fontWeight: FontWeight.w500),
-                ),
-                Consumer<UserProvider>(
-                  builder: (context, provider, _) {
-                    final user = provider.user;
-                    return InkWell(
+            child: Consumer<UserProvider>(
+              builder: (context, provider, _) {
+                final user = provider.user;
+                final firstName = (user?.name ?? 'there').trim().split(' ').first;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _greeting(),
+                      style: TextStyle(fontSize: 13.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.6), fontWeight: FontWeight.w500),
+                    ),
+                    SizedBox(height: 2.h),
+                    InkWell(
                       onTap: user != null
                           ? () => Navigator.push(
                                 context,
@@ -235,36 +228,99 @@ class _HomeScreenState extends State<HomeScreen> {
                               )
                           : null,
                       child: Text(
-                        user?.name ?? "User",
+                        firstName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface),
                       ),
-                    );
-                  },
-                ),
-              ],
+                    ),
+                  ],
+                );
+              },
             ),
           ),
-          IconButton(
-            onPressed: () {
+          Consumer<UserProvider>(
+            builder: (context, provider, _) {
+              final group = provider.user?.bloodGroup;
+              if (group == null || group.isEmpty) return const SizedBox.shrink();
+              return Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14.r),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.water_drop_rounded, size: 16.sp, color: theme.colorScheme.primary),
+                    SizedBox(width: 5.w),
+                    Text(
+                      group,
+                      style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900, color: theme.colorScheme.primary),
+                    ),
+                  ],
+                ),
+              );
             },
-            icon: Stack(
-              children: [
-                Icon(Icons.notifications_outlined, size: 28.sp, color: theme.colorScheme.onSurface),
-                Positioned(
-                  right: 2,
-                  top: 2,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(color: theme.colorScheme.primary, shape: BoxShape.circle),
-                    constraints: const BoxConstraints(minWidth: 8, minHeight: 8),
-                  ),
-                )
-              ],
-            ),
           ),
         ],
       ),
     );
+  }
+
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning,';
+    if (hour < 17) return 'Good afternoon,';
+    return 'Good evening,';
+  }
+
+  Widget _buildImpactGrid() {
+    return FutureBuilder<CommunityStats>(
+      future: _statsFuture,
+      builder: (context, snapshot) {
+        final cards = _impactCards(snapshot.data);
+        return GridView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 30.h),
+          itemCount: cards.length,
+          shrinkWrap: true,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            mainAxisSpacing: 16.w,
+            crossAxisSpacing: 16.w,
+            childAspectRatio: 0.85,
+          ),
+          itemBuilder: (context, index) => cards[index],
+        );
+      },
+    );
+  }
+
+  List<Widget> _impactCards(CommunityStats? s) {
+    final items = <(String, Color, Color, int?)>[
+      ('Active Donors', const Color(0xFFE3F2FD), Colors.blue.shade700, s?.donors),
+      ('Open Requests', const Color(0xFFFFF3E0), Colors.orange.shade700, s?.openRequests),
+      ('Volunteers', const Color(0xFFE0F7FA), Colors.teal.shade700, s?.volunteers),
+      ('Organizations', const Color(0xFFF3E5F5), Colors.purple.shade700, s?.organizations),
+      ('Ambulances', const Color(0xFFFFEBEE), Colors.red.shade700, s?.ambulances),
+      ('Members', const Color(0xFFE8F5E9), Colors.green.shade700, s?.members),
+    ];
+    return items.map((it) {
+      final count = it.$4;
+      return ContributionCard(
+        number: count == null ? '—' : _formatCount(count),
+        title: it.$1,
+        bgColor: it.$2,
+        textColor: it.$3,
+      );
+    }).toList();
+  }
+
+  String _formatCount(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
+    return '$n';
   }
 
   Widget _buildHeroCard(ThemeData theme) {
@@ -324,17 +380,24 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBloodGroupItem(BuildContext context, ThemeData theme, String group) {
+  Widget _buildBloodGroupItem(BuildContext context, ThemeData theme, String group, bool isUserGroup) {
     return InkWell(
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SpecificBloodgroupScreen(bloodGroup: group))),
       child: Container(
         width: 75.w,
         margin: EdgeInsets.only(right: 12.w, bottom: 10.h, top: 5.h),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: isUserGroup ? theme.colorScheme.primary : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(20.r),
+          border: isUserGroup ? null : Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.12)),
           boxShadow: [
-            BoxShadow(color: theme.colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
+            BoxShadow(
+              color: isUserGroup
+                  ? theme.colorScheme.primary.withValues(alpha: 0.3)
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: Column(
@@ -343,13 +406,20 @@ class _HomeScreenState extends State<HomeScreen> {
             Stack(
               alignment: Alignment.center,
               children: [
-                Icon(Icons.water_drop, color: theme.colorScheme.primary.withValues(alpha: 0.1), size: 45.sp),
+                Icon(Icons.water_drop, color: (isUserGroup ? Colors.white : theme.colorScheme.primary).withValues(alpha: 0.15), size: 45.sp),
                 Text(
                   group,
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16.sp, color: theme.colorScheme.primary),
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16.sp, color: isUserGroup ? Colors.white : theme.colorScheme.primary),
                 ),
               ],
             ),
+            if (isUserGroup) ...[
+              SizedBox(height: 4.h),
+              Text(
+                'You',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 9.sp, color: Colors.white.withValues(alpha: 0.9)),
+              ),
+            ],
           ],
         ),
       ),
@@ -361,6 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Consumer2<BloodrequestProvider, UserProvider>(
       builder: (context, bloodProvider, userProvider, _) {
         final dismissedIds = userProvider.user?.dismissedRequests ?? [];
+        final userGroup = userProvider.user?.bloodGroup;
 
         return StreamBuilder<List<BloodRequestModel>>(
           stream: bloodProvider.requests,
@@ -368,27 +439,28 @@ class _HomeScreenState extends State<HomeScreen> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(child: Padding(padding: const EdgeInsets.all(30), child: CircularProgressIndicator(color: theme.colorScheme.primary)));
             }
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return Padding(
-                padding: EdgeInsets.all(20.w),
-                child: Text("No urgent requests at the moment.", style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4), fontSize: 14.sp)),
-              );
-            }
 
-            final requests = snapshot.data!
+            final visible = (snapshot.data ?? [])
                 .where((req) {
                   final isMine = req.userId == currentUserId;
                   final isDismissed = dismissedIds.contains(req.id);
                   return isMine || !isDismissed;
                 })
-                .take(3)
                 .toList();
 
+            // Surface requests matching the user's blood group first.
+            if (userGroup != null && userGroup.isNotEmpty) {
+              visible.sort((a, b) {
+                final aMatch = a.bloodGroup == userGroup ? 0 : 1;
+                final bMatch = b.bloodGroup == userGroup ? 0 : 1;
+                return aMatch.compareTo(bMatch);
+              });
+            }
+
+            final requests = visible.take(3).toList();
+
             if (requests.isEmpty) {
-              return Padding(
-                padding: EdgeInsets.all(20.w),
-                child: Text("No urgent requests at the moment.", style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4), fontSize: 14.sp)),
-              );
+              return _buildEmptyRequests(theme);
             }
 
             return Column(
@@ -400,6 +472,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: req.title,
                     hospital: req.hospital,
                     date: req.createdAt.toLocal().toString().split(' ')[0],
+                    ownerId: req.userId,
+                    matchesUser: userGroup != null && userGroup.isNotEmpty && req.bloodGroup == userGroup,
                   ),
                 );
               }).toList(),
@@ -407,6 +481,34 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildEmptyRequests(ThemeData theme) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
+      padding: EdgeInsets.symmetric(vertical: 32.h, horizontal: 20.w),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.check_circle_outline_rounded, size: 40.sp, color: Colors.green.shade400),
+          SizedBox(height: 12.h),
+          Text(
+            'No urgent requests right now',
+            style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w800, color: theme.colorScheme.onSurface),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            'You’re all caught up. We’ll surface new needs here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+          ),
+        ],
+      ),
     );
   }
 }

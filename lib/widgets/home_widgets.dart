@@ -56,6 +56,7 @@ class HomeContainer extends StatelessWidget {
     required this.hospital,
     required this.date,
     this.ownerId,
+    this.matchesUser = false,
   });
 
   final String bloodGroup;
@@ -63,6 +64,7 @@ class HomeContainer extends StatelessWidget {
   final String hospital;
   final String date;
   final String? ownerId;
+  final bool matchesUser;
 
   @override
   Widget build(BuildContext context) {
@@ -155,6 +157,25 @@ class HomeContainer extends StatelessWidget {
                                       'YOURS',
                                       style: TextStyle(fontSize: 9.sp, color: Colors.blueAccent, fontWeight: FontWeight.bold),
                                     ),
+                                  )
+                                else if (matchesUser)
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(6.r),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.check_circle_rounded, size: 11.sp, color: Colors.green.shade600),
+                                        SizedBox(width: 3.w),
+                                        Text(
+                                          'Matches you',
+                                          style: TextStyle(fontSize: 9.sp, color: Colors.green.shade700, fontWeight: FontWeight.w800),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                               ],
                             ),
@@ -216,22 +237,25 @@ class HomeContainer extends StatelessWidget {
 }
 
 class ActivityCard extends StatelessWidget {
-  final String imagePath;
+  final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final Color? color;
 
   const ActivityCard({
     super.key,
-    required this.imagePath,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final accent = color ?? theme.colorScheme.primary;
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -255,12 +279,12 @@ class ActivityCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding: EdgeInsets.all(10.w),
+                  padding: EdgeInsets.all(12.w),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                    color: accent.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: Image.asset(imagePath, height: 28.h, width: 28.h, fit: BoxFit.contain),
+                  child: Icon(icon, size: 26.sp, color: accent),
                 ),
                 SizedBox(height: 10.h),
                 Text(
