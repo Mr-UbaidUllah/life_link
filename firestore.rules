@@ -1,0 +1,67 @@
+rules_version = '2';
+
+// Life Link — Firestore security rules
+// Principle: only authenticated users get any access; users own their own data;
+// directory listings (ambulances/orgs/volunteers) are readable by all signed-in
+// users and writable by signed-in users (the app lets members add entries).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Is the current user a participant in this chat room id (sorted uids
+    // joined with '_', e.g. "abc_xyz")?
+    function isChatParticipant(chatRoomId) {
+      return signedIn() && request.auth.uid in chatRoomId.split('_');
+    }
+
+    // ---- Users & their subcollections ----
+    match /users/{uid} {
+      // Any signed-in user can read profiles (needed for chat, directories,
+      // donor lookup). Only the owner can create/modify their own profile.
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid;
+
+      // Notifications: the owner reads and manages their own; any signed-in
+      // user may CREATE a notification for another user (chat/donor alerts),
+      // but cannot read or modify someone else's notifications.
+      match /notifications/{notificationId} {
+        allow read, update, delete: if signedIn() && request.auth.uid == uid;
+        allow create: if signedIn();
+      }
+    }
+
+    // ---- Blood requests ----
+    match /Blood_request/{requestId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+                    && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if signedIn()
+                            && resource.data.userId == request.auth.uid;
+    }
+
+    // ---- Chats & messages ----
+    match /chats/{chatRoomId} {
+      allow read, write: if isChatParticipant(chatRoomId);
+
+      match /messages/{messageId} {
+        allow read, write: if isChatParticipant(chatRoomId);
+      }
+    }
+
+    // ---- Directory listings (read by all signed-in; added by members) ----
+    match /Ambulance/{docId} {
+      allow read, write: if signedIn();
+    }
+    match /organizations/{docId} {
+      allow read, write: if signedIn();
+    }
+    match /Volunteer/{docId} {
+      allow read, write: if signedIn();
+    }
+
+    // Everything else is denied by default.
+  }
+}

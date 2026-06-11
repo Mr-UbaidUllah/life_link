@@ -14,8 +14,13 @@ class AuthService {
       String? token = await FirebaseMessaging.instance.getToken();
       if (token == null) return;
 
+      // Write the SAME field name the rest of the system reads: the Cloud
+      // Function (functions/index.js), NotificationService and ChatService all
+      // read the singular string `fcmToken`. Writing an `fcmTokens` array here
+      // meant a freshly-signed-up user had no readable token until an app
+      // restart, so they never received blood-request notifications.
       await _firestore.collection(FirebaseConstants.users).doc(uid).set({
-        'fcmTokens': FieldValue.arrayUnion([token]),
+        'fcmToken': token,
         'tokenUpdatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 

@@ -26,11 +26,16 @@ class ChatService {
 
     //  CREATE/UPDATE CHAT
     // Increment unread count for the receiver
+    // NOTE: dot-notation keys ('unreadCounts.$reciverid') are only interpreted
+    // as nested field paths by update(); inside set(merge:true) they create a
+    // literal top-level field with a dot in its name, so the count the inbox
+    // reads (the nested `unreadCounts` map) never moved. Use a nested map —
+    // merge:true deep-merges it, incrementing only the receiver's entry.
     await chatRef.set({
-      'users': ids, 
+      'users': ids,
       'lastMessage': text,
       'updatedAt': timestamp,
-      'unreadCounts.$reciverid': FieldValue.increment(1),
+      'unreadCounts': {reciverid: FieldValue.increment(1)},
     }, SetOptions(merge: true));
 
     //  ADD MESSAGE

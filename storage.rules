@@ -1,0 +1,37 @@
+rules_version = '2';
+
+// Life Link — Cloud Storage security rules
+// Images are world-readable (they're shown via download URLs across the app),
+// but only authenticated users can upload, and only reasonably-sized images.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isImageUnder5MB() {
+      return request.resource.size < 5 * 1024 * 1024
+             && request.resource.contentType.matches('image/.*');
+    }
+
+    match /profile_images/{fileName} {
+      allow read: if true;
+      allow write: if signedIn() && isImageUnder5MB();
+    }
+    match /organization_images/{fileName} {
+      allow read: if true;
+      allow write: if signedIn() && isImageUnder5MB();
+    }
+    match /ambulance_images/{fileName} {
+      allow read: if true;
+      allow write: if signedIn() && isImageUnder5MB();
+    }
+    match /volunteer_images/{fileName} {
+      allow read: if true;
+      allow write: if signedIn() && isImageUnder5MB();
+    }
+
+    // Everything else denied by default.
+  }
+}
