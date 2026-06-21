@@ -85,7 +85,34 @@ class AuthService {
     await _saveFcmToken(userCredential.user!.uid);
   }
 
+  Future<void> _clearFcmToken(String uid) async {
+    try {
+      // Drop this device's token from the signed-out user's doc so a second
+      // account on the same device never receives the previous user's pushes.
+      // Also delete the registration so a stale token isn't re-read elsewhere.
+      await _firestore.collection(FirebaseConstants.users).doc(uid).set({
+        'fcmToken': FieldValue.delete(),
+        'tokenUpdatedAt': FieldValue.delete(),
+      }, SetOptions(merge: true));
+      await FirebaseMessaging.instance.deleteToken();
+      log("FCM Token cleared for user", name: 'AuthService');
+    } catch (e, stackTrace) {
+      log(
+        "Error clearing FCM token",
+        name: 'AuthService',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   Future<void> logout() async {
+    // Capture the uid before signOut() nulls currentUser. Clearing the token
+    // is best-effort — it must never block the user from logging out.
+    final uid = _auth.currentUser?.uid;
+    if (uid != null) {
+      await _clearFcmToken(uid);
+    }
     await _auth.signOut();
   }
 

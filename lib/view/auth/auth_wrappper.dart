@@ -6,6 +6,7 @@ import 'package:blood_donation/view/profile/basic_information.dart';
 import 'package:blood_donation/view/profile/image_screen.dart';
 import 'package:blood_donation/view/profile/personel_information.dart';
 import 'package:blood_donation/utils/setup_flow.dart';
+import 'package:blood_donation/services/auth_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -51,6 +52,16 @@ class _AuthWrapperState extends State<AuthWrapper> {
     return _userDocFuture!;
   }
 
+  /// Re-fetch the profile after a transient failure (e.g. launched offline
+  /// with no cached doc). Clearing [_uid] forces [_userDocFor] to build a
+  /// fresh future on the next rebuild instead of returning the failed one.
+  void _retry() {
+    setState(() {
+      _uid = null;
+      _userDocFuture = null;
+    });
+  }
+
   /// Maps the first incomplete setup step to its screen for a returning user
   /// whose profile isn't finished yet. The decision logic lives in
   /// [firstIncompleteStep] so it can be unit-tested independently.
@@ -92,13 +103,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
               return const _BrandedLoading();
             }
 
-            // HANDLE FIRESTORE ERROR
+            // HANDLE FIRESTORE ERROR — most commonly launching offline with no
+            // cached profile doc. Offer a retry and a logout escape so the user
+            // is never permanently locked out of the app.
             if (userSnapshot.hasError) {
-              return const Scaffold(
-                body: Center(
-                  child: Text('Something went wrong. Please restart app.'),
-                ),
-              );
+              return _ProfileLoadError(onRetry: _retry);
             }
 
             // Document not found
@@ -156,6 +165,90 @@ class _BrandedLoading extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.7),
               strokeWidth: 2,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown when the signed-in user's profile can't be loaded (typically an
+/// offline launch with no cached document). Provides a retry and a logout
+/// escape so the user is never stranded on a dead-end screen.
+class _ProfileLoadError extends StatefulWidget {
+  const _ProfileLoadError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  State<_ProfileLoadError> createState() => _ProfileLoadErrorState();
+}
+
+class _ProfileLoadErrorState extends State<_ProfileLoadError> {
+  bool _loggingOut = false;
+
+  Future<void> _logout() async {
+    setState(() => _loggingOut = true);
+    try {
+      await AuthService().logout();
+    } catch (_) {
+      // Sign-out is local; even if token cleanup fails the auth state stream
+      // will route back to the login screen. Restore the button if it didn't.
+      if (mounted) setState(() => _loggingOut = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 32.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.cloud_off_rounded,
+                  size: 56.r, color: AppColors.primary),
+              SizedBox(height: 16.h),
+              Text(
+                'Couldn\'t load your profile',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                'Check your internet connection and try again.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14.sp, color: Colors.grey),
+              ),
+              SizedBox(height: 24.h),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _loggingOut ? null : widget.onRetry,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                  ),
+                  child: const Text('Retry'),
+                ),
+              ),
+              SizedBox(height: 12.h),
+              TextButton(
+                onPressed: _loggingOut ? null : _logout,
+                child: _loggingOut
+                    ? SizedBox(
+                        width: 18.r,
+                        height: 18.r,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Log out'),
+              ),
+            ],
           ),
         ),
       ),
