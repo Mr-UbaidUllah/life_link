@@ -13,7 +13,7 @@ class NotificationServices {
       FlutterLocalNotificationsPlugin();//This is used to SHOW notifications manually when the app is:
 //Open (foreground)
 //Or you want custom behavior
-  void requestNotificationpermission() async {
+  void requestNotificationPermission() async {
     NotificationSettings settings = await messaging.requestPermission(
       alert: true,
       announcement: true,
@@ -33,22 +33,7 @@ class NotificationServices {
     }
   }
 
-  // void initLocalNotifications(
-  //   BuildContext context,
-  //   RemoteMessage message,
-  // ) async {
-  //   var andriodInitializationSetting = AndroidInitializationSettings(
-  //     '@mipmap/ic_launcher',
-  //   );
-  //   var initializationsetting = InitializationSettings(
-  //     android: andriodInitializationSetting,
-  //   );
 
-  //   await flutterLocalNotificationsPlugin.initialize(
-  //     initializationsetting,
-  //     onDidReceiveNotificationResponse: (payload) {},
-  //   );
-  // }
 
   Future<String?> getDeviceToken() async {
     String? token = await messaging.getToken();
@@ -80,7 +65,7 @@ class NotificationServices {
         if (response.payload == 'msj') {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => BloodrequestScreen()),
+            MaterialPageRoute(builder: (_) => BloodRequestScreen()),
           );
         }
         // handleMessage(context, message);    
@@ -117,33 +102,6 @@ class NotificationServices {
     });
   }
 
-  // Future<void> showNotification(RemoteMessage message) async {
-  //   AndroidNotificationChannel channel = AndroidNotificationChannel(
-  //     Random.secure().nextInt(100000).toString(),
-  //     'High importance notification',
-  //     importance: Importance.max,
-  //   );
-  //   AndroidNotificationDetails androidNotificationDetails =
-  //       AndroidNotificationDetails(
-  //         channel.id.toString(),
-  //         channel.name.toString(),
-  //         channelDescription: 'Your channel description',
-  //         importance: Importance.high,
-  //         priority: Priority.high,
-  //         ticker: 'ticker',
-  //       );
-  //   NotificationDetails notificationDetails = NotificationDetails(
-  //     android: androidNotificationDetails,
-  //   );
-  //   Future.delayed(Duration.zero, () {
-  //     flutterLocalNotificationsPlugin.show(
-  //       0,
-  //       message.notification!.title.toString(),
-  //       message.notification!.body.toString(),
-  //       notificationDetails,
-  //     );
-  //   });
-  // }
 
   void isDeviceTokenRefresh() {
     messaging.onTokenRefresh.listen((event) {
@@ -168,7 +126,7 @@ class NotificationServices {
     if (message.data['type'] == 'msj') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => BloodrequestScreen()),
+        MaterialPageRoute(builder: (context) => BloodRequestScreen()),
       );
     }
   }

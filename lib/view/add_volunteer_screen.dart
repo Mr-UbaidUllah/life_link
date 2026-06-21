@@ -17,36 +17,35 @@ class AddVolunteerScreen extends StatefulWidget {
 }
 
 class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
-  final volunteerName = TextEditingController();
-  final volunteerWork = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final nameController = TextEditingController();
+  final skillsController = TextEditingController();
+  final bioController = TextEditingController();
+  final phoneController = TextEditingController();
+  final locationController = TextEditingController();
 
+  String? selectedRole;
   File? selectedImage;
 
-  void _showError(BuildContext context, ThemeData theme, String message) {
+  final List<String> roles = [
+    'Blood Donor Coordinator',
+    'Medical Professional',
+    'First Aid Responder',
+    'Event Organizer',
+    'Social Media Manager',
+    'Logistics Assistant',
+    'Community Advocate',
+    'Other',
+  ];
+
+  void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: theme.colorScheme.error,
+        backgroundColor: Theme.of(context).colorScheme.error,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
       ),
     );
-  }
-
-  bool _validateForm(BuildContext context, ThemeData theme) {
-    if (selectedImage == null) {
-      _showError(context, theme, 'Please select volunteer image');
-      return false;
-    }
-    if (volunteerName.text.trim().isEmpty) {
-      _showError(context, theme, 'Please enter volunteer name');
-      return false;
-    }
-    if (volunteerWork.text.trim().isEmpty) {
-      _showError(context, theme, 'Please enter work description');
-      return false;
-    }
-    return true;
   }
 
   @override
@@ -56,156 +55,253 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: theme.appBarTheme.backgroundColor,
         centerTitle: true,
         title: Text(
-          'Add Volunteer',
+          'Join Community',
           style: TextStyle(
-            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.w900,
-            fontSize: 20.sp,
+            fontSize: 18.sp,
           ),
-        ),
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.colorScheme.onSurface),
         ),
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            /// IMAGE PICKER
-            Center(
-              child: Stack(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(4.r),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2), width: 2),
-                    ),
-                    child: CircleAvatar(
-                      radius: 55.r,
-                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                      backgroundImage: selectedImage != null ? FileImage(selectedImage!) : null,
-                      child: selectedImage == null
-                          ? Icon(Icons.person_add_alt_1_rounded, size: 45.r, color: theme.colorScheme.onSurface.withValues(alpha: 0.4))
-                          : null,
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 4,
-                    right: 4,
-                    child: GestureDetector(
-                      onTap: () async {
-                        final file = await pickImage();
-                        if (file == null) return;
-                        setState(() {
-                          selectedImage = file;
-                        });
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(8.r),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 20),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Become a Volunteer',
+                style: TextStyle(
+                  fontSize: 24.sp,
+                  fontWeight: FontWeight.w900,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              Text(
+                'Fill in your details to help us grow our network.',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+              SizedBox(height: 30.h),
+
+              /// IMAGE PICKER
+              Center(
+                child: Stack(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(4.r),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.1), width: 3),
+                      ),
+                      child: CircleAvatar(
+                        radius: 60.r,
+                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                        backgroundImage: selectedImage != null ? FileImage(selectedImage!) : null,
+                        child: selectedImage == null
+                            ? Icon(Icons.person_add_alt_1_rounded, size: 40.r, color: theme.colorScheme.primary.withValues(alpha: 0.5))
+                            : null,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            
-            SizedBox(height: 40.h),
-
-            CustomTextField(
-              controller: volunteerName,
-              labelText: 'Volunteer Name',
-              hintText: 'Enter volunteer full name',
-              prefixIcon: Icons.person_outline_rounded,
-              borderRadius: 16.r,
-            ),
-            SizedBox(height: 20.h),
-            
-            CustomTextField(
-              controller: volunteerWork,
-              labelText: 'Work Description',
-              hintText: 'e.g. Blood Donor Coordinator',
-              prefixIcon: Icons.work_outline_rounded,
-              borderRadius: 16.r,
-              maxLines: 3,
-              height: 120.h,
-            ),
-
-            SizedBox(height: 50.h),
-
-            /// SAVE BUTTON
-            Consumer2<VolunteerProvider, volunteerStorageProvider>(
-              builder: (context, volunteerProv, storageProv, _) {
-                final bool isLoading = volunteerProv.isLoading || storageProv.isLoading;
-                
-                return SizedBox(
-                  width: double.infinity,
-                  height: 56.h,
-                  child: ElevatedButton(
-                    onPressed: isLoading
-                        ? null
-                        : () async {
-                            if (!_validateForm(context, theme)) return;
-                            final docRef = FirebaseFirestore.instance.collection('Volunteer').doc();
-                            
-                            final vol = VolunteerModel(
-                              id: docRef.id,
-                              name: volunteerName.text.trim(),
-                              imageUrl: '',
-                              workDescription: volunteerWork.text.trim(),
-                            );
-                            
-                            await volunteerProv.addVolunteer(vol);
-
-                            if (selectedImage != null) {
-                              await storageProv.uploadImage(vol.id, selectedImage!);
-                            }
- 
-                            if (context.mounted) {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Volunteer added successfully'),
-                                  backgroundColor: Colors.green,
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            }
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-                    ),
-                    child: isLoading
-                        ? SizedBox(
-                            height: 24.r,
-                            width: 24.r,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                          )
-                        : Text(
-                            'Save Volunteer',
-                            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+                    Positioned(
+                      bottom: 5,
+                      right: 5,
+                      child: GestureDetector(
+                        onTap: () async {
+                          final file = await pickImage();
+                          if (file != null) setState(() => selectedImage = file);
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(10.r),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
+                          child: const Icon(Icons.edit_rounded, color: Colors.white, size: 20),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              SizedBox(height: 40.h),
+
+              _buildSectionTitle('Basic Information', theme),
+              SizedBox(height: 16.h),
+              CustomTextField(
+                controller: nameController,
+                labelText: 'Full Name',
+                hintText: 'How should we call you?',
+                prefixIcon: Icons.person_outline_rounded,
+                borderRadius: 12.r,
+              ),
+              SizedBox(height: 16.h),
+              
+              // ROLE DROPDOWN
+              DropdownButtonFormField<String>(
+                value: selectedRole,
+                decoration: InputDecoration(
+                  labelText: 'Current Role',
+                  prefixIcon: Icon(Icons.badge_outlined, size: 20.sp, color: theme.colorScheme.primary),
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: BorderSide.none,
                   ),
-                );
-              },
-            ),
-            SizedBox(height: 20.h),
-          ],
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+                ),
+                hint: const Text('Select your volunteer role'),
+                items: roles.map((role) {
+                  return DropdownMenuItem(
+                    value: role,
+                    child: Text(role),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedRole = value;
+                  });
+                },
+                icon: Icon(Icons.keyboard_arrow_down_rounded, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                dropdownColor: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              
+              SizedBox(height: 16.h),
+              CustomTextField(
+                controller: phoneController,
+                labelText: 'Phone Number',
+                hintText: '+1 234 567 890',
+                prefixIcon: Icons.phone_outlined,
+                keyboardType: TextInputType.phone,
+                borderRadius: 12.r,
+              ),
+              SizedBox(height: 16.h),
+              CustomTextField(
+                controller: locationController,
+                labelText: 'Location',
+                hintText: 'City, Country',
+                prefixIcon: Icons.location_on_outlined,
+                borderRadius: 12.r,
+              ),
+
+              SizedBox(height: 32.h),
+              _buildSectionTitle('Expertise & Bio', theme),
+              SizedBox(height: 16.h),
+              CustomTextField(
+                controller: skillsController,
+                labelText: 'Skills / Expertise',
+                hintText: 'e.g. First Aid, Event Management',
+                prefixIcon: Icons.bolt_rounded,
+                borderRadius: 12.r,
+              ),
+              SizedBox(height: 16.h),
+              CustomTextField(
+                controller: bioController,
+                labelText: 'Short Bio',
+                hintText: 'Tell us a bit about your passion for volunteering...',
+                prefixIcon: Icons.info_outline_rounded,
+                borderRadius: 12.r,
+                maxLines: 4,
+                height: 120.h,
+              ),
+
+              SizedBox(height: 40.h),
+
+              /// SAVE BUTTON
+              Consumer2<VolunteerProvider, volunteerStorageProvider>(
+                builder: (context, volunteerProv, storageProv, _) {
+                  final bool isLoading = volunteerProv.isLoading || storageProv.isLoading;
+                  
+                  return SizedBox(
+                    width: double.infinity,
+                    height: 56.h,
+                    child: ElevatedButton(
+                      onPressed: isLoading
+                          ? null
+                          : () async {
+                              if (selectedImage == null) {
+                                _showError('Please select a profile image');
+                                return;
+                              }
+                              if (nameController.text.isEmpty || selectedRole == null) {
+                                _showError('Name and Role are required');
+                                return;
+                              }
+
+                              final docRef = FirebaseFirestore.instance.collection('Volunteer').doc();
+                              
+                              final vol = VolunteerModel(
+                                id: docRef.id,
+                                name: nameController.text.trim(),
+                                imageUrl: '',
+                                workDescription: selectedRole!,
+                                skills: skillsController.text.trim(),
+                                bio: bioController.text.trim(),
+                                phone: phoneController.text.trim(),
+                                location: locationController.text.trim(),
+                              );
+                              
+                              await volunteerProv.addVolunteer(vol);
+
+                              if (selectedImage != null) {
+                                await storageProv.uploadImage(vol.id, selectedImage!);
+                              }
+ 
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Welcome to the community! ❤️'),
+                                    backgroundColor: Colors.green,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                      ),
+                      child: isLoading
+                          ? SizedBox(height: 20.r, width: 20.r, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : Text('Submit Application', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+                    ),
+                  );
+                },
+              ),
+              SizedBox(height: 30.h),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, ThemeData theme) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w800,
+        color: theme.colorScheme.primary,
+        letterSpacing: 0.5,
       ),
     );
   }

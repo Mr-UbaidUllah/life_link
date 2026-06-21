@@ -22,7 +22,11 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
   final cityCtrl = TextEditingController();
   final addressCtrl = TextEditingController();
   final phoneCtrl = TextEditingController();
-
+  final descriptionCtrl = TextEditingController();
+  final emailCtrl = TextEditingController();
+  final websiteCtrl = TextEditingController();
+  
+  OrganizationType selectedType = OrganizationType.ngo;
   File? selectedImage;
 
   void _showError(BuildContext context, ThemeData theme, String message) {
@@ -45,20 +49,12 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
       _showError(context, theme, 'Please enter organization name');
       return false;
     }
-    if (countryCtrl.text.trim().isEmpty) {
-      _showError(context, theme, 'Please enter country');
-      return false;
-    }
-    if (cityCtrl.text.trim().isEmpty) {
-      _showError(context, theme, 'Please enter city');
+    if (phoneCtrl.text.trim().isEmpty) {
+      _showError(context, theme, 'Please enter phone number');
       return false;
     }
     if (addressCtrl.text.trim().isEmpty) {
       _showError(context, theme, 'Please enter address');
-      return false;
-    }
-    if (phoneCtrl.text.trim().isEmpty) {
-      _showError(context, theme, 'Please enter phone number');
       return false;
     }
     return true;
@@ -74,7 +70,7 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
         backgroundColor: theme.appBarTheme.backgroundColor,
         centerTitle: true,
         title: Text(
-          'Add Organization',
+          'Register Partner',
           style: TextStyle(
             color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.w900,
@@ -90,7 +86,7 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
         physics: const BouncingScrollPhysics(),
         padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             /// IMAGE PICKER
             Center(
@@ -103,11 +99,11 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
                       border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2), width: 2),
                     ),
                     child: CircleAvatar(
-                      radius: 50.r,
+                      radius: 60.r,
                       backgroundColor: theme.colorScheme.surfaceContainerHighest,
                       backgroundImage: selectedImage != null ? FileImage(selectedImage!) : null,
                       child: selectedImage == null
-                          ? Icon(Icons.business_rounded, size: 40.r, color: theme.colorScheme.onSurface.withValues(alpha: 0.4))
+                          ? Icon(Icons.business_rounded, size: 50.r, color: theme.colorScheme.onSurface.withValues(alpha: 0.4))
                           : null,
                     ),
                   ),
@@ -123,12 +119,15 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
                         });
                       },
                       child: Container(
-                        padding: EdgeInsets.all(8.r),
+                        padding: EdgeInsets.all(10.r),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.primary,
                           shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4))
+                          ],
                         ),
-                        child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
+                        child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 20),
                       ),
                     ),
                   ),
@@ -137,49 +136,117 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
             ),
             
             SizedBox(height: 30.h),
+            
+            Text('Basic Information', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+            SizedBox(height: 16.h),
 
             CustomTextField(
               controller: nameCtrl,
               labelText: 'Organization Name',
-              hintText: 'Enter organization name',
+              hintText: 'e.g. City General Hospital',
               prefixIcon: Icons.business_outlined,
               borderRadius: 16.r,
             ),
             SizedBox(height: 16.h),
-            
-            CustomTextField(
-              controller: countryCtrl,
-              labelText: 'Country',
-              hintText: 'Enter country',
-              prefixIcon: Icons.public_rounded,
-              borderRadius: 16.r,
+
+            DropdownButtonFormField<OrganizationType>(
+              value: selectedType,
+              decoration: InputDecoration(
+                labelText: 'Organization Type',
+                prefixIcon: Icon(Icons.category_outlined, color: theme.colorScheme.primary),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16.r)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16.r),
+                  borderSide: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.3)),
+                ),
+              ),
+              items: OrganizationType.values.map((type) {
+                return DropdownMenuItem(
+                  value: type,
+                  child: Text(type.name.toUpperCase()),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) setState(() => selectedType = value);
+              },
             ),
             SizedBox(height: 16.h),
-            
+
             CustomTextField(
-              controller: cityCtrl,
-              labelText: 'City',
-              hintText: 'Enter city',
-              prefixIcon: Icons.location_city_rounded,
+              controller: descriptionCtrl,
+              labelText: 'About / Description',
+              hintText: 'Tell us about your organization...',
+              prefixIcon: Icons.description_outlined,
               borderRadius: 16.r,
+              maxLines: 3,
+            ),
+            
+            SizedBox(height: 24.h),
+            Text('Location Details', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+            SizedBox(height: 16.h),
+            
+            Row(
+              children: [
+                Expanded(
+                  child: CustomTextField(
+                    controller: countryCtrl,
+                    labelText: 'Country',
+                    hintText: 'Country',
+                    prefixIcon: Icons.public_rounded,
+                    borderRadius: 16.r,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: CustomTextField(
+                    controller: cityCtrl,
+                    labelText: 'City',
+                    hintText: 'City',
+                    prefixIcon: Icons.location_city_rounded,
+                    borderRadius: 16.r,
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: 16.h),
             
             CustomTextField(
               controller: addressCtrl,
               labelText: 'Full Address',
-              hintText: 'Enter complete address',
+              hintText: 'Street address, building number...',
               prefixIcon: Icons.location_on_outlined,
               borderRadius: 16.r,
             ),
+            
+            SizedBox(height: 24.h),
+            Text('Contact & Links', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
             SizedBox(height: 16.h),
             
             CustomTextField(
               controller: phoneCtrl,
               labelText: 'Phone Number',
-              hintText: 'Enter contact number',
+              hintText: '+1 234 567 890',
               prefixIcon: Icons.phone_outlined,
               keyboardType: TextInputType.phone,
+              borderRadius: 16.r,
+            ),
+            SizedBox(height: 16.h),
+
+            CustomTextField(
+              controller: emailCtrl,
+              labelText: 'Email Address',
+              hintText: 'contact@org.com',
+              prefixIcon: Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress,
+              borderRadius: 16.r,
+            ),
+            SizedBox(height: 16.h),
+
+            CustomTextField(
+              controller: websiteCtrl,
+              labelText: 'Website (Optional)',
+              hintText: 'www.organization.com',
+              prefixIcon: Icons.language_rounded,
               borderRadius: 16.r,
             ),
 
@@ -207,7 +274,14 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
                               city: cityCtrl.text.trim(),
                               address: addressCtrl.text.trim(),
                               phone: phoneCtrl.text.trim(),
+                              description: descriptionCtrl.text.trim(),
+                              email: emailCtrl.text.trim(),
+                              website: websiteCtrl.text.trim(),
+                              type: selectedType,
                               image: '',
+                              joinedAt: DateTime.now(),
+                              isVerified: false,
+                              rating: 4.5, // Default for demo purposes
                             );
 
                             await orgProvider.addOraganization(org);
@@ -219,10 +293,17 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
                             if (mounted) {
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Organization added successfully'),
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      const Icon(Icons.check_circle_rounded, color: Colors.white),
+                                      SizedBox(width: 12.w),
+                                      const Text('Partner registered successfully!'),
+                                    ],
+                                  ),
                                   backgroundColor: Colors.green,
                                   behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
                                 ),
                               );
                             }
@@ -240,14 +321,14 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                           )
                         : Text(
-                            'Save Organization',
+                            'Register Organization',
                             style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
                           ),
                   ),
                 );
               },
             ),
-            SizedBox(height: 20.h),
+            SizedBox(height: 30.h),
           ],
         ),
       ),

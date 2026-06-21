@@ -7,4 +7,5 @@ class FirebaseConstants {
   static const String organizations = 'organizations';
   static const String volunteer = 'Volunteer';
   static const String ambulance = 'Ambulance';
+  static const String inventory = 'inventory';
 }

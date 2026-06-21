@@ -55,8 +55,6 @@ class NoInternetScreen extends StatelessWidget {
               const SizedBox(height: 32),
               ElevatedButton.icon(
                 onPressed: () async {
-                  // Connectivity check is already happening in NetworkProvider,
-                  // but we can manually trigger a check here if we want immediate feedback on button press.
                   final List<ConnectivityResult> result = await Connectivity().checkConnectivity();
                   if (!result.contains(ConnectivityResult.none)) {
                     // If it's actually back, the provider will update eventually, 

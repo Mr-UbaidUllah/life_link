@@ -15,9 +15,9 @@ class OrganizationScreen extends StatefulWidget {
 }
 
 class _OrganizationScreenState extends State<OrganizationScreen> {
-  // Cache the stream so returning from the add screen (which notifies the
-  // provider) doesn't resubscribe and flash the shimmer.
   late final Stream<List<OrganizationModel>> _orgStream;
+  String _searchQuery = '';
+  OrganizationType? _selectedType;
 
   @override
   void initState() {
@@ -35,7 +35,7 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
         backgroundColor: theme.appBarTheme.backgroundColor,
         centerTitle: true,
         title: Text(
-          'Organizations',
+          'Healthcare Partners',
           style: TextStyle(
             color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.w900,
@@ -49,10 +49,9 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
       ),
       body: Column(
         children: [
-          // Info Banner
+          // Search and Filter Section
           Container(
-            width: double.infinity,
-            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
+            padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 15.h),
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
               boxShadow: [
@@ -63,25 +62,35 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
                 ),
               ],
             ),
-            child: Row(
+            child: Column(
               children: [
-                Container(
-                  padding: EdgeInsets.all(8.w),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10.r),
-                  ),
-                  child: Icon(Icons.info_outline_rounded, color: theme.colorScheme.primary, size: 20.sp),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: Text(
-                    'Discover partner organizations supporting blood donation causes.',
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                      fontWeight: FontWeight.w500,
+                TextField(
+                  onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
+                  decoration: InputDecoration(
+                    hintText: 'Search partners...',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    filled: true,
+                    fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15.r),
+                      borderSide: BorderSide.none,
                     ),
+                    contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 16.w),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: [
+                      _buildFilterChip(null, 'All'),
+                      SizedBox(width: 8.w),
+                      ...OrganizationType.values.map((type) => Padding(
+                        padding: EdgeInsets.only(right: 8.w),
+                        child: _buildFilterChip(type, type.name.toUpperCase()),
+                      )),
+                    ],
                   ),
                 ),
               ],
@@ -89,50 +98,38 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
           ),
           
           Expanded(
-            child: Consumer<OrganizationProvider>(
-              builder: (context, _, __) {
-                return StreamBuilder<List<OrganizationModel>>(
-                  stream: _orgStream,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return ShimmerList(
-                        itemCount: 5,
-                        itemBuilder: (_, __) => const ContactCardSkeleton(),
-                      );
-                    }
+            child: StreamBuilder<List<OrganizationModel>>(
+              stream: _orgStream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return ShimmerList(
+                    itemCount: 5,
+                    itemBuilder: (_, __) => const ContactCardSkeleton(),
+                  );
+                }
 
-                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.business_outlined, size: 80.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
-                            SizedBox(height: 16.h),
-                            Text(
-                              "No organizations found",
-                              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return _buildEmptyState(theme);
+                }
 
-                    final requests = snapshot.data!;
+                final organizations = snapshot.data!.where((org) {
+                  final matchesSearch = org.name.toLowerCase().contains(_searchQuery) || 
+                                       org.city.toLowerCase().contains(_searchQuery);
+                  final matchesType = _selectedType == null || org.type == _selectedType;
+                  return matchesSearch && matchesType;
+                }).toList();
 
-                    return ListView.builder(
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.all(20.w),
-                      itemCount: requests.length,
-                      itemBuilder: (context, index) {
-                        final req = requests[index];
+                if (organizations.isEmpty) {
+                  return _buildEmptyState(theme, message: "No partners match your filters");
+                }
 
-                        return OrganizationCard(
-                          image: req.image,
-                          name: req.name,
-                          address: req.address,
-                          phone: req.phone,
-                        );
-                      },
+                return ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.all(20.w),
+                  itemCount: organizations.length,
+                  itemBuilder: (context, index) {
+                    return OrganizationCard(
+                      organization: organizations[index],
                     );
                   },
                 );
@@ -142,7 +139,7 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
         ],
       ),
 
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         backgroundColor: theme.colorScheme.primary,
         elevation: 4,
         onPressed: () {
@@ -151,7 +148,46 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
             MaterialPageRoute(builder: (_) => const AddOrganizationScreen()),
           );
         },
-        child: Icon(Icons.add_rounded, size: 30.sp, color: Colors.white),
+        icon: const Icon(Icons.add_business_rounded, color: Colors.white),
+        label: Text('Become a Partner', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.sp)),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(OrganizationType? type, String label) {
+    final isSelected = _selectedType == type;
+    final theme = Theme.of(context);
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() => _selectedType = selected ? type : null);
+      },
+      selectedColor: theme.colorScheme.primary,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : theme.colorScheme.onSurface.withValues(alpha: 0.7),
+        fontSize: 11.sp,
+        fontWeight: FontWeight.bold,
+      ),
+      backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+      side: BorderSide.none,
+      showCheckmark: false,
+    );
+  }
+
+  Widget _buildEmptyState(ThemeData theme, {String message = "No partners found"}) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.business_outlined, size: 80.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+          SizedBox(height: 16.h),
+          Text(
+            message,
+            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+          ),
+        ],
       ),
     );
   }

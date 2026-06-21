@@ -9,19 +9,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
-class AddAmbulence extends StatefulWidget {
-  const AddAmbulence({super.key});
+class AddAmbulance extends StatefulWidget {
+  const AddAmbulance({super.key});
 
   @override
-  State<AddAmbulence> createState() => _AddAmbulenceState();
+  State<AddAmbulance> createState() => _AddAmbulanceState();
 }
 
-class _AddAmbulenceState extends State<AddAmbulence> {
+class _AddAmbulanceState extends State<AddAmbulance> {
   final nameCtrl = TextEditingController();
   final hospitalCtrl = TextEditingController();
   final addressCtrl = TextEditingController();
   final phoneCtrl = TextEditingController();
-
+  final priceCtrl = TextEditingController();
+  
+  AmbulanceType selectedType = AmbulanceType.basic;
   File? selectedImage;
 
   void _showError(BuildContext context, ThemeData theme, String message) {
@@ -56,6 +58,10 @@ class _AddAmbulenceState extends State<AddAmbulence> {
       _showError(context, theme, 'Please enter phone number');
       return false;
     }
+    if (priceCtrl.text.trim().isEmpty) {
+      _showError(context, theme, 'Please enter base price');
+      return false;
+    }
     return true;
   }
 
@@ -69,7 +75,7 @@ class _AddAmbulenceState extends State<AddAmbulence> {
         backgroundColor: theme.appBarTheme.backgroundColor,
         centerTitle: true,
         title: Text(
-          'Add Ambulance',
+          'Register Ambulance',
           style: TextStyle(
             color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.w900,
@@ -85,6 +91,7 @@ class _AddAmbulenceState extends State<AddAmbulence> {
         physics: const BouncingScrollPhysics(),
         padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             /// IMAGE PICKER
             Center(
@@ -130,17 +137,8 @@ class _AddAmbulenceState extends State<AddAmbulence> {
               ),
             ),
             
-            SizedBox(height: 40.h),
+            SizedBox(height: 30.h),
 
-            CustomTextField(
-              controller: nameCtrl,
-              labelText: 'Ambulance Name',
-              hintText: 'e.g. Life Care Ambulance',
-              prefixIcon: Icons.bus_alert_rounded,
-              borderRadius: 16.r,
-            ),
-            SizedBox(height: 16.h),
-            
             CustomTextField(
               controller: hospitalCtrl,
               labelText: 'Hospital Name',
@@ -151,24 +149,77 @@ class _AddAmbulenceState extends State<AddAmbulence> {
             SizedBox(height: 16.h),
             
             CustomTextField(
-              controller: addressCtrl,
-              labelText: 'Full Address',
-              hintText: 'Enter pickup/station address',
-              prefixIcon: Icons.location_on_rounded,
+              controller: nameCtrl,
+              labelText: 'Ambulance Name/Model',
+              hintText: 'e.g. Life Care - Van A1',
+              prefixIcon: Icons.bus_alert_rounded,
               borderRadius: 16.r,
+            ),
+            SizedBox(height: 16.h),
+
+            Text(
+              'Select Ambulance Type',
+              style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
+            ),
+            SizedBox(height: 10.h),
+            Wrap(
+              spacing: 8.w,
+              children: AmbulanceType.values.map((type) {
+                final isSelected = selectedType == type;
+                return ChoiceChip(
+                  label: Text(type.name.toUpperCase()),
+                  selected: isSelected,
+                  onSelected: (val) {
+                    if (val) setState(() => selectedType = type);
+                  },
+                  selectedColor: theme.colorScheme.primary,
+                  labelStyle: TextStyle(
+                    color: isSelected ? Colors.white : theme.colorScheme.onSurface,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 16.h),
+            
+            Row(
+              children: [
+                Expanded(
+                  child: CustomTextField(
+                    controller: priceCtrl,
+                    labelText: 'Base Price',
+                    hintText: '0.00',
+                    prefixIcon: Icons.payments_rounded,
+                    keyboardType: TextInputType.number,
+                    borderRadius: 16.r,
+                  ),
+                ),
+                SizedBox(width: 16.w),
+                Expanded(
+                  child: CustomTextField(
+                    controller: phoneCtrl,
+                    labelText: 'Contact Number',
+                    hintText: 'Emergency phone',
+                    prefixIcon: Icons.phone_in_talk_rounded,
+                    keyboardType: TextInputType.phone,
+                    borderRadius: 16.r,
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: 16.h),
             
             CustomTextField(
-              controller: phoneCtrl,
-              labelText: 'Contact Number',
-              hintText: 'Enter emergency number',
-              prefixIcon: Icons.phone_in_talk_rounded,
-              keyboardType: TextInputType.phone,
+              controller: addressCtrl,
+              labelText: 'Station Address',
+              hintText: 'Enter pickup/station address',
+              prefixIcon: Icons.location_on_rounded,
               borderRadius: 16.r,
             ),
 
-            SizedBox(height: 50.h),
+            SizedBox(height: 40.h),
 
             /// SAVE BUTTON
             Consumer2<AmbulanceProvider, AmbulanceStorageProvider>(
@@ -192,6 +243,8 @@ class _AddAmbulenceState extends State<AddAmbulence> {
                               address: addressCtrl.text.trim(),
                               imageUrl: '',
                               phoneNumber: phoneCtrl.text.trim(),
+                              type: selectedType,
+                              basePrice: priceCtrl.text.trim(),
                             );
 
                             await ambulanceProv.addAmbulance(model);
@@ -224,7 +277,7 @@ class _AddAmbulenceState extends State<AddAmbulence> {
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                           )
                         : Text(
-                            'Save Ambulance',
+                            'Register Ambulance',
                             style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
                           ),
                   ),

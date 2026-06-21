@@ -30,6 +30,42 @@ class BloodrequestProvider with ChangeNotifier {
     }
   }
 
+  /// ✅ ACCEPT BLOOD REQUEST
+  Future<void> acceptBloodRequest(String requestId) async {
+    isLoading = true;
+    notifyListeners();
+    try {
+      await _service.acceptRequest(requestId);
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// ✅ CANCEL ACCEPTANCE
+  Future<void> cancelAcceptance(String requestId) async {
+    isLoading = true;
+    notifyListeners();
+    try {
+      await _service.cancelAcceptance(requestId);
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// ✅ COMPLETE BLOOD REQUEST
+  Future<void> completeBloodRequest(String requestId) async {
+    isLoading = true;
+    notifyListeners();
+    try {
+      await _service.completeRequest(requestId);
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> deleteRequest(String requestId) async {
     isLoading = true;
     notifyListeners();

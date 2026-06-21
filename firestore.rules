@@ -73,6 +73,9 @@ service cloud.firestore {
     match /Volunteer/{docId} {
       allow read, write: if signedIn();
     }
+    match /inventory/{docId} {
+      allow read, write: if signedIn();
+    }
 
     // Everything else is denied by default.
   }

@@ -58,7 +58,7 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _pages = [
     HomeScreen(key: HomeScreen.homeKey),
-    const BloodrequestScreen(),
+    const BloodRequestScreen(),
     const SearchScreen(),
     const UsersScreen(),
     const MoreScreen(),
@@ -188,7 +188,7 @@ class _NavBar extends StatelessWidget {
             _NavItem(
               icon: Icons.person_outline_rounded,
               activeIcon: Icons.person_rounded,
-              label: 'Profile',
+              label: 'Settings',
               selected: currentIndex == 4,
               onTap: () => onTap(4),
             ),

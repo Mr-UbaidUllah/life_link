@@ -6,8 +6,6 @@ class BloodRequestService {
   final _firestore = FirebaseFirestore.instance;
 
   Future<void> createRequest(BloodRequestModel request) async {
-    // Professional Fix: Use FieldValue.serverTimestamp() for createdAt 
-    // to ensure consistency across all user devices.
     final data = request.toMap();
     data['createdAt'] = FieldValue.serverTimestamp();
     await _firestore.collection('Blood_request').add(data);
@@ -19,14 +17,36 @@ class BloodRequestService {
     });
   }
 
+  /// ✅ ACCEPT REQUEST: Set status to 'in_progress' and save current user UID
+  Future<void> acceptRequest(String requestId) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    await _firestore.collection('Blood_request').doc(requestId).update({
+      'status': 'in_progress',
+      'acceptedByUserId': uid,
+    });
+  }
+
+  /// ✅ CANCEL ACCEPTANCE: Revert status to 'open' and remove acceptedByUserId
+  Future<void> cancelAcceptance(String requestId) async {
+    await _firestore.collection('Blood_request').doc(requestId).update({
+      'status': 'open',
+      'acceptedByUserId': FieldValue.delete(),
+    });
+  }
+
+  /// ✅ COMPLETE REQUEST: Set status to 'closed'
+  Future<void> completeRequest(String requestId) async {
+    await _firestore.collection('Blood_request').doc(requestId).update({
+      'status': 'closed',
+    });
+  }
+
   Future<void> deleteRequest(String requestId) async {
     await _firestore.collection('Blood_request').doc(requestId).delete();
   }
 
-  /// Deletes only the CURRENT user's own requests. Scoped by `userId` so it
-  /// complies with the security rule (a user may delete only their own
-  /// requests) — an unscoped batch-delete of the whole collection would be
-  /// rejected with permission-denied and let any user wipe everyone's data.
   Future<void> clearAllRequests() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
@@ -42,10 +62,6 @@ class BloodRequestService {
     await batch.commit();
   }
 
-  /// PROFESSIONAL FIX: 
-  /// We filter 'expiryDate' and 'status' on the client side within the stream.
-  /// This avoids the "disappearing" issue caused by missing Firestore Composite Indexes
-  /// and ensures the list is always up-to-date with the device's current time.
   Stream<List<BloodRequestModel>> getRequests() {
     return _firestore
         .collection('Blood_request')

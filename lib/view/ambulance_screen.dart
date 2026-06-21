@@ -15,9 +15,8 @@ class AmbulanceScreen extends StatefulWidget {
 }
 
 class _AmbulanceScreenState extends State<AmbulanceScreen> {
-  // Cache the stream so a provider notifyListeners() (fired by the add screen)
-  // doesn't resubscribe and flash the shimmer when returning to this list.
   late final Stream<List<AmbulanceModel>> _ambulanceStream;
+  AmbulanceType? selectedFilter;
 
   @override
   void initState() {
@@ -88,6 +87,34 @@ class _AmbulanceScreenState extends State<AmbulanceScreen> {
             ),
           ),
 
+          // Filter Chips
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
+            child: Row(
+              children: [
+                FilterChip(
+                  label: const Text('All'),
+                  selected: selectedFilter == null,
+                  onSelected: (val) => setState(() => selectedFilter = null),
+                  selectedColor: theme.colorScheme.primary.withValues(alpha: 0.2),
+                  checkmarkColor: theme.colorScheme.primary,
+                ),
+                SizedBox(width: 8.w),
+                ...AmbulanceType.values.map((type) => Padding(
+                  padding: EdgeInsets.only(right: 8.w),
+                  child: FilterChip(
+                    label: Text(type.name[0].toUpperCase() + type.name.substring(1)),
+                    selected: selectedFilter == type,
+                    onSelected: (val) => setState(() => selectedFilter = val ? type : null),
+                    selectedColor: theme.colorScheme.primary.withValues(alpha: 0.2),
+                    checkmarkColor: theme.colorScheme.primary,
+                  ),
+                )),
+              ],
+            ),
+          ),
+
           Expanded(
             child: Consumer<AmbulanceProvider>(
               builder: (context, _, __) {
@@ -107,7 +134,12 @@ class _AmbulanceScreenState extends State<AmbulanceScreen> {
                       );
                     }
 
-                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    var requests = snapshot.data ?? [];
+                    if (selectedFilter != null) {
+                      requests = requests.where((element) => element.type == selectedFilter).toList();
+                    }
+
+                    if (requests.isEmpty) {
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -122,21 +154,13 @@ class _AmbulanceScreenState extends State<AmbulanceScreen> {
                         ),
                       );
                     }
-                    final requests = snapshot.data!;
 
                     return ListView.builder(
                       physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.all(20.w),
+                      padding: EdgeInsets.symmetric(horizontal: 20.w),
                       itemCount: requests.length,
                       itemBuilder: (context, index) {
-                        final req = requests[index];
-
-                        return AmbulenceCard(
-                          image: req.imageUrl,
-                          name: req.hospitalName,
-                          address: req.address,
-                          phone: req.phoneNumber,
-                        );
+                        return AmbulenceCard(ambulance: requests[index]);
                       },
                     );
                   },
@@ -152,7 +176,7 @@ class _AmbulanceScreenState extends State<AmbulanceScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const AddAmbulence()),
+            MaterialPageRoute(builder: (_) => const AddAmbulance()),
           );
         },
         child: const Icon(Icons.add_rounded, size: 30, color: Colors.white),

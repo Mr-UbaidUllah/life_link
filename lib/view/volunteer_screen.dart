@@ -15,8 +15,6 @@ class VolunteerScreen extends StatefulWidget {
 }
 
 class _VolunteerScreenState extends State<VolunteerScreen> {
-  // Cache the stream so returning from the add screen (which notifies the
-  // provider) doesn't resubscribe and flash the shimmer.
   late final Stream<List<VolunteerModel>> _volunteerStream;
 
   @override
@@ -70,47 +68,55 @@ class _VolunteerScreenState extends State<VolunteerScreen> {
                   ),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text(
-                    'Make a Difference',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22.sp,
-                      fontWeight: FontWeight.w900,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Make a Difference',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20.sp,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        Text(
+                          'Join our community of volunteers and help us save more lives every day.',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w400,
+                            height: 1.4,
+                          ),
+                        ),
+                        SizedBox(height: 16.h),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const AddVolunteerScreen()),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: theme.colorScheme.primary,
+                            elevation: 0,
+                            padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                          ),
+                          child: Text(
+                            'Join Now',
+                            style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    'Join our community of volunteers and help us save more lives every day.',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w400,
-                      height: 1.4,
-                    ),
-                  ),
-                  SizedBox(height: 20.h),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const AddVolunteerScreen()),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: theme.colorScheme.primary,
-                      elevation: 0,
-                      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
-                    ),
-                    child: Text(
-                      'Join Now',
-                      style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
-                    ),
-                  ),
+                  SizedBox(width: 10.w),
+                  Icon(Icons.volunteer_activism_rounded, size: 60.sp, color: Colors.white.withValues(alpha: 0.2)),
                 ],
               ),
             ),
@@ -179,12 +185,7 @@ class _VolunteerScreenState extends State<VolunteerScreen> {
                       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
                       itemCount: volunteers.length,
                       itemBuilder: (context, index) {
-                        final v = volunteers[index];
-                        return VolunteerCard(
-                          image: v.imageUrl,
-                          name: v.name,
-                          description: v.workDescription,
-                        );
+                        return VolunteerCard(volunteer: volunteers[index]);
                       },
                     );
                   },

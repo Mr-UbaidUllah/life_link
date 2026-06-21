@@ -1,23 +1,34 @@
+import 'package:blood_donation/models/ambulance_model.dart';
+import 'package:blood_donation/view/ambulance_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AmbulenceCard extends StatelessWidget {
-  final String image;
-  final String name;
-  final String address;
-  final String phone;
+  final AmbulanceModel ambulance;
 
   const AmbulenceCard({
     super.key,
-    required this.image,
-    required this.name,
-    required this.address,
-    required this.phone,
+    required this.ambulance,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    
+    Color getStatusColor() {
+      return ambulance.isAvailable ? Colors.green : Colors.orange;
+    }
+
+    String getAmbulanceTypeLabel() {
+      switch (ambulance.type) {
+        case AmbulanceType.cardiac: return 'Cardiac (ICU)';
+        case AmbulanceType.basic: return 'Basic Life Support';
+        case AmbulanceType.neonatal: return 'Neonatal (NICU)';
+        case AmbulanceType.oxygen: return 'Oxygen Support';
+      }
+    }
+
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
       decoration: BoxDecoration(
@@ -31,58 +42,64 @@ class AmbulenceCard extends StatelessWidget {
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20.r),
-        child: IntrinsicHeight(
-          child: Row(
-            children: [
-              Container(
-                width: 6.w,
-                color: theme.colorScheme.primary,
-              ),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.all(12.w),
-                  child: Row(
-                    children: [
-                      // Image with loading indicator
-                      Container(
-                        width: 70.w,
-                        height: 70.w,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16.r),
-                          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16.r),
+      child: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(12.w),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Image and Availability Badge
+                Stack(
+                  children: [
+                    Container(
+                      width: 85.w,
+                      height: 85.w,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16.r),
+                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16.r),
+                        child: Hero(
+                          tag: 'ambulance_image_${ambulance.id}',
                           child: Image.network(
-                            image,
+                            ambulance.imageUrl,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) =>
-                                Icon(Icons.emergency_rounded, color: theme.colorScheme.onSurface.withValues(alpha: 0.4), size: 30.sp),
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
-                                      : null,
-                                ),
-                              );
-                            },
+                                Icon(Icons.emergency_rounded, color: theme.colorScheme.onSurface.withValues(alpha: 0.4), size: 35.sp),
                           ),
                         ),
                       ),
-                      SizedBox(width: 14.w),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              name,
+                    ),
+                    Positioned(
+                      top: 4,
+                      left: 4,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                        decoration: BoxDecoration(
+                          color: getStatusColor(),
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                        child: Text(
+                          ambulance.isAvailable ? 'AVAILABLE' : 'BUSY',
+                          style: TextStyle(color: Colors.white, fontSize: 8.sp, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(width: 14.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              ambulance.hospitalName,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16.sp,
@@ -91,55 +108,59 @@ class AmbulenceCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            SizedBox(height: 6.h),
-                            Row(
-                              children: [
-                                Icon(Icons.location_on_rounded, size: 14.sp, color: theme.colorScheme.primary),
-                                SizedBox(width: 4.w),
-                                Expanded(
-                                  child: Text(
-                                    address,
-                                    style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 4.h),
-                            Row(
-                              children: [
-                                Icon(Icons.phone_rounded, size: 14.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
-                                SizedBox(width: 4.w),
-                                Text(
-                                  phone,
-                                  style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.5), fontWeight: FontWeight.w500),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(width: 8.w),
-                      // Action Button
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
+                          ),
                           Container(
-                            padding: EdgeInsets.all(10.r),
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                             decoration: BoxDecoration(
                               color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
+                              borderRadius: BorderRadius.circular(8.r),
                             ),
-                            child: Icon(Icons.call_rounded, color: theme.colorScheme.primary, size: 18.sp),
+                            child: Text(
+                              'Rs. ${ambulance.basePrice}',
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
                           ),
-                          SizedBox(height: 4.h),
+                        ],
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        getAmbulanceTypeLabel(),
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: 6.h),
+                      Row(
+                        children: [
+                          Icon(Icons.star_rounded, size: 14.sp, color: Colors.amber),
+                          SizedBox(width: 2.w),
                           Text(
-                            'Call',
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.bold,
+                            ambulance.rating.toString(),
+                            style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            ' (${ambulance.reviews} reviews)',
+                            style: TextStyle(fontSize: 11.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 6.h),
+                      Row(
+                        children: [
+                          Icon(Icons.location_on_rounded, size: 14.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
+                          SizedBox(width: 4.w),
+                          Expanded(
+                            child: Text(
+                              ambulance.address,
+                              style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -147,10 +168,55 @@ class AmbulenceCard extends StatelessWidget {
                     ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+          Divider(height: 1, color: theme.dividerColor.withValues(alpha: 0.05)),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AmbulanceDetailsScreen(ambulance: ambulance),
+                        ),
+                      );
+                    },
+                    icon: Icon(Icons.info_outline_rounded, size: 18.sp),
+                    label: const Text('Details'),
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                      padding: EdgeInsets.symmetric(vertical: 10.h),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      final Uri url = Uri.parse('tel:${ambulance.phoneNumber}');
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url);
+                      }
+                    },
+                    icon: Icon(Icons.call_rounded, size: 18.sp, color: Colors.white),
+                    label: const Text('Call Now'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                      padding: EdgeInsets.symmetric(vertical: 10.h),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

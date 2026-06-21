@@ -12,9 +12,10 @@ class BloodRequestModel {
   final String country;
   final String city;
   final String userId;
+  final String? acceptedByUserId; // Added field
   final DateTime createdAt;
   final DateTime expiryDate;
-  final String status; // 'open' or 'closed'
+  final String status; // 'open', 'in_progress', or 'closed'
 
   BloodRequestModel({
     required this.id,
@@ -28,6 +29,7 @@ class BloodRequestModel {
     required this.country,
     required this.city,
     required this.userId,
+    this.acceptedByUserId,
     required this.createdAt,
     required this.expiryDate,
     this.status = 'open',
@@ -46,7 +48,8 @@ class BloodRequestModel {
       'country': country,
       'city': city,
       'userId': userId,
-      'createdAt': createdAt, // Use specific time or FieldValue.serverTimestamp()
+      'acceptedByUserId': acceptedByUserId,
+      'createdAt': createdAt, 
       'expiryDate': expiryDate,
       'status': status,
     };
@@ -68,6 +71,7 @@ class BloodRequestModel {
       country: map['country'] ?? '',
       city: map['city'] ?? '',
       userId: map['userId'] ?? '',
+      acceptedByUserId: map['acceptedByUserId'],
       createdAt: timestamp?.toDate() ?? DateTime.now(),
       expiryDate: expiryTimestamp?.toDate() ?? DateTime.now().add(const Duration(days: 1)),
       status: map['status'] ?? 'open',

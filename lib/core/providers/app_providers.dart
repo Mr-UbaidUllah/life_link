@@ -1,3 +1,5 @@
+
+import 'package:blood_donation/provider/network_provider.dart';
 import 'package:blood_donation/services/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
@@ -20,6 +22,7 @@ class AppProviders {
   static List<SingleChildWidget> providers = [
     Provider(create: (_) => AuthService()),
     ChangeNotifierProvider(create: (_) => ThemeProvider()),
+    ChangeNotifierProvider(create: (_) => NetworkProvider()),
     ChangeNotifierProxyProvider<AuthService, AuthProviders>(
       create: (context) => AuthProviders(authService: context.read<AuthService>()),
       update: (context, authService, previous) => AuthProviders(authService: authService),

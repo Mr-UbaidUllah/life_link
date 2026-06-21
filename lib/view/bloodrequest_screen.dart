@@ -9,14 +9,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
-class BloodrequestScreen extends StatefulWidget {
-  const BloodrequestScreen({super.key});
+class BloodRequestScreen extends StatefulWidget {
+  const BloodRequestScreen({super.key});
 
   @override
-  State<BloodrequestScreen> createState() => _BloodrequestScreenState();
+  State<BloodRequestScreen> createState() => _BloodRequestScreenState();
 }
 
-class _BloodrequestScreenState extends State<BloodrequestScreen> {
+class _BloodRequestScreenState extends State<BloodRequestScreen> {
   static const List<String> _bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
   // null == "All"

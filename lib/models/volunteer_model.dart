@@ -4,7 +4,11 @@ class VolunteerModel {
   final String id;
   final String name;
   final String imageUrl;
-  final String workDescription;
+  final String workDescription; // Current role or title
+  final String? skills;
+  final String? bio;
+  final String? phone;
+  final String? location;
   final DateTime? createdAt;
 
   VolunteerModel({
@@ -12,6 +16,10 @@ class VolunteerModel {
     required this.name,
     required this.imageUrl,
     required this.workDescription,
+    this.skills,
+    this.bio,
+    this.phone,
+    this.location,
     this.createdAt,
   });
 
@@ -21,6 +29,10 @@ class VolunteerModel {
     String? name,
     String? imageUrl,
     String? workDescription,
+    String? skills,
+    String? bio,
+    String? phone,
+    String? location,
     DateTime? createdAt,
   }) {
     return VolunteerModel(
@@ -28,6 +40,10 @@ class VolunteerModel {
       name: name ?? this.name,
       imageUrl: imageUrl ?? this.imageUrl,
       workDescription: workDescription ?? this.workDescription,
+      skills: skills ?? this.skills,
+      bio: bio ?? this.bio,
+      phone: phone ?? this.phone,
+      location: location ?? this.location,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -38,6 +54,10 @@ class VolunteerModel {
       'name': name,
       'imageUrl': imageUrl,
       'workDescription': workDescription,
+      'skills': skills,
+      'bio': bio,
+      'phone': phone,
+      'location': location,
       'createdAt': FieldValue.serverTimestamp(),
     };
   }
@@ -51,6 +71,10 @@ class VolunteerModel {
       name: map['name'] ?? '',
       imageUrl: map['imageUrl'] ?? '',
       workDescription: map['workDescription'] ?? '',
+      skills: map['skills'],
+      bio: map['bio'],
+      phone: map['phone'],
+      location: map['location'],
       createdAt: timestamp?.toDate(),
     );
   }
