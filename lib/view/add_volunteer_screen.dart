@@ -256,21 +256,28 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                                 location: locationController.text.trim(),
                               );
                               
-                              await volunteerProv.addVolunteer(vol);
+                              try {
+                                await volunteerProv.addVolunteer(vol);
 
-                              if (selectedImage != null) {
-                                await storageProv.uploadImage(vol.id, selectedImage!);
-                              }
- 
-                              if (context.mounted) {
+                                bool imageOk = true;
+                                if (selectedImage != null) {
+                                  imageOk = await storageProv.uploadImage(vol.id, selectedImage!);
+                                }
+
+                                if (!context.mounted) return;
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Welcome to the community! ❤️'),
-                                    backgroundColor: Colors.green,
+                                  SnackBar(
+                                    content: Text(imageOk
+                                        ? 'Welcome to the community! ❤️'
+                                        : 'Registered, but the image upload failed.'),
+                                    backgroundColor: imageOk ? Colors.green : Colors.orange,
                                     behavior: SnackBarBehavior.floating,
                                   ),
                                 );
+                              } catch (e) {
+                                if (!context.mounted) return;
+                                _showError('Could not submit. Check your connection and try again.');
                               }
                             },
                       style: ElevatedButton.styleFrom(

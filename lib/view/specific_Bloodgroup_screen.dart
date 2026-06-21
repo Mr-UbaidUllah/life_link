@@ -2,6 +2,7 @@ import 'package:blood_donation/models/bloodrequest_model.dart';
 import 'package:blood_donation/provider/bloodGroup_provider.dart';
 import 'package:blood_donation/view/post_details.dart';
 import 'package:blood_donation/widgets/home_widgets.dart';
+import 'package:blood_donation/widgets/refresh_helpers.dart';
 import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -34,59 +35,69 @@ class SpecificBloodgroupScreen extends StatelessWidget {
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.colorScheme.onSurface),
         ),
       ),
-      body: Consumer<BloodGroupRequestProvider>(
-        builder: (context, provider, _) {
-          return StreamBuilder<List<BloodRequestModel>>(
-            stream: provider.postsByBloodGroup(bloodGroup!),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return ShimmerList(
-                  padding: EdgeInsets.symmetric(vertical: 10.h),
-                  itemBuilder: (_, __) => const BloodRequestSkeleton(),
-                );
-              }
+      body: RefreshIndicator(
+        onRefresh: () async {
+          // The list is a live Firestore stream, so it's already current —
+          // the pull just gives the user explicit feedback.
+          await Future<void>.delayed(const Duration(milliseconds: 600));
+        },
+        color: theme.colorScheme.primary,
+        child: Consumer<BloodGroupRequestProvider>(
+          builder: (context, provider, _) {
+            return StreamBuilder<List<BloodRequestModel>>(
+              stream: provider.postsByBloodGroup(bloodGroup!),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return ShimmerList(
+                    padding: EdgeInsets.symmetric(vertical: 10.h),
+                    itemBuilder: (_, __) => const BloodRequestSkeleton(),
+                  );
+                }
 
-              if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.bloodtype_outlined, size: 80.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
-                      SizedBox(height: 16.h),
-                      Text(
-                        "No $bloodGroup requests found",
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                          fontWeight: FontWeight.w500,
-                        ),
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return RefreshableFill(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.bloodtype_outlined, size: 80.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+                          SizedBox(height: 16.h),
+                          Text(
+                            "No $bloodGroup requests found",
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                );
-              }
-
-              final requests = snapshot.data!;
-
-              return ListView.builder(
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.symmetric(vertical: 10.h),
-                itemCount: requests.length,
-                itemBuilder: (context, index) {
-                  final req = requests[index];
-
-                  return HomeContainer(
-                    request: req,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => PostDetailsScreen(request: req)),
                     ),
                   );
-                },
-              );
-            },
-          );
-        },
+                }
+
+                final requests = snapshot.data!;
+
+                return ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                  padding: EdgeInsets.symmetric(vertical: 10.h),
+                  itemCount: requests.length,
+                  itemBuilder: (context, index) {
+                    final req = requests[index];
+
+                    return HomeContainer(
+                      request: req,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => PostDetailsScreen(request: req)),
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

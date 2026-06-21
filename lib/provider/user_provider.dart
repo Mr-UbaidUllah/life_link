@@ -120,6 +120,11 @@ class UserProvider extends ChangeNotifier {
   Future<void> loadUserById(String uid) async {
     try {
       _isLoading = true;
+      // Clear the previous post's user immediately. _postUser is a single
+      // shared slot; without this it would keep showing the last post's owner
+      // (and worse, target chat/avatar at them) until this fetch resolves — or
+      // forever if the fetch throws.
+      _postUser = null;
       notifyListeners();
 
       _postUser = await _firestoreService.fetchUserById(uid);

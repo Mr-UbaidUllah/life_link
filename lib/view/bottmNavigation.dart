@@ -186,8 +186,8 @@ class _NavBar extends StatelessWidget {
               badgeStream: unreadStream,
             ),
             _NavItem(
-              icon: Icons.person_outline_rounded,
-              activeIcon: Icons.person_rounded,
+              icon: Icons.settings_outlined,
+              activeIcon: Icons.settings_rounded,
               label: 'Settings',
               selected: currentIndex == 4,
               onTap: () => onTap(4),

@@ -1,4 +1,5 @@
 import 'package:blood_donation/models/organization_model.dart';
+import 'package:blood_donation/utils/phone_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,12 +10,13 @@ class OrganizationDetailsScreen extends StatelessWidget {
   const OrganizationDetailsScreen({super.key, required this.organization});
 
   Future<void> _makeCall(String phoneNumber) async {
-    final Uri launchUri = Uri(
-      scheme: 'tel',
-      path: phoneNumber,
-    );
-    if (await canLaunchUrl(launchUri)) {
-      await launchUrl(launchUri);
+    await launchDialer(phoneNumber);
+  }
+
+  Future<void> _sendEmail(String email) async {
+    final Uri uri = Uri(scheme: 'mailto', path: email.trim());
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
     }
   }
 
@@ -164,7 +166,7 @@ class OrganizationDetailsScreen extends StatelessWidget {
                   _buildContactItem(theme, Icons.location_on_rounded, 'Address', organization.address),
                   _buildContactItem(theme, Icons.phone_rounded, 'Phone', organization.phone, onTap: () => _makeCall(organization.phone)),
                   if (organization.email.isNotEmpty)
-                    _buildContactItem(theme, Icons.email_rounded, 'Email', organization.email),
+                    _buildContactItem(theme, Icons.email_rounded, 'Email', organization.email, onTap: () => _sendEmail(organization.email)),
                   if (organization.website.isNotEmpty)
                     _buildContactItem(theme, Icons.language_rounded, 'Website', organization.website, onTap: () => _launchURL(organization.website)),
                   
@@ -183,20 +185,25 @@ class OrganizationDetailsScreen extends StatelessWidget {
             BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, -5)),
           ],
         ),
+        // An organization is a directory entry (not an app user), so the old
+        // "Send Message" button had no real recipient and did nothing. Offer
+        // Email instead when one is listed; otherwise Call takes the full width.
         child: Row(
           children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {},
-                icon: Icon(Icons.chat_bubble_outline_rounded, size: 20.sp),
-                label: const Text('Send Message'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 54.h),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+            if (organization.email.isNotEmpty) ...[
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _sendEmail(organization.email),
+                  icon: Icon(Icons.email_outlined, size: 20.sp),
+                  label: const Text('Email'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: Size(double.infinity, 54.h),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+                  ),
                 ),
               ),
-            ),
-            SizedBox(width: 16.w),
+              SizedBox(width: 16.w),
+            ],
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: () => _makeCall(organization.phone),

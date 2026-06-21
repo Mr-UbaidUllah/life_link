@@ -1,8 +1,7 @@
 import 'package:blood_donation/models/volunteer_model.dart';
-import 'package:blood_donation/view/msg_screen.dart';
+import 'package:blood_donation/utils/phone_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class VolunteerDetailsScreen extends StatelessWidget {
   final VolunteerModel volunteer;
@@ -107,46 +106,25 @@ class VolunteerDetailsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Quick Action Buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildActionBtn(
-                            context,
-                            icon: Icons.chat_bubble_rounded,
-                            label: 'Message',
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ChatScreen(
-                                    name: volunteer.name,
-                                    imageUrl: volunteer.imageUrl,
-                                    receiverId: volunteer.id,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        SizedBox(width: 16.w),
-                        Expanded(
-                          child: _buildActionBtn(
-                            context,
-                            icon: Icons.phone_rounded,
-                            label: 'Call',
-                            onTap: () {
-                              if (volunteer.phone != null && volunteer.phone!.isNotEmpty) {
-                                _makeCall(volunteer.phone!);
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Phone number not provided')),
-                                );
-                              }
-                            },
-                          ),
-                        ),
-                      ],
+                    // Quick Action: Call only.
+                    // A volunteer is a directory entry (its `id` is the
+                    // Volunteer-collection doc id, NOT an app-user uid), so an
+                    // in-app chat keyed to it would target a phantom recipient
+                    // that can never receive or reply. Phone is the real,
+                    // reachable contact channel for a volunteer.
+                    _buildActionBtn(
+                      context,
+                      icon: Icons.phone_rounded,
+                      label: 'Call Volunteer',
+                      onTap: () {
+                        if (volunteer.phone != null && volunteer.phone!.isNotEmpty) {
+                          _makeCall(volunteer.phone!);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Phone number not provided')),
+                          );
+                        }
+                      },
                     ),
 
                     SizedBox(height: 32.h),
@@ -304,9 +282,6 @@ class VolunteerDetailsScreen extends StatelessWidget {
   }
 
   Future<void> _makeCall(String phone) async {
-    final Uri url = Uri.parse('tel:$phone');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    }
+    await launchDialer(phone);
   }
 }

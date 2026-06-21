@@ -2,7 +2,9 @@ import 'package:blood_donation/models/bloodrequest_model.dart';
 import 'package:blood_donation/models/user_model.dart';
 import 'package:blood_donation/provider/bloodRequest_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
+import 'package:blood_donation/services/notification_database_service.dart';
 import 'package:blood_donation/services/stats_service.dart';
+import 'package:blood_donation/view/notification_screen.dart';
 import 'package:blood_donation/theme/theme.dart';
 import 'package:blood_donation/view/ambulance_screen.dart';
 import 'package:blood_donation/view/bottmNavigation.dart';
@@ -34,6 +36,11 @@ class _HomeScreenState extends State<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
   late Future<CommunityStats> _statsFuture;
   late final Stream<List<BloodRequestModel>> _requestsStream;
+  // Cache the unread-notifications stream once; getUnreadCount() opens a new
+  // Firestore subscription on each call, so building it inline would resubscribe
+  // on every header rebuild.
+  final Stream<int> _unreadNotificationsStream =
+      NotificationDatabaseService().getUnreadCount();
 
   void scrollToTop() {
     if (_scrollController.hasClients) {
@@ -179,6 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
+          _buildNotificationBell(context, theme),
           if (user?.bloodGroup != null && user!.bloodGroup!.isNotEmpty)
             Container(
               padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
@@ -204,6 +212,54 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
         ],
       ),
+    );
+  }
+
+  /// Bell that opens the notification inbox, with a live unread badge.
+  Widget _buildNotificationBell(BuildContext context, ThemeData theme) {
+    return StreamBuilder<int>(
+      stream: _unreadNotificationsStream,
+      builder: (context, snapshot) {
+        final count = snapshot.data ?? 0;
+        return Padding(
+          padding: EdgeInsets.only(right: 4.w),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              IconButton(
+                icon: Icon(Icons.notifications_none_rounded, size: 26.sp, color: theme.colorScheme.onSurface),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => NotificationScreen()),
+                ),
+              ),
+              if (count > 0)
+                Positioned(
+                  right: 6.w,
+                  top: 6.h,
+                  child: Container(
+                    padding: EdgeInsets.all(count > 9 ? 3.r : 4.r),
+                    constraints: BoxConstraints(minWidth: 16.w, minHeight: 16.w),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.error,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      count > 9 ? '9+' : '$count',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9.sp,
+                        fontWeight: FontWeight.bold,
+                        height: 1.1,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 

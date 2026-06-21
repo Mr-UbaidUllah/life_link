@@ -389,6 +389,40 @@ function shouldNotifyForRequest(requestData, userId, userData, creatorUserId) {
 
 exports.shouldNotifyForRequest = shouldNotifyForRequest;
 
+/**
+ * Persist an in-app notification document into each recipient's
+ * `users/{uid}/notifications` subcollection so it shows up in the app's
+ * Notification inbox (not just as an ephemeral push). `pushHandled: true`
+ * tells sendChatPushNotification NOT to send a second push for these — the
+ * blood-request / donor functions already delivered the FCM push directly.
+ *
+ * @param {string[]} userIds  Recipients' user document ids.
+ * @param {object} payload    { title, body, type, ...extra } fields to store.
+ * @return {Promise<void>}
+ */
+async function writeInboxNotifications(userIds, payload) {
+  if (!userIds || userIds.length === 0) return;
+  const db = admin.firestore();
+  const chunkSize = 450; // Firestore batch limit is 500 ops.
+  for (let i = 0; i < userIds.length; i += chunkSize) {
+    const chunk = userIds.slice(i, i + chunkSize);
+    const batch = db.batch();
+    chunk.forEach((uid) => {
+      const ref = db
+        .collection("users").doc(uid)
+        .collection("notifications").doc();
+      batch.set(ref, {
+        ...payload,
+        isRead: false,
+        pushHandled: true,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+    await batch.commit();
+  }
+  logger.info(`📝 Wrote ${userIds.length} inbox notification(s)`);
+}
+
 // ============================================
 // 🩸 BLOOD REQUEST NOTIFICATION
 // ============================================
@@ -433,10 +467,11 @@ exports.sendBloodRequestNotification = onDocumentCreated(
         return null;
       }
 
-      // Collect tokens of MATCHING recipients only — exact blood group + same
-      // city, and never the creator (see shouldNotifyForRequest).
+      // Collect MATCHING recipients only — exact blood group + same city, and
+      // never the creator (see shouldNotifyForRequest). Track ids (for the
+      // in-app inbox) and tokens (for the push) separately.
       const tokens = [];
-      let matched = 0;
+      const matchedUserIds = [];
 
       usersSnapshot.forEach((doc) => {
         const userData = doc.data();
@@ -445,7 +480,7 @@ exports.sendBloodRequestNotification = onDocumentCreated(
         if (!shouldNotifyForRequest(requestData, userId, userData, creatorUserId)) {
           return;
         }
-        matched++;
+        matchedUserIds.push(userId);
 
         if (userData.fcmToken) {
           tokens.push(userData.fcmToken);
@@ -457,14 +492,27 @@ exports.sendBloodRequestNotification = onDocumentCreated(
 
       logger.info(
         `📊 Stats: Total users: ${usersSnapshot.size}, ` +
-        `Matched: ${matched}, With tokens: ${tokens.length}`
+        `Matched: ${matchedUserIds.length}, With tokens: ${tokens.length}`
       );
+
+      const bodyText =
+        `Blood Group ${requestData.bloodGroup} needed - ` +
+        `${requestData.bags} bag(s) at ${requestData.hospital}`;
+
+      // Persist to each matched user's in-app inbox regardless of whether they
+      // have a push token, so the Notifications screen always shows the match.
+      await writeInboxNotifications(matchedUserIds, {
+        title: "🩸 Urgent Blood Request",
+        body: bodyText,
+        type: "blood_request",
+        requestId: requestId,
+      });
 
       if (tokens.length === 0) {
         logger.warn(
           `❌ No matching recipients with tokens for ` +
           `${norm(requestData.bloodGroup)} in ${norm(requestData.city)} ` +
-          `(excluding creator)`
+          `(excluding creator) — inbox written, push skipped`
         );
         return null;
       }
@@ -475,7 +523,7 @@ exports.sendBloodRequestNotification = onDocumentCreated(
       const message = {
         notification: {
           title: "🩸 Urgent Blood Request",
-          body: `Blood Group ${requestData.bloodGroup} needed - ${requestData.bags} bag(s) at ${requestData.hospital}`,
+          body: bodyText,
         },
         data: {
           requestId: requestId,
@@ -552,10 +600,10 @@ exports.sendDonorAvailabilityNotification = onDocumentUpdated(
 
         logger.info(`✅ Found ${usersSnapshot.size} total users`);
 
-        // Collect tokens (skip the donor)
+        // Collect recipients (everyone except the donor). Track ids for the
+        // in-app inbox and tokens for the push separately.
         const tokens = [];
-        let usersWithTokens = 0;
-        let donorSkipped = false;
+        const recipientUserIds = [];
 
         usersSnapshot.forEach((doc) => {
           const userData = doc.data();
@@ -564,40 +612,50 @@ exports.sendDonorAvailabilityNotification = onDocumentUpdated(
           // Skip the donor who toggled
           if (currentUserId === userId) {
             logger.info(`⏭️ Skipping donor: ${userId}`);
-            donorSkipped = true;
             return;
           }
+          recipientUserIds.push(currentUserId);
 
           // Collect token
           if (userData.fcmToken) {
             tokens.push(userData.fcmToken);
-            usersWithTokens++;
             logger.info(`✅ Added token for user: ${currentUserId}`);
           }
         });
 
         logger.info(
           `📊 Stats: Total users: ${usersSnapshot.size}, ` +
-          `With tokens: ${usersWithTokens}, ` +
-          `Donor skipped: ${donorSkipped}`
+          `Recipients: ${recipientUserIds.length}, ` +
+          `With tokens: ${tokens.length}`
         );
-
-        if (tokens.length === 0) {
-          logger.warn("❌ No tokens found (excluding donor)");
-          return null;
-        }
-
-        logger.info(`✅ Sending to ${tokens.length} users`);
 
         // Prepare notification
         const donorName = afterData.name || "A donor";
         const bloodGroup = afterData.bloodGroup || "Unknown blood group";
         const city = afterData.city || "your area";
+        const donorBody =
+          `${donorName} with blood group ${bloodGroup} ` +
+          `is now available to donate in ${city}`;
+
+        // Persist to every recipient's in-app inbox regardless of push token.
+        await writeInboxNotifications(recipientUserIds, {
+          title: "🩸 New Donor Available!",
+          body: donorBody,
+          type: "donor_available",
+          senderId: userId,
+        });
+
+        if (tokens.length === 0) {
+          logger.warn("❌ No tokens found (excluding donor) — inbox written, push skipped");
+          return null;
+        }
+
+        logger.info(`✅ Sending to ${tokens.length} users`);
 
         const message = {
           notification: {
             title: "🩸 New Donor Available!",
-            body: `${donorName} with blood group ${bloodGroup} is now available to donate in ${city}`,
+            body: donorBody,
           },
           data: {
             userId: userId,
@@ -642,6 +700,70 @@ exports.sendDonorAvailabilityNotification = onDocumentUpdated(
       }
     } catch (error) {
       logger.error("❌ Error:", error);
+      return null;
+    }
+  }
+);
+
+// ============================================
+// 💬 CHAT / IN-APP NOTIFICATION PUSH
+// ============================================
+// Fires whenever a notification document is written to any user's
+// `users/{userId}/notifications` subcollection (chat messages write here). The
+// client cannot send FCM to another device, so the push MUST happen here:
+// look up the recipient's fcmToken and deliver. Generic — works for any
+// notification type the app starts writing (chat today, others later).
+exports.sendChatPushNotification = onDocumentCreated(
+  "users/{userId}/notifications/{notificationId}",
+  async (event) => {
+    try {
+      const notification = event.data.data();
+      const userId = event.params.userId;
+
+      // Blood-request and donor-availability inbox docs are written by their
+      // own functions, which already delivered the FCM push. They carry
+      // pushHandled:true — skip here so the recipient doesn't get a second push.
+      if (notification.pushHandled === true) {
+        logger.info("⏭️ pushHandled — inbox-only, skipping duplicate push");
+        return null;
+      }
+
+      // Look up the recipient's FCM token.
+      const userDoc = await admin
+        .firestore()
+        .collection("users")
+        .doc(userId)
+        .get();
+
+      if (!userDoc.exists) {
+        logger.warn(`❌ Recipient ${userId} not found`);
+        return null;
+      }
+
+      const fcmToken = userDoc.data().fcmToken;
+      if (!fcmToken) {
+        logger.info(`⚠️ Recipient ${userId} has no FCM token — in-app only`);
+        return null;
+      }
+
+      const title = notification.title || "New notification";
+      const body = notification.body || "";
+
+      const response = await admin.messaging().send({
+        token: fcmToken,
+        notification: {title, body},
+        data: {
+          type: notification.type || "general",
+          senderId: notification.senderId || "",
+        },
+        android: {priority: "high"},
+      });
+
+      logger.info(`✅ Push sent to ${userId}: ${response}`);
+      return {success: true};
+    } catch (error) {
+      // A stale/unregistered token throws — log and move on, don't retry-loop.
+      logger.error("❌ Error sending chat push:", error);
       return null;
     }
   }

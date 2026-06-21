@@ -2,6 +2,7 @@ import 'package:blood_donation/models/organization_model.dart';
 import 'package:blood_donation/provider/organization_provider.dart';
 import 'package:blood_donation/view/add_organization_screen.dart';
 import 'package:blood_donation/widgets/organization_card.dart';
+import 'package:blood_donation/widgets/refresh_helpers.dart';
 import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -15,7 +16,7 @@ class OrganizationScreen extends StatefulWidget {
 }
 
 class _OrganizationScreenState extends State<OrganizationScreen> {
-  late final Stream<List<OrganizationModel>> _orgStream;
+  late Stream<List<OrganizationModel>> _orgStream;
   String _searchQuery = '';
   OrganizationType? _selectedType;
 
@@ -23,6 +24,13 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
   void initState() {
     super.initState();
     _orgStream = context.read<OrganizationProvider>().requests;
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _orgStream = context.read<OrganizationProvider>().requests;
+    });
+    await Future<void>.delayed(const Duration(milliseconds: 400));
   }
 
   @override
@@ -98,42 +106,46 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
           ),
           
           Expanded(
-            child: StreamBuilder<List<OrganizationModel>>(
-              stream: _orgStream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return ShimmerList(
-                    itemCount: 5,
-                    itemBuilder: (_, __) => const ContactCardSkeleton(),
-                  );
-                }
-
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return _buildEmptyState(theme);
-                }
-
-                final organizations = snapshot.data!.where((org) {
-                  final matchesSearch = org.name.toLowerCase().contains(_searchQuery) || 
-                                       org.city.toLowerCase().contains(_searchQuery);
-                  final matchesType = _selectedType == null || org.type == _selectedType;
-                  return matchesSearch && matchesType;
-                }).toList();
-
-                if (organizations.isEmpty) {
-                  return _buildEmptyState(theme, message: "No partners match your filters");
-                }
-
-                return ListView.builder(
-                  physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.all(20.w),
-                  itemCount: organizations.length,
-                  itemBuilder: (context, index) {
-                    return OrganizationCard(
-                      organization: organizations[index],
+            child: RefreshIndicator(
+              onRefresh: _refresh,
+              color: theme.colorScheme.primary,
+              child: StreamBuilder<List<OrganizationModel>>(
+                stream: _orgStream,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return ShimmerList(
+                      itemCount: 5,
+                      itemBuilder: (_, __) => const ContactCardSkeleton(),
                     );
-                  },
-                );
-              },
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return RefreshableFill(child: _buildEmptyState(theme));
+                  }
+
+                  final organizations = snapshot.data!.where((org) {
+                    final matchesSearch = org.name.toLowerCase().contains(_searchQuery) ||
+                                         org.city.toLowerCase().contains(_searchQuery);
+                    final matchesType = _selectedType == null || org.type == _selectedType;
+                    return matchesSearch && matchesType;
+                  }).toList();
+
+                  if (organizations.isEmpty) {
+                    return RefreshableFill(child: _buildEmptyState(theme, message: "No partners match your filters"));
+                  }
+
+                  return ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                    padding: EdgeInsets.all(20.w),
+                    itemCount: organizations.length,
+                    itemBuilder: (context, index) {
+                      return OrganizationCard(
+                        organization: organizations[index],
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ),
         ],

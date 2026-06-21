@@ -247,20 +247,33 @@ class _AddAmbulanceState extends State<AddAmbulance> {
                               basePrice: priceCtrl.text.trim(),
                             );
 
-                            await ambulanceProv.addAmbulance(model);
+                            try {
+                              await ambulanceProv.addAmbulance(model);
 
-                            if (selectedImage != null) {
-                              await storageProv.uploadImage(model.id, selectedImage!);
-                            }
+                              // uploadImage returns false on failure; don't
+                              // claim full success if the image didn't upload.
+                              bool imageOk = true;
+                              if (selectedImage != null) {
+                                imageOk = await storageProv.uploadImage(model.id, selectedImage!);
+                              }
 
-                            if (context.mounted) {
+                              if (!context.mounted) return;
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Ambulance service added successfully'),
-                                  backgroundColor: Colors.green,
+                                SnackBar(
+                                  content: Text(imageOk
+                                      ? 'Ambulance service added successfully'
+                                      : 'Ambulance added, but the image upload failed.'),
+                                  backgroundColor: imageOk ? Colors.green : Colors.orange,
                                   behavior: SnackBarBehavior.floating,
                                 ),
+                              );
+                            } catch (e) {
+                              if (!context.mounted) return;
+                              _showError(
+                                context,
+                                theme,
+                                'Could not add ambulance. Check your connection and try again.',
                               );
                             }
                           },

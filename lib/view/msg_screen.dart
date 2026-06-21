@@ -33,12 +33,30 @@ class _ChatScreenState extends State<ChatScreen> {
   // flash the loading skeleton) every time the Consumer rebuilds on send.
   late final Stream<List<MessageModel>> _messagesStream;
 
+  // Tracks how many messages we've already acknowledged as read. Each time the
+  // stream grows while the chat is on screen we re-run markAsRead, otherwise an
+  // incoming message would re-bump unreadCounts[me] and leave a phantom badge
+  // on the bottom-nav until the user closed and reopened the chat.
+  int _lastSeenCount = 0;
+
   @override
   void initState() {
     super.initState();
     _messagesStream = context.read<MessageProvider>().getMessages(widget.receiverId);
     // Mark as read when entering the chat
     Future.microtask(() {
+      if (mounted) {
+        context.read<MessageProvider>().markAsRead(widget.receiverId);
+      }
+    });
+  }
+
+  /// Clear the unread count whenever the visible message list grows while the
+  /// chat is open. Idempotent (markAsRead just sets the counter to 0).
+  void _markReadIfNewMessages(int count) {
+    if (count <= _lastSeenCount) return;
+    _lastSeenCount = count;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<MessageProvider>().markAsRead(widget.receiverId);
       }
@@ -181,6 +199,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     }
 
                     final messages = snapshot.data!.reversed.toList();
+                    _markReadIfNewMessages(snapshot.data!.length);
 
                     return ListView.builder(
                       controller: _scrollController,
@@ -294,7 +313,12 @@ class _ChatScreenState extends State<ChatScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
-      builder: (context) {
+      // NOTE: name the sheet's own context `sheetContext`. Popping the sheet
+      // deactivates that context, so it can't be reused to open the confirm
+      // dialog — the dialog would silently fail and "delete" would do nothing.
+      // Close the sheet with `sheetContext`, then drive the dialog off the
+      // screen's still-mounted `context`.
+      builder: (sheetContext) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -312,7 +336,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 leading: Icon(Icons.person_outline, color: theme.colorScheme.onSurface),
                 title: Text('View Profile', style: TextStyle(color: theme.colorScheme.onSurface)),
                 onTap: () {
-                  Navigator.pop(context);
+                  Navigator.pop(sheetContext);
                   _viewProfile();
                 },
               ),
@@ -320,7 +344,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 leading: const Icon(Icons.delete_outline, color: Colors.red),
                 title: const Text('Delete Conversation', style: TextStyle(color: Colors.red)),
                 onTap: () {
-                  Navigator.pop(context);
+                  Navigator.pop(sheetContext);
                   _confirmDeleteChat(context, theme);
                 },
               ),
@@ -346,13 +370,15 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           TextButton(
             onPressed: () async {
+              // Capture everything off the context BEFORE the await — popping
+              // the dialog deactivates dialogContext, and the screen may unmount.
+              final messageProvider = context.read<MessageProvider>();
+              final screenNavigator = Navigator.of(context);
               final scaffoldMessenger = ScaffoldMessenger.of(context);
+              Navigator.pop(dialogContext); // close the confirm dialog now
               try {
-                await context.read<MessageProvider>().deleteChat(widget.receiverId);
-                if (mounted) {
-                  Navigator.pop(dialogContext);
-                  Navigator.pop(context);
-                }
+                await messageProvider.deleteChat(widget.receiverId);
+                if (mounted) screenNavigator.pop(); // leave the chat screen
               } catch (e) {
                 scaffoldMessenger.showSnackBar(
                   SnackBar(content: Text('Error deleting chat: $e')),

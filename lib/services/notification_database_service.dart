@@ -23,6 +23,21 @@ class NotificationDatabaseService {
     });
   }
 
+  /// Live count of unread notifications for the current user — drives the
+  /// badge on the home-screen bell.
+  Stream<int> getUnreadCount() {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return Stream.value(0);
+
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('notifications')
+        .where('isRead', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
   Future<void> markAsRead(String notificationId) async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;

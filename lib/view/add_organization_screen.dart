@@ -284,27 +284,40 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
                               rating: 4.5, // Default for demo purposes
                             );
 
-                            await orgProvider.addOraganization(org);
+                            try {
+                              await orgProvider.addOraganization(org);
 
-                            if (selectedImage != null) {
-                              await storageProvider.uploadImage(org.id, selectedImage!);
-                            }
+                              bool imageOk = true;
+                              if (selectedImage != null) {
+                                imageOk = await storageProvider.uploadImage(org.id, selectedImage!);
+                              }
 
-                            if (mounted) {
+                              if (!mounted) return;
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Row(
                                     children: [
-                                      const Icon(Icons.check_circle_rounded, color: Colors.white),
+                                      Icon(imageOk ? Icons.check_circle_rounded : Icons.warning_amber_rounded, color: Colors.white),
                                       SizedBox(width: 12.w),
-                                      const Text('Partner registered successfully!'),
+                                      Expanded(
+                                        child: Text(imageOk
+                                            ? 'Partner registered successfully!'
+                                            : 'Partner registered, but the image upload failed.'),
+                                      ),
                                     ],
                                   ),
-                                  backgroundColor: Colors.green,
+                                  backgroundColor: imageOk ? Colors.green : Colors.orange,
                                   behavior: SnackBarBehavior.floating,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
                                 ),
+                              );
+                            } catch (e) {
+                              if (!mounted) return;
+                              _showError(
+                                context,
+                                theme,
+                                'Could not register partner. Check your connection and try again.',
                               );
                             }
                           },

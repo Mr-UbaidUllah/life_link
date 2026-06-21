@@ -7,6 +7,7 @@ import 'package:blood_donation/view/edit_profile_screen.dart';
 import 'package:blood_donation/view/msg_screen.dart';
 import 'package:blood_donation/view/post_details.dart';
 import 'package:blood_donation/widgets/home_widgets.dart';
+import 'package:blood_donation/widgets/refresh_helpers.dart';
 import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -88,33 +89,44 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                         color: theme.colorScheme.surface,
                         borderRadius: BorderRadius.vertical(top: Radius.circular(30.r)),
                       ),
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.symmetric(vertical: 22.h),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _buildQuickStat(theme, user.bloodGroup ?? '—', 'Blood Group', Icons.bloodtype_rounded),
-                                _buildVerticalDivider(theme),
-                                _buildQuickStat(theme, user.isDonor ? 'Donor' : 'Member', 'Status', Icons.volunteer_activism_rounded),
-                                _buildVerticalDivider(theme),
-                                _buildQuickStat(theme, '${user.createdAt.year}', 'Joined', Icons.event_rounded),
-                              ],
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(16.w, 22.h, 16.w, 22.h),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildQuickStat(theme, user.bloodGroup ?? '—', 'Blood Group',
+                                  Icons.bloodtype_rounded, AppColors.primary),
                             ),
-                          ),
-                          TabBar(
-                            indicatorColor: theme.colorScheme.primary,
-                            indicatorWeight: 3,
-                            indicatorSize: TabBarIndicatorSize.label,
-                            labelColor: theme.colorScheme.primary,
-                            unselectedLabelColor: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp),
-                            tabs: const [
-                              Tab(text: "Details"),
-                              Tab(text: "Requests"),
-                            ],
-                          ),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: _buildQuickStat(theme, user.isDonor ? 'Donor' : 'Member', 'Status',
+                                  Icons.volunteer_activism_rounded, AppColors.green),
+                            ),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: _buildQuickStat(theme, '${user.createdAt.year}', 'Joined',
+                                  Icons.event_rounded, AppColors.blue),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Pinned so the tabs stay reachable while the content scrolls.
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _SliverTabBarDelegate(
+                      backgroundColor: theme.colorScheme.surface,
+                      tabBar: TabBar(
+                        indicatorColor: theme.colorScheme.primary,
+                        indicatorWeight: 3,
+                        indicatorSize: TabBarIndicatorSize.label,
+                        labelColor: theme.colorScheme.primary,
+                        unselectedLabelColor: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                        labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp),
+                        tabs: const [
+                          Tab(text: "Details"),
+                          Tab(text: "Requests"),
                         ],
                       ),
                     ),
@@ -122,7 +134,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                 ];
               },
               body: Container(
-                color: theme.colorScheme.surface,
+                color: theme.scaffoldBackgroundColor,
                 child: TabBarView(
                   children: [
                     _buildDetailsTab(theme, user),
@@ -179,18 +191,32 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
             onPressed: () => _openEdit(user),
           ),
       ],
-      flexibleSpace: FlexibleSpaceBar(
-        stretchModes: const [StretchMode.zoomBackground],
-        background: Stack(
+      flexibleSpace: LayoutBuilder(
+        builder: (context, constraints) {
+          // Collapse progress: 0 = fully expanded, 1 = collapsed to the toolbar.
+          final settings = context
+              .dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
+          double collapseT = 0;
+          if (settings != null) {
+            final delta = settings.maxExtent - settings.minExtent;
+            if (delta > 0) {
+              collapseT = (1 -
+                      (settings.currentExtent - settings.minExtent) / delta)
+                  .clamp(0.0, 1.0);
+            }
+          }
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              FlexibleSpaceBar(
+                stretchModes: const [StretchMode.zoomBackground],
+                background: Stack(
           fit: StackFit.expand,
           children: [
             Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.primary.withValues(alpha: 0.7),
-                  ],
+                  colors: [AppColors.primary, AppColors.primaryDeep],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -204,6 +230,18 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                 height: 180.r,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -45.h,
+              left: -35.w,
+              child: Container(
+                width: 150.r,
+                height: 150.r,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.06),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -285,26 +323,83 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
             ),
           ],
         ),
+              ),
+              // Collapsed-state heading: the user's name fades into the toolbar
+              // as the header shrinks, so the pinned bar shows a real heading
+              // instead of an empty coloured strip.
+              IgnorePointer(
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: SafeArea(
+                    bottom: false,
+                    child: SizedBox(
+                      height: kToolbarHeight,
+                      child: Center(
+                        child: Opacity(
+                          opacity: collapseT < 0.5
+                              ? 0.0
+                              : ((collapseT - 0.5) * 2).clamp(0.0, 1.0),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 56.w),
+                            child: Text(
+                              user.name ?? 'Profile',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 17.sp,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildVerticalDivider(ThemeData theme) {
+  Widget _buildQuickStat(ThemeData theme, String value, String label, IconData icon, Color accent) {
     return Container(
-      height: 40.h,
-      width: 1,
-      color: theme.dividerColor.withValues(alpha: 0.1),
-    );
-  }
-
-  Widget _buildQuickStat(ThemeData theme, String value, String label, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: theme.colorScheme.primary.withValues(alpha: 0.6), size: 20.sp),
-        SizedBox(height: 4.h),
-        Text(value, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16.sp, color: theme.colorScheme.onSurface)),
-        Text(label, style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.45), fontSize: 12.sp)),
-      ],
+      padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 6.w),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: accent.withValues(alpha: 0.14)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8.r),
+            decoration: BoxDecoration(color: accent.withValues(alpha: 0.15), shape: BoxShape.circle),
+            child: Icon(icon, color: accent, size: 18.sp),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.sp, color: theme.colorScheme.onSurface),
+          ),
+          SizedBox(height: 2.h),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -318,8 +413,11 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     ].join(', ');
     final about = (user.about ?? '').trim();
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
+    return RefreshIndicator(
+      onRefresh: () => context.read<UserProvider>().loadUserById(widget.userId),
+      color: theme.colorScheme.primary,
+      child: SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
       padding: EdgeInsets.all(24.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -373,6 +471,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
           SizedBox(height: 40.h),
         ],
       ),
+      ),
     );
   }
 
@@ -391,10 +490,26 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 12, offset: const Offset(0, 4)),
             ],
           ),
-          child: Column(children: children),
+          child: Column(children: _withDividers(theme, children)),
         ),
       ],
     );
+  }
+
+  /// Inserts a hairline divider between each tile so rows in a card read as
+  /// distinct entries instead of a single merged block.
+  List<Widget> _withDividers(ThemeData theme, List<Widget> tiles) {
+    final out = <Widget>[];
+    for (var i = 0; i < tiles.length; i++) {
+      if (i > 0) {
+        out.add(Padding(
+          padding: EdgeInsets.only(left: 62.w, right: 16.w),
+          child: Divider(height: 1, thickness: 1, color: theme.colorScheme.onSurface.withValues(alpha: 0.06)),
+        ));
+      }
+      out.add(tiles[i]);
+    }
+    return out;
   }
 
   Widget _buildInfoTile(ThemeData theme, IconData icon, String label, String value, {VoidCallback? onTap}) {
@@ -439,8 +554,15 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   // ---------------------------------------------------------- Requests tab
 
   Widget _buildRequestsTab(ThemeData theme, String userId) {
-    return Consumer<UserPostsProvider>(
-      builder: (context, provider, _) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        // Posts stream live from Firestore — already current; the pull is
+        // explicit feedback.
+        await Future<void>.delayed(const Duration(milliseconds: 600));
+      },
+      color: theme.colorScheme.primary,
+      child: Consumer<UserPostsProvider>(
+        builder: (context, provider, _) {
         return StreamBuilder<List<BloodRequestModel>>(
           stream: provider.posts(userId),
           builder: (context, snapshot) {
@@ -453,17 +575,19 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
             }
 
             if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.post_add_rounded, size: 60.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
-                    SizedBox(height: 16.h),
-                    Text(
-                      _isMe ? "You haven't posted any requests yet" : 'No blood requests yet',
-                      style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4), fontSize: 15.sp),
-                    ),
-                  ],
+              return RefreshableFill(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.post_add_rounded, size: 60.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+                      SizedBox(height: 16.h),
+                      Text(
+                        _isMe ? "You haven't posted any requests yet" : 'No blood requests yet',
+                        style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4), fontSize: 15.sp),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }
@@ -471,6 +595,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
             final requests = snapshot.data!;
             return ListView.builder(
               // HomeContainer carries its own horizontal margin.
+              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
               padding: EdgeInsets.symmetric(vertical: 14.h),
               itemCount: requests.length,
               itemBuilder: (context, index) {
@@ -491,6 +616,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
           },
         );
       },
+        ),
     );
   }
 
@@ -500,9 +626,10 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     final hasPhone = (user.phone ?? '').trim().isNotEmpty;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(24.w, 14.h, 24.w, 14.h),
+      padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 14.h),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
+        border: Border(top: BorderSide(color: theme.colorScheme.onSurface.withValues(alpha: 0.06))),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, -5)),
         ],
@@ -510,20 +637,22 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       child: SafeArea(
         top: false,
         child: _isMe
-            ? SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _openEdit(user),
-                  icon: Icon(Icons.edit_rounded, size: 18.sp, color: Colors.white),
-                  label: Text('Edit Profile', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15.sp)),
-                  style: _filledButtonStyle(theme),
-                ),
+            ? _actionButton(
+                theme: theme,
+                icon: Icons.edit_rounded,
+                label: 'Edit Profile',
+                primary: true,
+                onTap: () => _openEdit(user),
               )
             : Row(
                 children: [
                   Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
+                    child: _actionButton(
+                      theme: theme,
+                      icon: Icons.chat_bubble_rounded,
+                      label: 'Message',
+                      primary: false,
+                      onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -534,25 +663,17 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                           ),
                         );
                       },
-                      icon: Icon(Icons.chat_bubble_rounded, size: 18.sp, color: theme.colorScheme.primary),
-                      label: Text('Message', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 15.sp)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-                        foregroundColor: theme.colorScheme.primary,
-                        padding: EdgeInsets.symmetric(vertical: 16.h),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.r)),
-                      ),
                     ),
                   ),
                   if (hasPhone) ...[
-                    SizedBox(width: 14.w),
+                    SizedBox(width: 12.w),
                     Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _makePhoneCall(user.phone),
-                        icon: Icon(Icons.call_rounded, size: 18.sp, color: Colors.white),
-                        label: Text('Call', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15.sp)),
-                        style: _filledButtonStyle(theme),
+                      child: _actionButton(
+                        theme: theme,
+                        icon: Icons.call_rounded,
+                        label: 'Call',
+                        primary: true,
+                        onTap: () => _makePhoneCall(user.phone),
                       ),
                     ),
                   ],
@@ -562,14 +683,62 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     );
   }
 
-  ButtonStyle _filledButtonStyle(ThemeData theme) {
-    return ElevatedButton.styleFrom(
-      backgroundColor: theme.colorScheme.primary,
-      foregroundColor: Colors.white,
-      padding: EdgeInsets.symmetric(vertical: 16.h),
-      elevation: 5,
-      shadowColor: theme.colorScheme.primary.withValues(alpha: 0.3),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.r)),
+  /// Bottom-bar action button. [primary] renders a gradient CTA with a soft
+  /// red glow; otherwise a tonal secondary button outlined in the brand color.
+  Widget _actionButton({
+    required ThemeData theme,
+    required IconData icon,
+    required String label,
+    required bool primary,
+    required VoidCallback onTap,
+  }) {
+    final radius = BorderRadius.circular(16.r);
+    final fg = primary ? Colors.white : theme.colorScheme.primary;
+    return Material(
+      color: Colors.transparent,
+      child: Ink(
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          gradient: primary
+              ? const LinearGradient(
+                  colors: [AppColors.primary, AppColors.primaryDeep],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: primary ? null : theme.colorScheme.primary.withValues(alpha: 0.10),
+          border: primary
+              ? null
+              : Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.20)),
+          boxShadow: primary
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
+                  )
+                ]
+              : null,
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: radius,
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 15.h),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 18.sp, color: fg),
+                SizedBox(width: 8.w),
+                Text(
+                  label,
+                  style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 15.sp),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -630,5 +799,30 @@ class _HeaderChip extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Pins the profile's TabBar just below the collapsing header so the tabs stay
+/// visible (and tappable) no matter how far the content is scrolled.
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverTabBarDelegate({required this.tabBar, required this.backgroundColor});
+
+  final TabBar tabBar;
+  final Color backgroundColor;
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(color: backgroundColor, child: tabBar);
+  }
+
+  @override
+  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
+    return oldDelegate.backgroundColor != backgroundColor || oldDelegate.tabBar != tabBar;
   }
 }

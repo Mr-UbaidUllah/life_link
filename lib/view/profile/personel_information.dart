@@ -1,5 +1,6 @@
 import 'package:blood_donation/provider/auth_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
+import 'package:blood_donation/view/auth/auth_wrappper.dart';
 import 'package:blood_donation/view/profile/basic_information.dart';
 import 'package:blood_donation/widgets/custom_dropdown_form_field.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
@@ -217,13 +218,19 @@ class _PersonelInformationState extends State<PersonelInformation> {
                   ? null
                   : () async {
                       // Sign out through the provider so AuthProviders.user is
-                      // cleared (not left stale). AuthWrapper's auth stream then
-                      // renders LoginScreen; pop any pushed setup routes back to
-                      // that root so we don't stack a second login screen.
+                      // cleared (not left stale), and clear the cached profile.
                       await auth.logout();
-                      if (context.mounted) {
-                        Navigator.of(context).popUntil((route) => route.isFirst);
-                      }
+                      if (!context.mounted) return;
+                      context.read<UserProvider>().clearUser();
+                      // The signup path reached here via pushReplacement, which
+                      // REPLACED the AuthWrapper root — so popUntil(isFirst)
+                      // would no-op and strand the (now signed-out) user on this
+                      // dead screen. Rebuild AuthWrapper as the sole route; its
+                      // auth stream then renders LoginScreen.
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const AuthWrapper()),
+                        (route) => false,
+                      );
                     },
             );
           },

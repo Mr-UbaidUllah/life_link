@@ -5,6 +5,7 @@ import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
 import 'package:blood_donation/widgets/custom_dropdown_form_field.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -231,13 +232,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 focusedBorderColor: theme.colorScheme.primary,
                 borderRadius: 16.r,
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
+                  final name = value?.trim() ?? '';
+                  if (name.isEmpty) {
                     return 'Please enter your name';
+                  }
+                  if (name.length < 3) {
+                    return 'Name must be at least 3 characters';
                   }
                   return null;
                 },
               ),
-              
+
               SizedBox(height: 20.h),
 
               CustomTextField(
@@ -248,6 +253,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 keyboardType: TextInputType.phone,
                 focusedBorderColor: theme.colorScheme.primary,
                 borderRadius: 16.r,
+                // Match the setup screen: digits only, 10–11 chars, so a saved
+                // profile can't end up with an empty/garbage number that breaks
+                // the Call button on the profile screen.
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(11),
+                ],
+                validator: (value) {
+                  final phone = value?.trim() ?? '';
+                  if (phone.isEmpty) {
+                    return 'Please enter your phone number';
+                  }
+                  if (phone.length < 10) {
+                    return 'Enter a valid phone number';
+                  }
+                  return null;
+                },
               ),
 
               SizedBox(height: 30.h),

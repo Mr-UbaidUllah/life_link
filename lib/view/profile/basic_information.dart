@@ -10,7 +10,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 class BasicInformation extends StatefulWidget {
-  const BasicInformation({super.key});
+  /// When true, this screen is being used to EDIT an already-onboarded user's
+  /// health details (opened from Settings) rather than as Step 2 of the
+  /// first-time setup wizard. In edit mode saving pops back to the caller
+  /// instead of advancing to the photo step + wiping the nav stack.
+  final bool isEditMode;
+
+  const BasicInformation({super.key, this.isEditMode = false});
 
   @override
   State<BasicInformation> createState() => _BasicInformationState();
@@ -87,7 +93,7 @@ class _BasicInformationState extends State<BasicInformation> {
               )
             : null,
         title: Text(
-          'Profile Setup',
+          widget.isEditMode ? 'Update Health Details' : 'Profile Setup',
           style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -111,15 +117,17 @@ class _BasicInformationState extends State<BasicInformation> {
                 children: [
                   Icon(Icons.info_outline, size: 80.sp, color: theme.colorScheme.primary),
                   SizedBox(height: 12.h),
-                  Text(
-                    'Step 2 of 3',
-                    style: TextStyle(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14.sp,
+                  if (!widget.isEditMode) ...[
+                    Text(
+                      'Step 2 of 3',
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14.sp,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 4.h),
+                    SizedBox(height: 4.h),
+                  ],
                   Text(
                     'Health Details',
                     style: TextStyle(
@@ -199,12 +207,26 @@ class _BasicInformationState extends State<BasicInformation> {
 
                           if (!context.mounted) return;
                           if (success) {
-                            // push (not pushReplacement) so the back stack stays
-                            // Step1 → Step2 → Step3 and the back arrow walks it.
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const ImageScreen()),
-                            );
+                            if (widget.isEditMode) {
+                              // Editing from Settings: just return to the caller
+                              // with a confirmation — don't advance to the photo
+                              // step or wipe the nav stack.
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Health details updated'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              Navigator.pop(context);
+                            } else {
+                              // First-time setup: push (not pushReplacement) so the
+                              // back stack stays Step1 → Step2 → Step3 and the back
+                              // arrow walks it.
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const ImageScreen()),
+                              );
+                            }
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -221,7 +243,7 @@ class _BasicInformationState extends State<BasicInformation> {
                         },
                         child: users.isLoading
                           ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary))
-                          : const ReusableButton(label: 'Next'),
+                          : ReusableButton(label: widget.isEditMode ? 'Save' : 'Next'),
                       );
                     },
                   ),

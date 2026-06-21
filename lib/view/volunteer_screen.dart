@@ -2,6 +2,7 @@ import 'package:blood_donation/models/volunteer_model.dart';
 import 'package:blood_donation/provider/volunteer_provider.dart';
 import 'package:blood_donation/view/add_volunteer_screen.dart';
 import 'package:blood_donation/widgets/volunteer_card.dart';
+import 'package:blood_donation/widgets/refresh_helpers.dart';
 import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -15,12 +16,19 @@ class VolunteerScreen extends StatefulWidget {
 }
 
 class _VolunteerScreenState extends State<VolunteerScreen> {
-  late final Stream<List<VolunteerModel>> _volunteerStream;
+  late Stream<List<VolunteerModel>> _volunteerStream;
 
   @override
   void initState() {
     super.initState();
     _volunteerStream = context.read<VolunteerProvider>().volunteerRequests;
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _volunteerStream = context.read<VolunteerProvider>().volunteerRequests;
+    });
+    await Future<void>.delayed(const Duration(milliseconds: 400));
   }
 
   @override
@@ -149,48 +157,56 @@ class _VolunteerScreenState extends State<VolunteerScreen> {
           ),
 
           Expanded(
-            child: Consumer<VolunteerProvider>(
-              builder: (context, _, __) {
-                return StreamBuilder<List<VolunteerModel>>(
-                  stream: _volunteerStream,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return ShimmerList(
+            child: RefreshIndicator(
+              onRefresh: _refresh,
+              color: theme.colorScheme.primary,
+              child: Consumer<VolunteerProvider>(
+                builder: (context, _, __) {
+                  return StreamBuilder<List<VolunteerModel>>(
+                    stream: _volunteerStream,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return ShimmerList(
+                          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                          itemCount: 5,
+                          itemBuilder: (_, __) => const VolunteerCardSkeleton(),
+                        );
+                      }
+
+                      if (snapshot.hasError) {
+                        return RefreshableFill(
+                          child: Center(child: Text('Something went wrong', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)))),
+                        );
+                      }
+
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return RefreshableFill(
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.volunteer_activism_outlined, size: 80.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+                                SizedBox(height: 16.h),
+                                Text("No volunteers yet", style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4), fontSize: 16.sp)),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      final volunteers = snapshot.data!;
+                      return ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-                        itemCount: 5,
-                        itemBuilder: (_, __) => const VolunteerCardSkeleton(),
+                        itemCount: volunteers.length,
+                        itemBuilder: (context, index) {
+                          return VolunteerCard(volunteer: volunteers[index]);
+                        },
                       );
-                    }
-
-                    if (snapshot.hasError) {
-                      return Center(child: Text('Something went wrong', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6))));
-                    }
-
-                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.volunteer_activism_outlined, size: 80.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
-                            SizedBox(height: 16.h),
-                            Text("No volunteers yet", style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.4), fontSize: 16.sp)),
-                          ],
-                        ),
-                      );
-                    }
-                    
-                    final volunteers = snapshot.data!;
-                    return ListView.builder(
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-                      itemCount: volunteers.length,
-                      itemBuilder: (context, index) {
-                        return VolunteerCard(volunteer: volunteers[index]);
-                      },
-                    );
-                  },
-                );
-              },
+                    },
+                  );
+                },
+              ),
             ),
           ),
         ],

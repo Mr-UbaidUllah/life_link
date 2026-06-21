@@ -14,15 +14,23 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
+class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+  // Plays once: brings the logo and wordmark in.
+  late AnimationController _introController;
+  late Animation<double> _logoScale;
+  late Animation<double> _logoFade;
+  late Animation<double> _titleFade;
+  late Animation<Offset> _titleSlide;
+  late Animation<double> _subtitleFade;
+  late Animation<double> _footerFade;
+
+  // Loops forever: the heartbeat ring radiating out from the logo.
+  late AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
-    
+
     // Set system UI to be fully transparent for a seamless full-screen experience
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -33,20 +41,51 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     ));
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
-    _controller = AnimationController(
+    _introController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1800),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    // Logo lands first with a soft elastic settle.
+    _logoFade = CurvedAnimation(
+      parent: _introController,
+      curve: const Interval(0.0, 0.35, curve: Curves.easeOut),
+    );
+    _logoScale = Tween<double>(begin: 0.7, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _introController,
+        curve: const Interval(0.0, 0.55, curve: Curves.elasticOut),
+      ),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+    // Wordmark rises up and fades in just after the logo.
+    _titleFade = CurvedAnimation(
+      parent: _introController,
+      curve: const Interval(0.35, 0.65, curve: Curves.easeOut),
+    );
+    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _introController,
+        curve: const Interval(0.35, 0.7, curve: Curves.easeOutCubic),
+      ),
     );
 
-    _controller.forward();
+    _subtitleFade = CurvedAnimation(
+      parent: _introController,
+      curve: const Interval(0.55, 0.85, curve: Curves.easeOut),
+    );
+
+    _footerFade = CurvedAnimation(
+      parent: _introController,
+      curve: const Interval(0.7, 1.0, curve: Curves.easeOut),
+    );
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat();
+
+    _introController.forward();
 
     // Do all the startup work WHILE the animation plays, so leaving the
     // splash never stalls on prefs/auth/profile fetches.
@@ -95,7 +134,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   void dispose() {
-    _controller.dispose();
+    _introController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -111,111 +151,176 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [
+              AppColors.primaryBright,
               AppColors.primary,
               AppColors.primaryDeep,
             ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            stops: [0.0, 0.45, 1.0],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
         child: Stack(
           children: [
-            Positioned(
-              top: -50.h,
-              right: -50.w,
-              child: _buildDecorativeCircle(200.r, Colors.white.withValues(alpha: 0.05)),
-            ),
-            Positioned(
-              bottom: 100.h,
-              left: -30.w,
-              child: _buildDecorativeCircle(150.r, Colors.white.withValues(alpha: 0.03)),
-            ),
-    
-            Center(
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(25.r),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 30,
-                              offset: const Offset(0, 15),
-                            ),
-                          ],
-                        ),
-                        child: Image.asset(
-                          'assets/images/drop.png',
-                          height: 100.h,
-                          width: 100.h,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                      SizedBox(height: 40.h),
-    
-                      Text(
-                        'LIFE LINK',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 36.sp,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 4,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withValues(alpha: 0.3),
-                              offset: const Offset(0, 4),
-                              blurRadius: 10,
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 12.h),
-    
-                      Text(
-                        'Donate Blood, Save Life',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
+            // Soft radial glow centred behind the logo to lift it off the gradient.
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(0, -0.25),
+                    radius: 0.9,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.16),
+                      Colors.transparent,
                     ],
                   ),
                 ),
               ),
             ),
-    
+
+            // Decorative ambient circles.
             Positioned(
-              bottom: 60.h,
+              top: -60.h,
+              right: -60.w,
+              child: _buildDecorativeCircle(220.r, Colors.white.withValues(alpha: 0.06)),
+            ),
+            Positioned(
+              bottom: 80.h,
+              left: -40.w,
+              child: _buildDecorativeCircle(160.r, Colors.white.withValues(alpha: 0.04)),
+            ),
+            Positioned(
+              top: 140.h,
+              left: -20.w,
+              child: _buildDecorativeCircle(70.r, Colors.white.withValues(alpha: 0.05)),
+            ),
+
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Logo with radiating heartbeat rings.
+                  SizedBox(
+                    width: 220.r,
+                    height: 220.r,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        AnimatedBuilder(
+                          animation: _pulseController,
+                          builder: (context, child) {
+                            return CustomPaint(
+                              size: Size(220.r, 220.r),
+                              painter: _PulseRingPainter(_pulseController.value),
+                            );
+                          },
+                        ),
+                        FadeTransition(
+                          opacity: _logoFade,
+                          child: ScaleTransition(
+                            scale: _logoScale,
+                            child: Container(
+                              padding: EdgeInsets.all(26.r),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primaryDeep.withValues(alpha: 0.35),
+                                    blurRadius: 40,
+                                    offset: const Offset(0, 18),
+                                  ),
+                                ],
+                              ),
+                              child: Image.asset(
+                                'assets/images/drop.png',
+                                height: 96.h,
+                                width: 96.h,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 36.h),
+
+                  FadeTransition(
+                    opacity: _titleFade,
+                    child: SlideTransition(
+                      position: _titleSlide,
+                      child: Text(
+                        'LIFE LINK',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 38.sp,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 5,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              offset: const Offset(0, 4),
+                              blurRadius: 12,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 14.h),
+
+                  // Thin divider flanking the tagline for a more finished mark.
+                  FadeTransition(
+                    opacity: _subtitleFade,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _taglineRule(),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 12.w),
+                          child: Text(
+                            'DONATE BLOOD, SAVE LIFE',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.85),
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                        _taglineRule(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Positioned(
+              bottom: 56.h,
               left: 0,
               right: 0,
-              child: Center(
+              child: FadeTransition(
+                opacity: _footerFade,
                 child: Column(
                   children: [
                     SizedBox(
-                      width: 30.w,
-                      height: 30.w,
+                      width: 28.w,
+                      height: 28.w,
                       child: CircularProgressIndicator(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        strokeWidth: 2,
+                        color: Colors.white.withValues(alpha: 0.8),
+                        strokeWidth: 2.2,
                       ),
                     ),
-                    SizedBox(height: 20.h),
+                    SizedBox(height: 18.h),
                     Text(
                       'v1.0.0',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
+                        color: Colors.white.withValues(alpha: 0.55),
                         fontSize: 12.sp,
-                        fontWeight: FontWeight.w400,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 1,
                       ),
                     ),
                   ],
@@ -225,6 +330,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
           ],
         ),
       ),
+    );
+  }
+
+  Widget _taglineRule() {
+    return Container(
+      width: 22.w,
+      height: 1,
+      color: Colors.white.withValues(alpha: 0.35),
     );
   }
 
@@ -238,4 +351,38 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       ),
     );
   }
+}
+
+/// Draws two concentric rings that expand and fade outward from the centre,
+/// staggered so the logo appears to pulse like a heartbeat.
+class _PulseRingPainter extends CustomPainter {
+  _PulseRingPainter(this.progress);
+
+  /// 0..1 loop value from the pulse controller.
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final minRadius = size.width * 0.28;
+    final maxRadius = size.width * 0.5;
+
+    void drawRing(double t) {
+      // Each ring grows from the logo edge outward and fades as it goes.
+      final radius = minRadius + (maxRadius - minRadius) * t;
+      final opacity = (1.0 - t) * 0.4;
+      final paint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = Colors.white.withValues(alpha: opacity);
+      canvas.drawCircle(center, radius, paint);
+    }
+
+    drawRing(progress);
+    // Second ring offset by half a cycle for a continuous double-beat.
+    drawRing((progress + 0.5) % 1.0);
+  }
+
+  @override
+  bool shouldRepaint(_PulseRingPainter oldDelegate) => oldDelegate.progress != progress;
 }

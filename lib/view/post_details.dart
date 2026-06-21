@@ -6,8 +6,8 @@ import 'package:blood_donation/view/profile/profile_details_scrren.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:blood_donation/utils/phone_launcher.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class PostDetailsScreen extends StatefulWidget {
   final BloodRequestModel request;
@@ -30,18 +30,11 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
   }
 
   Future<void> _makeCall(String phoneNumber) async {
-    final Uri launchUri = Uri(
-      scheme: 'tel',
-      path: phoneNumber,
-    );
-    if (await canLaunchUrl(launchUri)) {
-      await launchUrl(launchUri);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not launch dialer')),
-        );
-      }
+    final ok = await launchDialer(phoneNumber);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not launch dialer')),
+      );
     }
   }
 
@@ -332,18 +325,20 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () {
-                            if (postUser != null) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ChatScreen(
-                                    name: postUser.name ?? "User",
-                                    receiverId: postUser.uid,
-                                    imageUrl: postUser.profileImage,
-                                  ),
+                            // Always message the request's OWNER. Key the chat
+                            // off request.userId (authoritative) rather than the
+                            // shared postUser.uid, which can be stale/null and
+                            // would otherwise open a chat with the wrong person.
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChatScreen(
+                                  name: postUser?.name ?? request.contactName,
+                                  receiverId: request.userId,
+                                  imageUrl: postUser?.profileImage,
                                 ),
-                              );
-                            }
+                              ),
+                            );
                           },
                           icon: const Icon(Icons.message_rounded, color: Colors.white),
                           label: const Text('Message', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

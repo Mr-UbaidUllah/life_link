@@ -24,8 +24,14 @@ class MessageProvider extends ChangeNotifier {
           .toList();
       
       chatList.sort((a, b) {
-        final timeA = a.updatedAt ?? Timestamp.now();
-        final timeB = b.updatedAt ?? Timestamp.now();
+        // Newest first. Sort any chat missing updatedAt to the BOTTOM, not the
+        // top — previously a null fell back to Timestamp.now() and jumped ahead
+        // of real, recently-active conversations.
+        final timeA = a.updatedAt;
+        final timeB = b.updatedAt;
+        if (timeA == null && timeB == null) return 0;
+        if (timeA == null) return 1;
+        if (timeB == null) return -1;
         return timeB.compareTo(timeA);
       });
       

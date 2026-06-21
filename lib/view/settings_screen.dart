@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'package:blood_donation/provider/auth_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
+import 'package:blood_donation/widgets/refresh_helpers.dart';
 import '../widgets/user_tile_widget.dart';
 import 'auth/login_screen.dart';
 import 'edit_profile_screen.dart';
@@ -48,22 +49,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.colorScheme.onSurface),
         ),
       ),
-      body: Consumer<UserProvider>(
+      body: RefreshIndicator(
+        onRefresh: () => context.read<UserProvider>().loadCurrentUser(),
+        color: theme.colorScheme.primary,
+        child: Consumer<UserProvider>(
         builder: (context, userProvider, child) {
           final user = userProvider.user;
           if (userProvider.isLoading && user == null) {
             return Center(child: CircularProgressIndicator(color: theme.colorScheme.primary));
           }
           if (user == null) {
-            return Center(
-              child: Text(
-                'User not found.',
-                style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 16.sp),
+            return RefreshableFill(
+              child: Center(
+                child: Text(
+                  'User not found.',
+                  style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 16.sp),
+                ),
               ),
             );
           }
           return SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
             padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,7 +117,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                          Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const BasicInformation(),
+                            builder: (context) => const BasicInformation(isEditMode: true),
                           ),
                         );
                       },
@@ -205,15 +211,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: TextButton.icon(
                     onPressed: () async {
                       final confirm = await _showLogoutDialog(context, theme);
-                      if (confirm == true && mounted) {
-                        await Provider.of<AuthProviders>(context, listen: false).logout();
-                        if (mounted) {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (context) => const LoginScreen()),
-                            (Route<dynamic> route) => false,
-                          );
-                        }
-                      }
+                      if (confirm != true || !mounted) return;
+                      // Capture provider/navigator refs before the await so we
+                      // don't touch a stale context afterwards.
+                      final auth = context.read<AuthProviders>();
+                      final userProvider = context.read<UserProvider>();
+                      final navigator = Navigator.of(context);
+                      await auth.logout();
+                      // Clear the cached profile so the next account that signs
+                      // in on this device can't briefly see the previous user's
+                      // name/photo before its own data loads.
+                      userProvider.clearUser();
+                      navigator.pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        (Route<dynamic> route) => false,
+                      );
                     },
                     icon: Icon(Icons.logout_rounded, color: theme.colorScheme.primary),
                     label: Text(
@@ -238,6 +250,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           );
         },
+      ),
       ),
     );
   }

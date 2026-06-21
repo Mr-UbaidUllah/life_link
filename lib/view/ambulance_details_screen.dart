@@ -1,7 +1,7 @@
 import 'package:blood_donation/models/ambulance_model.dart';
+import 'package:blood_donation/utils/phone_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class AmbulanceDetailsScreen extends StatelessWidget {
   final AmbulanceModel ambulance;
@@ -9,13 +9,7 @@ class AmbulanceDetailsScreen extends StatelessWidget {
   const AmbulanceDetailsScreen({super.key, required this.ambulance});
 
   Future<void> _makeCall(String phoneNumber) async {
-    final Uri launchUri = Uri(
-      scheme: 'tel',
-      path: phoneNumber,
-    );
-    if (await canLaunchUrl(launchUri)) {
-      await launchUrl(launchUri);
-    }
+    await launchDialer(phoneNumber);
   }
 
   @override
@@ -28,6 +22,22 @@ class AmbulanceDetailsScreen extends StatelessWidget {
         case AmbulanceType.basic: return 'Basic Life Support';
         case AmbulanceType.neonatal: return 'Neonatal (NICU)';
         case AmbulanceType.oxygen: return 'Oxygen Support';
+      }
+    }
+
+    // Capabilities typical of the selected ambulance type. Derived from the one
+    // real attribute the registrant entered (type) instead of showing an
+    // identical hardcoded list for every vehicle.
+    List<String> getTypicalCapabilities() {
+      switch (ambulance.type) {
+        case AmbulanceType.cardiac:
+          return ['ICU Equipment', 'Cardiac Monitor', 'Defibrillator', 'Trained Paramedics', 'Oxygen Supply'];
+        case AmbulanceType.neonatal:
+          return ['Incubator', 'Neonatal Ventilator', 'Trained Paramedics', 'Oxygen Supply'];
+        case AmbulanceType.oxygen:
+          return ['Oxygen Cylinders', 'Ventilator Support', 'Trained Attendant'];
+        case AmbulanceType.basic:
+          return ['First Aid Kit', 'Oxygen Supply', 'Stretcher', 'Trained Driver'];
       }
     }
 
@@ -110,11 +120,10 @@ class AmbulanceDetailsScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 20.h),
 
-                  // Rating & Type Row
+                  // Type & availability. No rating chip: there is no review
+                  // system, so the model's default 4.5 was a fabricated score.
                   Row(
                     children: [
-                      _buildChip(theme, Icons.star_rounded, ambulance.rating.toString(), Colors.amber),
-                      SizedBox(width: 10.w),
                       _buildChip(theme, Icons.medical_services_rounded, getAmbulanceTypeLabel(), theme.colorScheme.primary),
                       const Spacer(),
                       _buildAvailabilityTag(ambulance.isAvailable),
@@ -127,20 +136,21 @@ class AmbulanceDetailsScreen extends StatelessWidget {
                   
                   _buildDetailItem(theme, Icons.location_on_rounded, 'Address', ambulance.address),
                   _buildDetailItem(theme, Icons.phone_rounded, 'Emergency Contact', ambulance.phoneNumber),
-                  _buildDetailItem(theme, Icons.info_outline_rounded, 'Service Area', 'City Wide (24/7)'),
-                  
+
                   SizedBox(height: 30.h),
-                  Text('Features', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+                  Text('Typical Capabilities', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 6.h),
+                  Text(
+                    'Based on the registered ambulance type — confirm specifics when you call.',
+                    style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                  ),
                   SizedBox(height: 12.h),
                   Wrap(
                     spacing: 10.w,
                     runSpacing: 10.h,
-                    children: [
-                      _buildFeatureTag(theme, 'Air Conditioned'),
-                      _buildFeatureTag(theme, 'Ventilator Support'),
-                      _buildFeatureTag(theme, 'Trained Paramedics'),
-                      _buildFeatureTag(theme, 'Oxygen Supply'),
-                    ],
+                    children: getTypicalCapabilities()
+                        .map((f) => _buildFeatureTag(theme, f))
+                        .toList(),
                   ),
                   
                   SizedBox(height: 100.h), // Space for bottom button
@@ -158,37 +168,21 @@ class AmbulanceDetailsScreen extends StatelessWidget {
             BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, -5)),
           ],
         ),
-        child: Row(
-          children: [
-            Container(
-              height: 54.h,
-              width: 54.h,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16.r),
-              ),
-              child: IconButton(
-                icon: Icon(Icons.map_rounded, color: theme.colorScheme.primary),
-                onPressed: () {},
-              ),
-            ),
-            SizedBox(width: 16.w),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _makeCall(ambulance.phoneNumber),
-                icon: const Icon(Icons.call_rounded, color: Colors.white),
-                label: Text(
-                  'Book Now',
-                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  minimumSize: Size(double.infinity, 54.h),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-                ),
-              ),
-            ),
-          ],
+        // Call only. The previous map IconButton did nothing (no coordinates
+        // are collected), and "Book Now" implied a booking flow that doesn't
+        // exist — this just dials the emergency contact.
+        child: ElevatedButton.icon(
+          onPressed: () => _makeCall(ambulance.phoneNumber),
+          icon: const Icon(Icons.call_rounded, color: Colors.white),
+          label: Text(
+            'Call Ambulance',
+            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: theme.colorScheme.primary,
+            minimumSize: Size(double.infinity, 54.h),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+          ),
         ),
       ),
     );

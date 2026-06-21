@@ -3,6 +3,7 @@ import 'package:blood_donation/provider/bloodRequest_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/view/post_details.dart';
 import 'package:blood_donation/widgets/home_widgets.dart';
+import 'package:blood_donation/widgets/refresh_helpers.dart';
 import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,14 @@ class _BloodRequestScreenState extends State<BloodRequestScreen> {
 
   // null == "All"
   String? _selectedGroup;
+
+  // Ids dismissed this session, hidden immediately. onDismissed's Firestore
+  // round-trip (dismissRequest → loadCurrentUser) is async, but the cached
+  // stream can emit a rebuild before dismissedRequests updates — re-inserting
+  // the just-dismissed card with the same Key and tripping Dismissible's
+  // "a dismissed widget is still part of the tree" assertion. Filtering on this
+  // set in build() removes the card synchronously, before that race.
+  final Set<String> _locallyDismissed = {};
 
   // Cache the requests stream once — the provider getter opens a new Firestore
   // subscription per access, so the two StreamBuilders below (app-bar + body)
@@ -100,9 +109,11 @@ class _BloodRequestScreenState extends State<BloodRequestScreen> {
               }
 
               // Requests the user is allowed to see (own posts + non-dismissed).
+              // Exclude anything dismissed this session immediately, even before
+              // the provider's dismissedRequests list catches up.
               final visible = (snapshot.data ?? []).where((req) {
                 final isMine = req.userId == currentUserId;
-                final isDismissed = dismissedIds.contains(req.id);
+                final isDismissed = dismissedIds.contains(req.id) || _locallyDismissed.contains(req.id);
                 return isMine || !isDismissed;
               }).toList();
 
@@ -126,10 +137,13 @@ class _BloodRequestScreenState extends State<BloodRequestScreen> {
                   _buildSummaryHeader(theme, requests.length, _selectedGroup),
                   _buildFilterChips(theme, userGroup),
                   Expanded(
-                    child: requests.isEmpty
-                        ? _buildEmptyState(theme)
+                    child: RefreshIndicator(
+                      onRefresh: () => context.read<UserProvider>().loadCurrentUser(),
+                      color: theme.colorScheme.primary,
+                      child: requests.isEmpty
+                        ? RefreshableFill(child: _buildEmptyState(theme))
                         : ListView.builder(
-                            physics: const BouncingScrollPhysics(),
+                            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                             padding: EdgeInsets.only(top: 4.h, bottom: 96.h),
                             itemCount: requests.length,
                             itemBuilder: (context, index) {
@@ -158,6 +172,10 @@ class _BloodRequestScreenState extends State<BloodRequestScreen> {
                                   ),
                                 ),
                                 onDismissed: isMine ? null : (direction) {
+                                  // Hide synchronously, then persist. The setState
+                                  // rebuild drops this Dismissible from the tree on
+                                  // the very next frame, satisfying its contract.
+                                  setState(() => _locallyDismissed.add(req.id));
                                   userProvider.dismissRequest(req.id);
                                 },
                                 child: HomeContainer(
@@ -175,6 +193,7 @@ class _BloodRequestScreenState extends State<BloodRequestScreen> {
                               );
                             },
                           ),
+                    ),
                   ),
                 ],
               );

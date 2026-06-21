@@ -2,6 +2,7 @@ import 'package:blood_donation/models/ambulance_model.dart';
 import 'package:blood_donation/provider/ambulance_provider.dart';
 import 'package:blood_donation/view/add_ambulence.dart';
 import 'package:blood_donation/widgets/ambulence_card.dart';
+import 'package:blood_donation/widgets/refresh_helpers.dart';
 import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -15,13 +16,21 @@ class AmbulanceScreen extends StatefulWidget {
 }
 
 class _AmbulanceScreenState extends State<AmbulanceScreen> {
-  late final Stream<List<AmbulanceModel>> _ambulanceStream;
+  late Stream<List<AmbulanceModel>> _ambulanceStream;
   AmbulanceType? selectedFilter;
 
   @override
   void initState() {
     super.initState();
     _ambulanceStream = context.read<AmbulanceProvider>().ambulanceRequest;
+  }
+
+  // Re-subscribe to the directory so a pull forces a fresh Firestore query.
+  Future<void> _refresh() async {
+    setState(() {
+      _ambulanceStream = context.read<AmbulanceProvider>().ambulanceRequest;
+    });
+    await Future<void>.delayed(const Duration(milliseconds: 400));
   }
 
   @override
@@ -116,56 +125,64 @@ class _AmbulanceScreenState extends State<AmbulanceScreen> {
           ),
 
           Expanded(
-            child: Consumer<AmbulanceProvider>(
-              builder: (context, _, __) {
-                return StreamBuilder<List<AmbulanceModel>>(
-                  stream: _ambulanceStream,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return ShimmerList(
-                        itemCount: 5,
-                        itemBuilder: (_, __) => const ContactCardSkeleton(),
-                      );
-                    }
+            child: RefreshIndicator(
+              onRefresh: _refresh,
+              color: theme.colorScheme.primary,
+              child: Consumer<AmbulanceProvider>(
+                builder: (context, _, __) {
+                  return StreamBuilder<List<AmbulanceModel>>(
+                    stream: _ambulanceStream,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return ShimmerList(
+                          itemCount: 5,
+                          itemBuilder: (_, __) => const ContactCardSkeleton(),
+                        );
+                      }
 
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Text('Something went wrong', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
-                      );
-                    }
+                      if (snapshot.hasError) {
+                        return RefreshableFill(
+                          child: Center(
+                            child: Text('Something went wrong', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
+                          ),
+                        );
+                      }
 
-                    var requests = snapshot.data ?? [];
-                    if (selectedFilter != null) {
-                      requests = requests.where((element) => element.type == selectedFilter).toList();
-                    }
+                      var requests = snapshot.data ?? [];
+                      if (selectedFilter != null) {
+                        requests = requests.where((element) => element.type == selectedFilter).toList();
+                      }
 
-                    if (requests.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.bus_alert_rounded, size: 80.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
-                            SizedBox(height: 16.h),
-                            Text(
-                              "No ambulances found",
-                              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
+                      if (requests.isEmpty) {
+                        return RefreshableFill(
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.bus_alert_rounded, size: 80.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+                                SizedBox(height: 16.h),
+                                Text(
+                                  "No ambulances found",
+                                  style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      );
-                    }
+                          ),
+                        );
+                      }
 
-                    return ListView.builder(
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(horizontal: 20.w),
-                      itemCount: requests.length,
-                      itemBuilder: (context, index) {
-                        return AmbulenceCard(ambulance: requests[index]);
-                      },
-                    );
-                  },
-                );
-              },
+                      return ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                        padding: EdgeInsets.symmetric(horizontal: 20.w),
+                        itemCount: requests.length,
+                        itemBuilder: (context, index) {
+                          return AmbulenceCard(ambulance: requests[index]);
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ),
         ],

@@ -3,6 +3,7 @@ import 'package:blood_donation/models/user_model.dart';
 import 'package:blood_donation/view/msg_screen.dart';
 import 'package:blood_donation/widgets/home_widgets.dart';
 import 'package:blood_donation/widgets/user_tile_widget.dart';
+import 'package:blood_donation/widgets/refresh_helpers.dart';
 import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +23,7 @@ class _UsersScreenState extends State<UsersScreen> {
 
   // Cache the chat-list stream so the Consumer rebuilding (e.g. after a
   // deleteChat notify) doesn't resubscribe and flash the skeleton.
-  late final Stream<List<ChatModel>> _chatListStream;
+  late Stream<List<ChatModel>> _chatListStream;
 
   // Memoize per-user lookups; without this the FutureBuilder re-fetches every
   // user's doc on each chat-list snapshot emission.
@@ -32,6 +33,15 @@ class _UsersScreenState extends State<UsersScreen> {
   void initState() {
     super.initState();
     _chatListStream = context.read<MessageProvider>().getChatList();
+  }
+
+  Future<void> _refresh() async {
+    // Re-subscribe and drop cached user lookups so names/avatars re-fetch too.
+    setState(() {
+      _userCache.clear();
+      _chatListStream = context.read<MessageProvider>().getChatList();
+    });
+    await Future<void>.delayed(const Duration(milliseconds: 400));
   }
 
   Future<UserModel?> _userFor(String uid) {
@@ -81,7 +91,10 @@ class _UsersScreenState extends State<UsersScreen> {
           ),
         ),
       ),
-      body: Consumer<MessageProvider>(
+      body: RefreshIndicator(
+        onRefresh: _refresh,
+        color: theme.colorScheme.primary,
+        child: Consumer<MessageProvider>(
         builder: (context, chatProvider, _) {
           return StreamBuilder<List<ChatModel>>(
             stream: _chatListStream,
@@ -96,32 +109,42 @@ class _UsersScreenState extends State<UsersScreen> {
               }
 
               if (snapshot.hasError) {
-                return Center(
-                  child: Text(
-                    'Error: ${snapshot.error}',
-                    style: TextStyle(color: theme.colorScheme.error),
+                return RefreshableFill(
+                  child: Center(
+                    child: Text(
+                      'Error: ${snapshot.error}',
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
                   ),
                 );
               }
 
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return _buildEmptyState(theme);
+                return RefreshableFill(child: _buildEmptyState(theme));
               }
 
               final chats = snapshot.data!;
 
               final filteredChats = chats.where((chat) {
+                // Hide self-chats ("Saved Messages").
                 if (chat.users.length == 2 && chat.users[0] == chat.users[1]) {
+                  return false;
+                }
+                // Hide empty conversations — a chat with no message was never a
+                // real conversation (e.g. a leftover phantom doc). Real chats
+                // always carry the last message text.
+                if (chat.lastMessage.trim().isEmpty) {
                   return false;
                 }
                 return true;
               }).toList();
 
               if (filteredChats.isEmpty) {
-                return _buildEmptyState(theme);
+                return RefreshableFill(child: _buildEmptyState(theme));
               }
 
               return ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                 padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
                 itemCount: filteredChats.length,
                 separatorBuilder: (context, index) => SizedBox(height: 8.h),
@@ -218,6 +241,7 @@ class _UsersScreenState extends State<UsersScreen> {
             },
           );
         },
+      ),
       ),
     );
   }

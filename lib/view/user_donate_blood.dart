@@ -42,10 +42,13 @@ class _UserDonateBloodState extends State<UserDonateBlood> {
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.colorScheme.onSurface),
         ),
       ),
-      body: Consumer<UserProvider>(
+      body: RefreshIndicator(
+        onRefresh: () => context.read<UserProvider>().loadCurrentUser(),
+        color: theme.colorScheme.primary,
+        child: Consumer<UserProvider>(
         builder: (context, provider, child) {
           return SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
             padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
             child: Column(
               children: [
@@ -119,6 +122,7 @@ class _UserDonateBloodState extends State<UserDonateBlood> {
           );
         },
       ),
+      ),
     );
   }
 
@@ -153,17 +157,17 @@ class _UserDonateBloodState extends State<UserDonateBlood> {
           ),
           child: Column(
             children: [
-              userTile(theme, 'Full Name', provider.user!.name.toString(), Icons.person_outline_rounded),
+              userTile(theme, 'Full Name', provider.user!.name ?? 'Not set', Icons.person_outline_rounded),
               _buildDivider(theme),
-              userTile(theme, 'Blood Group', provider.user!.bloodGroup.toString(), Icons.bloodtype_rounded),
+              userTile(theme, 'Blood Group', provider.user!.bloodGroup ?? 'Not set', Icons.bloodtype_rounded),
               _buildDivider(theme),
-              userTile(theme, 'Phone Number', provider.user!.phone.toString(), Icons.phone_android_rounded),
+              userTile(theme, 'Phone Number', provider.user!.phone ?? 'Not set', Icons.phone_android_rounded),
               _buildDivider(theme),
-              userTile(theme, 'City', provider.user!.city.toString(), Icons.location_city_rounded),
+              userTile(theme, 'City', provider.user!.city ?? 'Not set', Icons.location_city_rounded),
               _buildDivider(theme),
-              userTile(theme, 'Country', provider.user!.country.toString(), Icons.public_rounded),
+              userTile(theme, 'Country', provider.user!.country ?? 'Not set', Icons.public_rounded),
               _buildDivider(theme),
-              userTile(theme, 'Email Address', provider.user!.email.toString(), Icons.email_outlined),
+              userTile(theme, 'Email Address', provider.user!.email, Icons.email_outlined),
             ],
           ),
         ),
