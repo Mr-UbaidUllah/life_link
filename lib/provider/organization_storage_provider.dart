@@ -1,32 +1,36 @@
 import 'dart:io';
 
-import 'package:blood_donation/models/organization_model.dart';
-import 'package:blood_donation/services/organizationStorage_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
+import 'package:blood_donation/core/base/base_state_provider.dart';
+import 'package:blood_donation/core/constants/firebase_constants.dart';
+import 'package:blood_donation/services/storage_service.dart';
+import 'package:blood_donation/services/organization_service.dart';
+import 'package:blood_donation/utils/app_logger.dart';
 
-class OrganizationStorageProvider with ChangeNotifier {
-    final _service = OrganizationstorageService();
-    bool isLoading = false;
-    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-    OrganizationModel? organization;
+class OrganizationStorageProvider extends BaseStateProvider {
+  OrganizationStorageProvider({
+    StorageService? storageService,
+    OrganizationService? organizationService,
+  })  : _storageService = storageService ?? StorageService(),
+        _organizationService = organizationService ?? OrganizationService();
 
-  Future<bool> uploadImage(String uid, File image) async {
-    isLoading = true;
-    notifyListeners();
+  final StorageService _storageService;
+  final OrganizationService _organizationService;
+
+  Future<bool> uploadImage(String id, File image) async {
+    setLoading(true);
     try {
-      final imageUrl = await _service.uploadorganizationImage(uid, image);
-      await _firestore.collection('organizations').doc(uid).update({
-        'image': imageUrl,
-      });
-      organization = organization?.copyWith(image: imageUrl);
+      final imageUrl = await _storageService.uploadImage(
+        folder: FirebaseConstants.organizationImagesFolder,
+        id: id,
+        image: image,
+      );
+      await _organizationService.updateImage(id, imageUrl);
       return true;
     } catch (e) {
-      debugPrint(e.toString());
+      AppLogger.e('Organization image upload failed', e);
       return false;
     } finally {
-      isLoading = false;
-      notifyListeners();
+      setLoading(false);
     }
   }
 }

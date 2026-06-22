@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class redContainer extends StatelessWidget {
-  const redContainer({super.key, required this.height, required this.width});
+class RedContainer extends StatelessWidget {
+  const RedContainer({super.key, required this.height, required this.width});
 
   final double height;
   final double width;

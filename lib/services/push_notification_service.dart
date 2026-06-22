@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
+import 'package:blood_donation/utils/app_logger.dart';
 
 class NotificationService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -21,9 +21,9 @@ class NotificationService {
   );
 
   Future<void> initialize() async {
-    debugPrint("🔔 Initializing notifications...");
+    AppLogger.d("Initializing notifications...");
 
-    // 1️ Request permission
+    // 1. Request permission
     NotificationSettings settings = await _messaging.requestPermission(
       alert: true,
       badge: true,
@@ -31,48 +31,50 @@ class NotificationService {
     );
 
     if (settings.authorizationStatus != AuthorizationStatus.authorized) {
-      debugPrint("❌ Permission denied");
+      AppLogger.d("Notification permission denied");
       return;
     }
 
-    debugPrint("✅ Permission granted");
+    AppLogger.d("Notification permission granted");
 
-    // 2️ Get FCM token
+    // 2. Get FCM token
     String? token = await _messaging.getToken();
-    debugPrint("✅ FCM Token: $token");
-
     if (token != null) {
       await _saveTokenToFirestore(token);
     }
 
-    // 3️ Listen for token refresh
+    // 3. Listen for token refresh
     _messaging.onTokenRefresh.listen(_saveTokenToFirestore);
 
-    // 4️ Setup local notifications
+    // 4. Setup local notifications
     await _setupLocalNotifications();
 
-    // 5️ Foreground notification
+    // 5. Foreground notification
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
 
-    // 6️ When notification is tapped
+    // 6. When notification is tapped
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
-      debugPrint("📲 Notification clicked");
+      AppLogger.d("Notification clicked");
     });
 
-    // 7️ App opened from terminated state
+    // 7. App opened from terminated state
     RemoteMessage? initialMessage = await FirebaseMessaging.instance
         .getInitialMessage();
     if (initialMessage != null) {
-      debugPrint("🚀 App opened from terminated state");
+      AppLogger.d("App opened from terminated notification");
     }
   }
 
   // save token
+  // NOTE: stored as a singular `fcmToken` string because the Cloud Function
+  // (functions/index.js) reads `userData.fcmToken`. Migrating to a multi-device
+  // `fcmTokens` array requires a coordinated function+client change — tracked
+  // for the security/scale phase. Do not change the shape here in isolation.
   Future<void> _saveTokenToFirestore(String token) async {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      debugPrint("❌ User not logged in");
+      AppLogger.d("Cannot save FCM token: user not logged in");
       return;
     }
 
@@ -80,7 +82,7 @@ class NotificationService {
       'fcmToken': token,
     }, SetOptions(merge: true));
 
-    debugPrint("✅ Token saved to Firestore");
+    AppLogger.d("FCM token saved");
   }
 
   //  LOCAL NOTIFICATION SETUP
@@ -105,12 +107,7 @@ class NotificationService {
 
   //  FOREGROUND HANDLER
   void _handleForegroundMessage(RemoteMessage message) {
-    if (kDebugMode) {
-      debugPrint("📬 Foreground notification");
-      debugPrint(message.notification?.title);
-      debugPrint(message.notification?.body);
-    }
-
+    AppLogger.d("Foreground notification: ${message.notification?.title}");
     _showLocalNotification(message);
   }
 

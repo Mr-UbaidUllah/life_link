@@ -1,9 +1,9 @@
 import 'package:blood_donation/models/bloodrequest_model.dart';
 import 'package:blood_donation/models/user_model.dart';
-import 'package:blood_donation/provider/bloodRequest_provider.dart';
+import 'package:blood_donation/provider/blood_request_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/view/post_details.dart';
-import 'package:blood_donation/view/profile/profile_details_scrren.dart';
+import 'package:blood_donation/view/profile/profile_details_screen.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
 import 'package:blood_donation/widgets/home_widgets.dart';
 import 'package:blood_donation/widgets/shimmer.dart';
@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
-import 'bottmNavigation.dart';
+import 'bottom_navigation.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});

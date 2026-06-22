@@ -1,4 +1,5 @@
 import 'package:blood_donation/models/volunteer_model.dart';
+import 'package:blood_donation/theme/theme.dart';
 import 'package:blood_donation/utils/phone_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -176,7 +177,7 @@ class VolunteerDetailsScreen extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.verified_user_rounded, color: Colors.green, size: 20.sp),
+                          Icon(Icons.verified_user_rounded, color: AppColors.success, size: 20.sp),
                           SizedBox(width: 12.w),
                           Expanded(
                             child: Text(

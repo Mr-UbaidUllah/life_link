@@ -1,6 +1,6 @@
 import 'package:blood_donation/models/message_model.dart';
 import 'package:blood_donation/provider/chat_provider.dart';
-import 'package:blood_donation/view/profile/profile_details_scrren.dart';
+import 'package:blood_donation/view/profile/profile_details_screen.dart';
 import 'package:blood_donation/widgets/message_bubble.dart';
 import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:firebase_auth/firebase_auth.dart';

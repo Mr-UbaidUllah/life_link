@@ -1,9 +1,12 @@
 import 'package:blood_donation/models/bloodrequest_model.dart';
-import 'package:blood_donation/services/bloodrequesT_Service.dart';
+import 'package:blood_donation/services/blood_request_service.dart';
 import 'package:flutter/material.dart';
 
 class BloodrequestProvider with ChangeNotifier {
-  final _service = BloodRequestService();
+  BloodrequestProvider({BloodRequestService? service})
+      : _service = service ?? BloodRequestService();
+
+  final BloodRequestService _service;
   List<BloodRequestModel> _allRequests = [];
   List<BloodRequestModel> _filteredRequests = [];
   bool isLoading = false;

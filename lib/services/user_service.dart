@@ -1,10 +1,24 @@
 import 'package:blood_donation/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 
 class UserFirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  /// Sets the user's profile image URL (set+merge so a partial doc still works).
+  Future<void> setProfileImage(String uid, String imageUrl) {
+    return _firestore.collection('users').doc(uid).set(
+      {'profileImage': imageUrl},
+      SetOptions(merge: true),
+    );
+  }
+
+  /// Removes the user's profile image field.
+  Future<void> clearProfileImage(String uid) {
+    return _firestore.collection('users').doc(uid).update(
+      {'profileImage': FieldValue.delete()},
+    );
+  }
 
   Future<void> updatePersonalInfo({
     required String uid,
@@ -40,6 +54,27 @@ class UserFirestoreService {
       'about': about,
       // Marks Step 2 as done so AuthWrapper can resume a returning user on the
       // first incomplete step instead of always starting at Step 1.
+      'basicInfoCompleted': true,
+    }, SetOptions(merge: true));
+  }
+
+  /// Saves the full health-screening details (Step 2 / "Update Health Details").
+  Future<void> updateHealthInfo({
+    required String uid,
+    required bool isDonor,
+    String? about,
+    double? weightKg,
+    DateTime? lastDonationDate,
+    List<String> healthConditions = const [],
+  }) async {
+    await _firestore.collection('users').doc(uid).set({
+      'isDonor': isDonor,
+      'about': about,
+      'weightKg': weightKg,
+      'lastDonationDate': lastDonationDate == null
+          ? null
+          : Timestamp.fromDate(lastDonationDate),
+      'healthConditions': healthConditions,
       'basicInfoCompleted': true,
     }, SetOptions(merge: true));
   }
@@ -96,22 +131,16 @@ class UserFirestoreService {
         .where('isDonor', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
-          debugPrint('DONORS COUNT: ${snapshot.docs.length}');
-
           return snapshot.docs.map((doc) {
             return UserModel.fromMap(doc.id, doc.data());
           }).toList();
         });
   }
 
-  /// 🔹 Fetch ALL users
+  /// Fetch ALL users
   Stream<List<UserModel>> fetchAllUsers() {
     return _firestore.collection('users').snapshots().map((snapshot) {
-      debugPrint('USERS COUNT: ${snapshot.docs.length}');
-
       return snapshot.docs.map((doc) {
-        debugPrint('USER DATA: ${doc.data()}');
-
         return UserModel.fromMap(doc.id, doc.data());
       }).toList();
     });

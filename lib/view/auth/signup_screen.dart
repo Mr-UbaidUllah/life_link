@@ -1,8 +1,8 @@
 import 'package:blood_donation/provider/auth_provider.dart';
-import 'package:blood_donation/view/profile/personel_information.dart';
+import 'package:blood_donation/view/profile/personal_information.dart';
 import 'package:blood_donation/view/auth/login_screen.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
-import 'package:blood_donation/widgets/redContainer.dart';
+import 'package:blood_donation/widgets/red_container.dart';
 import 'package:blood_donation/widgets/reusable_button.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -18,13 +18,13 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController email_controller = TextEditingController();
-  final TextEditingController password_controller = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   @override
   void dispose() {
-    email_controller.dispose();
-    password_controller.dispose();
+    emailController.dispose();
+    passwordController.dispose();
     super.dispose();
   }
 
@@ -64,7 +64,7 @@ class _SignupScreenState extends State<SignupScreen> {
           children: [
             Stack(
               children: [
-                redContainer(height: height, width: width),
+                RedContainer(height: height, width: width),
                 Padding(
                   padding: EdgeInsets.only(top: height * 0.3),
                   child: Container(
@@ -107,7 +107,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         SizedBox(height: 40.h),
                         CustomTextField(
-                          controller: email_controller,
+                          controller: emailController,
                           hintText: 'Email Address',
                           prefixIcon: Icons.email_outlined,
                           keyboardType: TextInputType.emailAddress,
@@ -116,7 +116,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         SizedBox(height: 20.h),
                         CustomTextField(
-                          controller: password_controller,
+                          controller: passwordController,
                           prefixIcon: Icons.lock_outline,
                           hintText: 'Password',
                           isPassword: true,
@@ -139,8 +139,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                       final auth = context.read<AuthProviders>();
                                       try {
                                         await auth.signup(
-                                          email_controller.text.trim(),
-                                          password_controller.text.trim(),
+                                          emailController.text.trim(),
+                                          passwordController.text.trim(),
                                         );
                                         if (!context.mounted) return;
                                         Navigator.of(context).pushReplacement(

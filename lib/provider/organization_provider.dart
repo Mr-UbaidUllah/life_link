@@ -1,20 +1,22 @@
-import 'package:blood_donation/services/organization_service.dart';
+import 'package:blood_donation/core/base/base_state_provider.dart';
 import 'package:blood_donation/models/organization_model.dart';
-import 'package:flutter/material.dart';
+import 'package:blood_donation/services/organization_service.dart';
 
-class OrganizationProvider with ChangeNotifier {
-  final _service = OrganizationService();
-  bool isLoading = false;
+class OrganizationProvider extends BaseStateProvider {
+  OrganizationProvider({OrganizationService? service})
+      : _service = service ?? OrganizationService();
 
-  Future<void> addOraganization(OrganizationModel orgmodel) async {
-    isLoading = true;
-    notifyListeners();
-    try {
-      await _service.addOrganization(orgmodel);
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
+  final OrganizationService _service;
+
+  Future<bool> addOraganization(OrganizationModel orgmodel) async {
+    final result = await runGuarded<bool>(
+      () async {
+        await _service.addOrganization(orgmodel);
+        return true;
+      },
+      errorContext: 'addOrganization',
+    );
+    return result ?? false;
   }
 
   Stream<List<OrganizationModel>> get requests => _service.getOrganizations();

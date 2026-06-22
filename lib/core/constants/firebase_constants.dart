@@ -8,4 +8,10 @@ class FirebaseConstants {
   static const String volunteer = 'Volunteer';
   static const String ambulance = 'Ambulance';
   static const String inventory = 'inventory';
+
+  // ---- Cloud Storage folders ----
+  static const String profileImagesFolder = 'profile_images';
+  static const String ambulanceImagesFolder = 'ambulance_images';
+  static const String organizationImagesFolder = 'organization_images';
+  static const String volunteerImagesFolder = 'volunteer_images';
 }

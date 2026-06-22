@@ -179,17 +179,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     _buildSettingsTile(
                       theme,
-                      icon: Icons.help_outline_rounded,
-                      title: 'Help & Support',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Support center coming soon!'))
-                        );
-                      },
-                    ),
-                    _buildDivider(theme),
-                    _buildSettingsTile(
-                      theme,
                       icon: Icons.info_outline_rounded,
                       title: 'About App',
                       onTap: () {

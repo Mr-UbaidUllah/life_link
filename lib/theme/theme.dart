@@ -24,6 +24,13 @@ class AppColors {
   static const Color plum = Color(0xFF6D597A);
   static const Color indigo = Color(0xFF52489C);
 
+  // Semantic colors — use these instead of raw Colors.green/orange/blue so
+  // meaning (success/warning/info/error) is consistent and dark-mode safe.
+  static const Color success = green;
+  static const Color warning = amber;
+  static const Color info = blue;
+  static const Color danger = Color(0xFFD62828);
+
   // Light mode
   static const Color lightBackground = Color(0xFFF7F8FA);
   static const Color lightSurface = Colors.white;

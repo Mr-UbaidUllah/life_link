@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:blood_donation/models/organization_model.dart';
 import 'package:blood_donation/provider/organization_provider.dart';
 import 'package:blood_donation/provider/organization_storage_provider.dart';
+import 'package:blood_donation/widgets/app_snackbar.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
 import 'package:blood_donation/widgets/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -294,24 +295,17 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
 
                               if (!mounted) return;
                               Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Row(
-                                    children: [
-                                      Icon(imageOk ? Icons.check_circle_rounded : Icons.warning_amber_rounded, color: Colors.white),
-                                      SizedBox(width: 12.w),
-                                      Expanded(
-                                        child: Text(imageOk
-                                            ? 'Partner registered successfully!'
-                                            : 'Partner registered, but the image upload failed.'),
-                                      ),
-                                    ],
-                                  ),
-                                  backgroundColor: imageOk ? Colors.green : Colors.orange,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-                                ),
-                              );
+                              if (imageOk) {
+                                AppSnackbar.success(
+                                  context,
+                                  'Partner registered successfully!',
+                                );
+                              } else {
+                                AppSnackbar.info(
+                                  context,
+                                  'Partner registered, but the image upload failed.',
+                                );
+                              }
                             } catch (e) {
                               if (!mounted) return;
                               _showError(

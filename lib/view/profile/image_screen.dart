@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:blood_donation/provider/storage_provider.dart';
 import 'package:blood_donation/utils/image_limits.dart';
-import 'package:blood_donation/view/bottmNavigation.dart';
+import 'package:blood_donation/view/bottom_navigation.dart';
 import 'package:blood_donation/widgets/reusable_button.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dotted_border/dotted_border.dart';

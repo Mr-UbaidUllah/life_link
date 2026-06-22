@@ -1,44 +1,52 @@
 import 'dart:io';
 
-import 'package:blood_donation/models/user_model.dart';
-import 'package:blood_donation/services/Storage_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 
-class StorageProvider with ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final StorageService _storageService = StorageService();
+import 'package:blood_donation/core/base/base_state_provider.dart';
+import 'package:blood_donation/core/constants/firebase_constants.dart';
+import 'package:blood_donation/models/user_model.dart';
+import 'package:blood_donation/services/storage_service.dart';
+import 'package:blood_donation/services/user_service.dart';
+import 'package:blood_donation/utils/app_logger.dart';
+
+/// Handles the current user's profile photo (upload + delete).
+class StorageProvider extends BaseStateProvider {
+  StorageProvider({
+    StorageService? storageService,
+    UserFirestoreService? userService,
+  })  : _storageService = storageService ?? StorageService(),
+        _userService = userService ?? UserFirestoreService();
+
+  final StorageService _storageService;
+  final UserFirestoreService _userService;
 
   UserModel? user;
-  bool isLoading = false;
 
   /// Human-readable reason for the last failed upload/delete, or null on success.
   String? error;
 
   Future<bool> uploadImage(String uid, File image) async {
+    setLoading(true);
+    error = null;
     try {
-      isLoading = true;
-      error = null;
-      notifyListeners();
-
-      final imageUrl = await _storageService.uploadProfileImage(uid, image);
-      // set+merge (not update) so a missing/partial profile doc still succeeds.
-      await _firestore.collection('users').doc(uid).set({
-        'profileImage': imageUrl,
-      }, SetOptions(merge: true));
+      final imageUrl = await _storageService.uploadImage(
+        folder: FirebaseConstants.profileImagesFolder,
+        id: uid,
+        image: image,
+      );
+      await _userService.setProfileImage(uid, imageUrl);
       user = user?.copyWith(profileImage: imageUrl);
       return true;
     } on FirebaseException catch (e) {
       error = _friendlyError(e);
-      debugPrint('uploadImage failed: ${e.code} ${e.message}');
+      AppLogger.e('uploadImage failed: ${e.code}', e);
       return false;
     } catch (e) {
       error = 'Could not upload your photo. Please try again.';
-      debugPrint('uploadImage failed: $e');
+      AppLogger.e('uploadImage failed', e);
       return false;
     } finally {
-      isLoading = false;
-      notifyListeners();
+      setLoading(false);
     }
   }
 
@@ -60,14 +68,16 @@ class StorageProvider with ChangeNotifier {
   }
 
   Future<bool> deleteImage(String uid) async {
+    setLoading(true);
     try {
-      isLoading = true;
-      notifyListeners();
-
-      return await _storageService.deleteProfileimage(uid);
+      final ok = await _storageService.deleteImage(
+        folder: FirebaseConstants.profileImagesFolder,
+        id: uid,
+      );
+      if (ok) await _userService.clearProfileImage(uid);
+      return ok;
     } finally {
-      isLoading = false;
-      notifyListeners();
+      setLoading(false);
     }
   }
 }

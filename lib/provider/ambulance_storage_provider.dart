@@ -1,32 +1,36 @@
 import 'dart:io';
 
-import 'package:blood_donation/models/ambulance_model.dart';
-import 'package:blood_donation/services/amulance_storage_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
+import 'package:blood_donation/core/base/base_state_provider.dart';
+import 'package:blood_donation/core/constants/firebase_constants.dart';
+import 'package:blood_donation/services/storage_service.dart';
+import 'package:blood_donation/services/ambulance_service.dart';
+import 'package:blood_donation/utils/app_logger.dart';
 
-class AmbulanceStorageProvider with ChangeNotifier {
-  final _service = AmbulanceStorageService();
-  bool isLoading = false;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  AmbulanceModel? ambulance;
+class AmbulanceStorageProvider extends BaseStateProvider {
+  AmbulanceStorageProvider({
+    StorageService? storageService,
+    AmbulanceService? ambulanceService,
+  })  : _storageService = storageService ?? StorageService(),
+        _ambulanceService = ambulanceService ?? AmbulanceService();
 
-  Future<bool> uploadImage(String uid, File image) async {
-    isLoading = true;
-    notifyListeners();
+  final StorageService _storageService;
+  final AmbulanceService _ambulanceService;
+
+  Future<bool> uploadImage(String id, File image) async {
+    setLoading(true);
     try {
-      final imageUrl = await _service.uploadorganizationImage(uid, image);
-      await _firestore.collection('Ambulance').doc(uid).update({
-        'imageUrl': imageUrl,
-      });
-      ambulance = ambulance?.copyWith(imageUrl: imageUrl);
+      final imageUrl = await _storageService.uploadImage(
+        folder: FirebaseConstants.ambulanceImagesFolder,
+        id: id,
+        image: image,
+      );
+      await _ambulanceService.updateImageUrl(id, imageUrl);
       return true;
     } catch (e) {
-      debugPrint(e.toString());
+      AppLogger.e('Ambulance image upload failed', e);
       return false;
     } finally {
-      isLoading = false;
-      notifyListeners();
+      setLoading(false);
     }
   }
 }

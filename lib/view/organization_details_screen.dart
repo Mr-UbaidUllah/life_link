@@ -1,4 +1,5 @@
 import 'package:blood_donation/models/organization_model.dart';
+import 'package:blood_donation/theme/theme.dart';
 import 'package:blood_donation/utils/phone_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -99,7 +100,7 @@ class OrganizationDetailsScreen extends StatelessWidget {
                                 ),
                                 if (organization.isVerified) ...[
                                   SizedBox(width: 8.w),
-                                  Icon(Icons.verified_rounded, color: Colors.blue, size: 20.sp),
+                                  Icon(Icons.verified_rounded, color: AppColors.info, size: 20.sp),
                                 ],
                               ],
                             ),
@@ -115,12 +116,12 @@ class OrganizationDetailsScreen extends StatelessWidget {
                         Container(
                           padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
                           decoration: BoxDecoration(
-                            color: Colors.amber.withValues(alpha: 0.1),
+                            color: AppColors.warning.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(10.r),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.star_rounded, color: Colors.amber, size: 18.sp),
+                              Icon(Icons.star_rounded, color: AppColors.warning, size: 18.sp),
                               SizedBox(width: 4.w),
                               Text(
                                 organization.rating.toString(),

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:blood_donation/models/user_model.dart';
 import 'package:blood_donation/provider/storage_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
+import 'package:blood_donation/widgets/app_snackbar.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
 import 'package:blood_donation/widgets/custom_dropdown_form_field.dart';
 import 'package:flutter/material.dart';
@@ -103,14 +104,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (success) {
         await userProvider.loadCurrentUser();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Profile updated successfully'),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-            ),
-          );
+          AppSnackbar.success(context, 'Profile updated successfully');
           Navigator.pop(context);
         }
       } else {
@@ -118,13 +112,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceFirst("Exception: ", "")),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-          ),
+        AppSnackbar.error(
+          context,
+          e.toString().replaceFirst("Exception: ", ""),
         );
       }
     } finally {

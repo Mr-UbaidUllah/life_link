@@ -37,7 +37,7 @@ class AuthProviders with ChangeNotifier {
       isLoading = true;
       notifyListeners();
 
-      await _authService.Login(email, password);
+      await _authService.login(email, password);
       user = await _authService.getCurrentUserData();
       return null; // Success
     } on FirebaseAuthException catch (e) {

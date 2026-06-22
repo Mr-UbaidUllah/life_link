@@ -12,6 +12,7 @@ class UserPostsService {
     return _firestore
         .collection('Blood_request')
         .where('userId', isEqualTo: userId) // only current user's posts
+        .limit(100)
         .snapshots()
         .map(
           (snapshot) => snapshot.docs

@@ -1,6 +1,6 @@
 import 'package:blood_donation/theme/theme.dart';
 import 'package:blood_donation/view/auth/auth_wrappper.dart';
-import 'package:blood_donation/view/auth/onboarding_Screen.dart';
+import 'package:blood_donation/view/auth/onboarding_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

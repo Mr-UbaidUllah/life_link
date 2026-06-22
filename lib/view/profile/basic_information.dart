@@ -1,19 +1,22 @@
+import 'package:blood_donation/models/user_model.dart';
 import 'package:blood_donation/provider/user_provider.dart';
+import 'package:blood_donation/utils/donation_eligibility.dart';
 import 'package:blood_donation/view/profile/image_screen.dart';
+import 'package:blood_donation/widgets/app_snackbar.dart';
 import 'package:blood_donation/widgets/custom_dropdown_form_field.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
 import 'package:blood_donation/widgets/reusable_button.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class BasicInformation extends StatefulWidget {
-  /// When true, this screen is being used to EDIT an already-onboarded user's
-  /// health details (opened from Settings) rather than as Step 2 of the
-  /// first-time setup wizard. In edit mode saving pops back to the caller
-  /// instead of advancing to the photo step + wiping the nav stack.
+  /// When true, this screen edits an already-onboarded user's health details
+  /// (opened from Settings) rather than acting as Step 2 of first-time setup.
   final bool isEditMode;
 
   const BasicInformation({super.key, this.isEditMode = false});
@@ -23,9 +26,15 @@ class BasicInformation extends StatefulWidget {
 }
 
 class _BasicInformationState extends State<BasicInformation> {
-  String? selectedOption;
-  final List<String> options = ['Yes', 'No'];
-  final TextEditingController aboutController = TextEditingController();
+  static const List<String> _donateOptions = ['Yes', 'No'];
+
+  String? _selectedOption;
+  final TextEditingController _weightController = TextEditingController();
+  final TextEditingController _aboutController = TextEditingController();
+  final TextEditingController _lastDonationController = TextEditingController();
+  DateTime? _lastDonationDate;
+  bool _neverDonated = false;
+  final Set<String> _conditions = {};
   bool _loadingExisting = true;
 
   @override
@@ -36,12 +45,20 @@ class _BasicInformationState extends State<BasicInformation> {
 
   @override
   void dispose() {
-    aboutController.dispose();
+    _weightController.dispose();
+    _aboutController.dispose();
+    _lastDonationController.dispose();
     super.dispose();
   }
 
-  /// Restore previously saved Step 2 values for a returning user so they don't
-  /// have to re-enter them.
+  void _syncDonationDateText() {
+    _lastDonationController.text = _neverDonated
+        ? 'Never donated'
+        : _lastDonationDate == null
+            ? ''
+            : DateFormat('d MMM yyyy').format(_lastDonationDate!);
+  }
+
   Future<void> _prefillExisting() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
@@ -53,10 +70,19 @@ class _BasicInformationState extends State<BasicInformation> {
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
       final data = doc.data();
       if (data != null && mounted) {
-        if (data['isDonor'] is bool) {
-          selectedOption = (data['isDonor'] as bool) ? 'Yes' : 'No';
+        final user = UserModel.fromMap(doc.id, data);
+        _selectedOption = user.isDonor ? 'Yes' : 'No';
+        _aboutController.text = user.about ?? '';
+        if (user.weightKg != null) {
+          _weightController.text = user.weightKg!.toStringAsFixed(
+            user.weightKg! % 1 == 0 ? 0 : 1,
+          );
         }
-        aboutController.text = (data['about'] ?? '') as String;
+        _lastDonationDate = user.lastDonationDate;
+        _neverDonated = user.isDonor && user.lastDonationDate == null &&
+            user.weightKg != null;
+        _conditions.addAll(user.healthConditions);
+        _syncDonationDateText();
       }
     } catch (_) {
       // Non-fatal: fall back to an empty form.
@@ -65,12 +91,105 @@ class _BasicInformationState extends State<BasicInformation> {
     }
   }
 
-  // The provider stores errors as e.toString(); Firestore network failures
-  // surface as "[cloud_firestore/unavailable]" or contain "network".
-  bool _isNetworkError(String? error) {
-    if (error == null) return false;
-    final lower = error.toLowerCase();
-    return lower.contains('unavailable') || lower.contains('network');
+  /// Builds a throwaway model from the current form values to preview eligibility.
+  UserModel _draftUser() {
+    return UserModel(
+      uid: '',
+      email: '',
+      createdAt: DateTime.now(),
+      isDonor: _selectedOption == 'Yes',
+      weightKg: double.tryParse(_weightController.text.trim()),
+      lastDonationDate: _neverDonated ? null : _lastDonationDate,
+      healthConditions: _conditions.toList(),
+    );
+  }
+
+  Future<void> _pickLastDonationDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _lastDonationDate ?? now,
+      firstDate: DateTime(now.year - 5),
+      lastDate: now,
+      helpText: 'Last donation date',
+    );
+    if (picked != null) {
+      setState(() {
+        _lastDonationDate = picked;
+        _neverDonated = false;
+        _syncDonationDateText();
+      });
+    }
+  }
+
+  void _toggleCondition(String condition, bool selected) {
+    setState(() {
+      if (condition == 'None') {
+        _conditions
+          ..clear()
+          ..add('None');
+        return;
+      }
+      _conditions.remove('None');
+      if (selected) {
+        _conditions.add(condition);
+      } else {
+        _conditions.remove(condition);
+      }
+    });
+  }
+
+  Future<void> _save() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    if (_selectedOption == null) {
+      AppSnackbar.error(context, 'Please select a donation preference');
+      return;
+    }
+
+    final isDonor = _selectedOption == 'Yes';
+    final weight = double.tryParse(_weightController.text.trim());
+
+    // Weight is required for donors so eligibility can be evaluated.
+    if (isDonor && (weight == null || weight <= 0)) {
+      AppSnackbar.error(context, 'Please enter a valid weight in kg');
+      return;
+    }
+
+    final provider = context.read<UserProvider>();
+    final ok = await provider.updateHealthInfo(
+      uid: user.uid,
+      isDonor: isDonor,
+      about: _aboutController.text.trim(),
+      weightKg: weight,
+      lastDonationDate: _neverDonated ? null : _lastDonationDate,
+      healthConditions: _conditions.toList(),
+    );
+
+    if (!mounted) return;
+    if (ok) {
+      await provider.loadCurrentUser();
+      if (!mounted) return;
+      if (widget.isEditMode) {
+        AppSnackbar.success(context, 'Health details updated');
+        Navigator.pop(context);
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ImageScreen()),
+        );
+      }
+    } else {
+      final isNetwork = (provider.error ?? '').toLowerCase().contains('network') ||
+          (provider.error ?? '').toLowerCase().contains('unavailable');
+      AppSnackbar.error(
+        context,
+        isNetwork
+            ? 'No internet connection. Check your network and try again.'
+            : 'Could not save your details. Please try again.',
+      );
+    }
   }
 
   @override
@@ -81,178 +200,252 @@ class _BasicInformationState extends State<BasicInformation> {
       appBar: AppBar(
         backgroundColor: theme.appBarTheme.backgroundColor,
         elevation: 0,
-        // Only show a back button when there's actually a previous step to
-        // return to. When this screen is the resumed entry point (rendered
-        // directly by AuthWrapper) nothing is on the stack, so a back button
-        // would be a dead control — hide it instead.
         automaticallyImplyLeading: false,
         leading: Navigator.canPop(context)
             ? IconButton(
-                icon: Icon(Icons.arrow_back_ios_new, color: theme.colorScheme.onSurface),
+                icon: Icon(Icons.arrow_back_ios_new,
+                    color: theme.colorScheme.onSurface),
                 onPressed: () => Navigator.pop(context),
               )
             : null,
         title: Text(
           widget.isEditMode ? 'Update Health Details' : 'Profile Setup',
-          style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleLarge
+              ?.copyWith(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
       body: _loadingExisting
-          ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary))
+          ? Center(
+              child: CircularProgressIndicator(color: theme.colorScheme.primary))
           : SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(vertical: 20.h),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(30.r),
-                  bottomRight: Radius.circular(30.r),
-                ),
-              ),
               child: Column(
                 children: [
-                  Icon(Icons.info_outline, size: 80.sp, color: theme.colorScheme.primary),
-                  SizedBox(height: 12.h),
-                  if (!widget.isEditMode) ...[
-                    Text(
-                      'Step 2 of 3',
-                      style: TextStyle(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14.sp,
-                      ),
-                    ),
-                    SizedBox(height: 4.h),
-                  ],
-                  Text(
-                    'Health Details',
-                    style: TextStyle(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
+                  _buildHeader(theme),
+                  Padding(
+                    padding: EdgeInsets.all(24.r),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _sectionTitle(theme, 'Donation Preference'),
+                        SizedBox(height: 12.h),
+                        CustomDropdownFormField(
+                          hintText: 'I want to donate blood',
+                          value: _selectedOption,
+                          items: _donateOptions,
+                          itemToString: (item) => item,
+                          borderRadius: 12,
+                          focusedBorderColor: theme.colorScheme.primary,
+                          prefixIcon: Icon(Icons.volunteer_activism_outlined,
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.4)),
+                          onChanged: (val) =>
+                              setState(() => _selectedOption = val),
+                        ),
+                        SizedBox(height: 24.h),
+                        _sectionTitle(theme, 'Weight'),
+                        SizedBox(height: 12.h),
+                        CustomTextField(
+                          hintText: 'e.g. 65',
+                          labelText: 'Weight (kg)',
+                          controller: _weightController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d{0,3}(\.\d{0,1})?')),
+                          ],
+                          suffixText: 'kg',
+                          borderRadius: 12,
+                          prefixIcon: Icons.monitor_weight_outlined,
+                          onChanged: (_) => setState(() {}),
+                        ),
+                        SizedBox(height: 24.h),
+                        _sectionTitle(theme, 'Last Donation'),
+                        SizedBox(height: 12.h),
+                        _buildLastDonationField(theme),
+                        SizedBox(height: 8.h),
+                        _buildNeverDonatedToggle(theme),
+                        SizedBox(height: 24.h),
+                        _sectionTitle(theme, 'Health Conditions'),
+                        SizedBox(height: 4.h),
+                        Text(
+                          'Select any that apply. This helps confirm donation safety.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.55),
+                          ),
+                        ),
+                        SizedBox(height: 12.h),
+                        _buildConditionChips(theme),
+                        SizedBox(height: 24.h),
+                        _buildEligibilityBanner(theme),
+                        SizedBox(height: 24.h),
+                        _sectionTitle(theme, 'About You (Optional)'),
+                        SizedBox(height: 12.h),
+                        CustomTextField(
+                          hintText: 'Tell us a bit about yourself...',
+                          maxLines: 4,
+                          borderRadius: 12,
+                          controller: _aboutController,
+                        ),
+                        SizedBox(height: 32.h),
+                        Consumer<UserProvider>(
+                          builder: (context, users, _) => ReusableButton(
+                            label: widget.isEditMode ? 'Save' : 'Next',
+                            isLoading: users.isLoading,
+                            onPressed: _save,
+                          ),
+                        ),
+                        SizedBox(height: 20.h),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            Padding(
-              padding: EdgeInsets.all(24.0.r),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Donation Preference',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-                  CustomDropdownFormField(
-                    hintText: 'I want to donate blood',
-                    value: selectedOption,
-                    items: options,
-                    itemToString: (item) => item,
-                    borderRadius: 12,
-                    focusedBorderColor: theme.colorScheme.primary,
-                    prefixIcon: Icon(Icons.volunteer_activism_outlined, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
-                    onChanged: (val) {
-                      setState(() {
-                        selectedOption = val;
-                      });
-                    },
-                  ),
-                  SizedBox(height: 16.h),
-                  CustomTextField(
-                    hintText: 'Tell us a bit about yourself...',
-                    labelText: "About Yourself (Optional)",
-                    maxLines: 4,
-                    borderRadius: 12,
-                    controller: aboutController,
-                  ),
-                  SizedBox(height: 40.h),
-                  Consumer<UserProvider>(
-                    builder: (context, users, _) {
-                      return InkWell(
-                        // Disable the tap while saving so a fast double-tap
-                        // can't fire two updateBasicInfo writes.
-                        onTap: users.isLoading
-                            ? null
-                            : () async {
-                          final user = FirebaseAuth.instance.currentUser;
+    );
+  }
 
-                          if (user == null) return;
-
-                          if (selectedOption == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Please select a donation preference'),
-                                backgroundColor: theme.colorScheme.error,
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                            return;
-                          }
-
-                          final success = await users.updateBasicInfo(
-                            uid: user.uid,
-                            wantToDonate: selectedOption!,
-                            about: aboutController.text.trim(),
-                          );
-
-                          if (!context.mounted) return;
-                          if (success) {
-                            if (widget.isEditMode) {
-                              // Editing from Settings: just return to the caller
-                              // with a confirmation — don't advance to the photo
-                              // step or wipe the nav stack.
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Health details updated'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                              Navigator.pop(context);
-                            } else {
-                              // First-time setup: push (not pushReplacement) so the
-                              // back stack stays Step1 → Step2 → Step3 and the back
-                              // arrow walks it.
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const ImageScreen()),
-                              );
-                            }
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  _isNetworkError(users.error)
-                                      ? 'No internet connection. Check your network and try again.'
-                                      : 'Could not save your details. Please try again.',
-                                ),
-                                backgroundColor: theme.colorScheme.error,
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        },
-                        child: users.isLoading
-                          ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary))
-                          : ReusableButton(label: widget.isEditMode ? 'Save' : 'Next'),
-                      );
-                    },
-                  ),
-                  SizedBox(height: 20.h),
-                ],
+  Widget _buildHeader(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 24.h),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(30.r)),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.health_and_safety_outlined,
+              size: 72.sp, color: theme.colorScheme.primary),
+          SizedBox(height: 12.h),
+          if (!widget.isEditMode) ...[
+            Text(
+              'Step 2 of 3',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
               ),
             ),
+            SizedBox(height: 4.h),
           ],
-        ),
+          Text(
+            'Health Screening',
+            style: theme.textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionTitle(ThemeData theme, String text) => Text(
+        text,
+        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+      );
+
+  Widget _buildLastDonationField(ThemeData theme) {
+    return CustomTextField(
+      readOnly: true,
+      controller: _lastDonationController,
+      hintText: 'Select date',
+      labelText: 'Last donation date',
+      borderRadius: 12,
+      prefixIcon: Icons.calendar_today_outlined,
+      onTap: _neverDonated ? null : _pickLastDonationDate,
+    );
+  }
+
+  Widget _buildNeverDonatedToggle(ThemeData theme) {
+    return InkWell(
+      onTap: () => setState(() {
+        _neverDonated = !_neverDonated;
+        if (_neverDonated) _lastDonationDate = null;
+        _syncDonationDateText();
+      }),
+      borderRadius: BorderRadius.circular(8.r),
+      child: Row(
+        children: [
+          Checkbox(
+            value: _neverDonated,
+            onChanged: (v) => setState(() {
+              _neverDonated = v ?? false;
+              if (_neverDonated) _lastDonationDate = null;
+              _syncDonationDateText();
+            }),
+          ),
+          Text("I haven't donated before",
+              style: theme.textTheme.bodyMedium),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConditionChips(ThemeData theme) {
+    return Wrap(
+      spacing: 8.w,
+      runSpacing: 8.h,
+      children: DonationEligibility.selectableConditions.map((c) {
+        final selected = _conditions.contains(c);
+        return FilterChip(
+          label: Text(c),
+          selected: selected,
+          onSelected: (val) => _toggleCondition(c, val),
+          showCheckmark: false,
+          selectedColor: theme.colorScheme.primary.withValues(alpha: 0.15),
+          labelStyle: TextStyle(
+            color: selected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurface.withValues(alpha: 0.8),
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            fontSize: 12.sp,
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildEligibilityBanner(ThemeData theme) {
+    // Only meaningful once the user opts in to donating.
+    if (_selectedOption != 'Yes') return const SizedBox.shrink();
+
+    final result = _draftUser().evaluateEligibility();
+    final color = result.isEligible
+        ? theme.colorScheme.primary
+        : theme.colorScheme.error;
+    final icon = result.isEligible
+        ? Icons.check_circle_rounded
+        : Icons.info_rounded;
+
+    String message = result.reason;
+    if (!result.isEligible && result.nextEligibleDate != null) {
+      message =
+          '$message Next eligible: ${DateFormat('d MMM yyyy').format(result.nextEligibleDate!)}.';
+    }
+
+    return Container(
+      padding: EdgeInsets.all(14.r),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 20.sp),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Text(
+              message,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

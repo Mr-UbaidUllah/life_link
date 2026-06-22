@@ -75,7 +75,7 @@ class AuthService {
     return userCredential;
   }
 
-  Future<void> Login(String email, String password) async {
+  Future<void> login(String email, String password) async {
     UserCredential userCredential = await _auth.signInWithEmailAndPassword(
       email: email,
       password: password,

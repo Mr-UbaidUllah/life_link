@@ -1,4 +1,5 @@
 import 'package:blood_donation/models/ambulance_model.dart';
+import 'package:blood_donation/theme/theme.dart';
 import 'package:blood_donation/utils/phone_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -209,7 +210,7 @@ class AmbulanceDetailsScreen extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
       decoration: BoxDecoration(
-        color: available ? Colors.green.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
+        color: (available ? AppColors.success : AppColors.warning).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8.r),
       ),
       child: Text(
@@ -217,7 +218,7 @@ class AmbulanceDetailsScreen extends StatelessWidget {
         style: TextStyle(
           fontSize: 12.sp,
           fontWeight: FontWeight.bold,
-          color: available ? Colors.green : Colors.orange,
+          color: available ? AppColors.success : AppColors.warning,
         ),
       ),
     );

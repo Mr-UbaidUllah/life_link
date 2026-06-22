@@ -1,8 +1,11 @@
 rules_version = '2';
 
 // Life Link — Cloud Storage security rules
-// Images are world-readable (they're shown via download URLs across the app),
-// but only authenticated users can upload, and only reasonably-sized images.
+//
+// Reads require auth (the app fetches images via tokenized download URLs, which
+// keep working regardless; this only stops anonymous bucket-path enumeration).
+// Writes require auth + a sane image, and profile photos may only be written to
+// the signed-in user's own `<uid>.jpg` path.
 service firebase.storage {
   match /b/{bucket}/o {
 
@@ -16,19 +19,21 @@ service firebase.storage {
     }
 
     match /profile_images/{fileName} {
-      allow read: if true;
-      allow write: if signedIn() && isImageUnder10MB();
+      allow read: if signedIn();
+      allow write: if signedIn()
+                   && isImageUnder10MB()
+                   && fileName == request.auth.uid + '.jpg';
     }
     match /organization_images/{fileName} {
-      allow read: if true;
+      allow read: if signedIn();
       allow write: if signedIn() && isImageUnder10MB();
     }
     match /ambulance_images/{fileName} {
-      allow read: if true;
+      allow read: if signedIn();
       allow write: if signedIn() && isImageUnder10MB();
     }
     match /volunteer_images/{fileName} {
-      allow read: if true;
+      allow read: if signedIn();
       allow write: if signedIn() && isImageUnder10MB();
     }
 

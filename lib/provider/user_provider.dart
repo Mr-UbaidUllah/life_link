@@ -1,11 +1,14 @@
 import 'package:blood_donation/models/user_model.dart';
-import 'package:blood_donation/services/user_Service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:blood_donation/services/user_service.dart';
+import 'package:blood_donation/utils/app_logger.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class UserProvider extends ChangeNotifier {
-  final UserFirestoreService _firestoreService = UserFirestoreService();
+  UserProvider({UserFirestoreService? service})
+      : _firestoreService = service ?? UserFirestoreService();
+
+  final UserFirestoreService _firestoreService;
 
   bool _isLoading = false;
   bool isWilling = false;
@@ -82,6 +85,40 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  /// Saves the full health-screening form (weight, last donation, conditions).
+  Future<bool> updateHealthInfo({
+    required String uid,
+    required bool isDonor,
+    String? about,
+    double? weightKg,
+    DateTime? lastDonationDate,
+    List<String> healthConditions = const [],
+  }) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      await _firestoreService.updateHealthInfo(
+        uid: uid,
+        isDonor: isDonor,
+        about: about,
+        weightKg: weightKg,
+        lastDonationDate: lastDonationDate,
+        healthConditions: healthConditions,
+      );
+      isWilling = isDonor;
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      AppLogger.e('updateHealthInfo failed', e);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> loadCurrentUser() async {
     try {
       _isLoading = true;
@@ -94,7 +131,7 @@ class UserProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('Error loading user: $e');
+      AppLogger.e('Error loading user', e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -107,12 +144,10 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> updateProfileImage(String imageUrl) async {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
 
-    await FirebaseFirestore.instance.collection('users').doc(uid).update({
-      'profileImage': imageUrl,
-    });
-
+    await _firestoreService.setProfileImage(uid, imageUrl);
     await loadCurrentUser();
   }
 

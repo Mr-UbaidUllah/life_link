@@ -4,7 +4,7 @@ import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/view/ambulance_screen.dart';
 import 'package:blood_donation/view/inbox_screen.dart';
 import 'package:blood_donation/view/organization_screen.dart';
-import 'package:blood_donation/view/profile/profile_details_scrren.dart';
+import 'package:blood_donation/view/profile/profile_details_screen.dart';
 import 'package:blood_donation/view/request_screen.dart';
 import 'package:blood_donation/view/settings_screen.dart';
 import 'package:blood_donation/view/user_donate_blood.dart';
@@ -128,19 +128,6 @@ class _MoreScreenState extends State<MoreScreen> {
                   icon: Icons.settings_outlined,
                   title: 'App Settings',
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
-                ),
-                MenuTile(
-                  icon: Icons.favorite_outline_rounded,
-                  title: 'Support Us',
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Support options are coming soon. Thank you! ❤️'),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-                      ),
-                    );
-                  },
                 ),
               ],
             ),

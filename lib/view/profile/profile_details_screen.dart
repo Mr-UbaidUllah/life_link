@@ -1,6 +1,6 @@
 import 'package:blood_donation/models/bloodrequest_model.dart';
 import 'package:blood_donation/models/user_model.dart';
-import 'package:blood_donation/provider/userPost_provider.dart';
+import 'package:blood_donation/provider/user_post_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/theme/theme.dart';
 import 'package:blood_donation/view/edit_profile_screen.dart';
@@ -8,6 +8,7 @@ import 'package:blood_donation/view/msg_screen.dart';
 import 'package:blood_donation/view/post_details.dart';
 import 'package:blood_donation/widgets/home_widgets.dart';
 import 'package:blood_donation/widgets/refresh_helpers.dart';
+import 'package:intl/intl.dart';
 import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -440,6 +441,10 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
             if (location.isNotEmpty)
               _buildInfoTile(theme, Icons.location_city_rounded, 'Address', location),
           ]),
+          if (user.isDonor) ...[
+            SizedBox(height: 25.h),
+            _buildHealthSection(theme, user),
+          ],
           if (about.isNotEmpty || _isMe) ...[
             SizedBox(height: 25.h),
             Text(
@@ -475,12 +480,76 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     );
   }
 
+  Widget _buildHealthSection(ThemeData theme, UserModel user) {
+    final eligibility = user.evaluateEligibility();
+    final color =
+        eligibility.isEligible ? theme.colorScheme.primary : theme.colorScheme.error;
+    final lastDonation = user.lastDonationDate == null
+        ? 'No record'
+        : DateFormat('d MMM yyyy').format(user.lastDonationDate!);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Health & Eligibility',
+            style: TextStyle(
+                fontSize: 17.sp,
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.onSurface)),
+        SizedBox(height: 12.h),
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(14.r),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(14.r),
+            border: Border.all(color: color.withValues(alpha: 0.25)),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                  eligibility.isEligible
+                      ? Icons.check_circle_rounded
+                      : Icons.info_rounded,
+                  color: color,
+                  size: 22.sp),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Text(
+                  eligibility.isEligible
+                      ? 'Eligible to donate'
+                      : eligibility.reason,
+                  style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13.sp),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 12.h),
+        _buildInfoSection(theme, '', [
+          _buildInfoTile(theme, Icons.monitor_weight_outlined, 'Weight',
+              user.weightKg == null ? 'Not provided' : '${user.weightKg} kg'),
+          _buildInfoTile(theme, Icons.calendar_today_outlined,
+              'Last donation', lastDonation),
+          if (user.healthConditions.isNotEmpty)
+            _buildInfoTile(theme, Icons.medical_information_outlined,
+                'Conditions', user.healthConditions.join(', ')),
+        ]),
+      ],
+    );
+  }
+
   Widget _buildInfoSection(ThemeData theme, String title, List<Widget> children) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.w800, color: theme.colorScheme.onSurface)),
-        SizedBox(height: 14.h),
+        if (title.isNotEmpty) ...[
+          Text(title, style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.w800, color: theme.colorScheme.onSurface)),
+          SizedBox(height: 14.h),
+        ],
         Container(
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,

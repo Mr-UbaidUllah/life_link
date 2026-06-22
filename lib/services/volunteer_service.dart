@@ -1,21 +1,32 @@
+import 'package:blood_donation/core/base/base_firestore_service.dart';
+import 'package:blood_donation/core/constants/firebase_constants.dart';
 import 'package:blood_donation/models/volunteer_model.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class VolunteerService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+class VolunteerService extends BaseFirestoreService<VolunteerModel> {
+  VolunteerService({super.firestore}) : super(FirebaseConstants.volunteer);
 
-  Future<void> addVolunteer(VolunteerModel volunteer) async {
-    await _firestore
-        .collection('Volunteer')
-        .doc(volunteer.id)
-        .set(volunteer.toMap());
+  @override
+  VolunteerModel fromMap(String id, Map<String, dynamic> map) =>
+      VolunteerModel.fromMap(id, map);
+
+  @override
+  Map<String, dynamic> toMap(VolunteerModel item) => item.toMap();
+
+  @override
+  String idOf(VolunteerModel item) => item.id;
+
+  // ---- Convenience API (kept for existing call sites) ----
+  // Stamps the creator so security rules can scope edits/deletes to the owner.
+  Future<void> addVolunteer(VolunteerModel volunteer) {
+    final data = toMap(volunteer)
+      ..['createdBy'] = FirebaseAuth.instance.currentUser?.uid;
+    return collection.doc(idOf(volunteer)).set(data);
   }
 
-  Stream<List<VolunteerModel>> getVolunteers() {
-    return _firestore.collection('Volunteer').snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) {
-        return VolunteerModel.fromMap(doc.id, doc.data());
-      }).toList();
-    });
-  }
+  Stream<List<VolunteerModel>> getVolunteers({int? limit}) =>
+      streamAll(limit: limit);
+
+  Future<void> updateImageUrl(String id, String url) =>
+      update(id, {'imageUrl': url});
 }

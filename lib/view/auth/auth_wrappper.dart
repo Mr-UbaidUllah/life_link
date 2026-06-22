@@ -1,10 +1,10 @@
 import 'package:blood_donation/theme/theme.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:blood_donation/view/auth/login_screen.dart';
-import 'package:blood_donation/view/bottmNavigation.dart';
+import 'package:blood_donation/view/bottom_navigation.dart';
 import 'package:blood_donation/view/profile/basic_information.dart';
 import 'package:blood_donation/view/profile/image_screen.dart';
-import 'package:blood_donation/view/profile/personel_information.dart';
+import 'package:blood_donation/view/profile/personal_information.dart';
 import 'package:blood_donation/utils/setup_flow.dart';
 import 'package:blood_donation/services/auth_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

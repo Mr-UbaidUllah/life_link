@@ -1,8 +1,9 @@
 import 'package:blood_donation/models/bloodrequest_model.dart';
-import 'package:blood_donation/provider/bloodRequest_provider.dart';
+import 'package:blood_donation/theme/theme.dart';
+import 'package:blood_donation/provider/blood_request_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/view/msg_screen.dart';
-import 'package:blood_donation/view/profile/profile_details_scrren.dart';
+import 'package:blood_donation/view/profile/profile_details_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -93,17 +94,17 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                           margin: EdgeInsets.only(bottom: 15.h),
                           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                           decoration: BoxDecoration(
-                            color: Colors.blue.withValues(alpha: 0.1),
+                            color: AppColors.info.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(10.r),
-                            border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                            border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                              Icon(Icons.info_outline, color: AppColors.info, size: 20),
                               SizedBox(width: 10.w),
-                              const Text(
+                              Text(
                                 'This is your request.',
-                                style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                                style: TextStyle(color: AppColors.info, fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
@@ -315,7 +316,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                           icon: const Icon(Icons.call_rounded, color: Colors.white),
                           label: const Text('Call Now', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
+                            backgroundColor: AppColors.success,
                             padding: EdgeInsets.symmetric(vertical: 12.h),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
                           ),
@@ -362,7 +363,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                       icon: const Icon(Icons.check_circle_outline_rounded, color: Colors.white),
                       label: const Text('Found Donor / Close Request', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
+                        backgroundColor: AppColors.info,
                         padding: EdgeInsets.symmetric(vertical: 15.h),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
                       ),

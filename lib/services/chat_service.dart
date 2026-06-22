@@ -1,11 +1,75 @@
+import 'package:blood_donation/core/constants/firebase_constants.dart';
+import 'package:blood_donation/models/chat_models.dart';
 import 'package:blood_donation/models/message_model.dart';
+import 'package:blood_donation/models/user_model.dart';
+import 'package:blood_donation/utils/app_logger.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 
 class ChatService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  /// Streams the current user's chats, newest-active first.
+  Stream<List<ChatModel>> chatListStream() {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return Stream.value(const []);
+
+    return _firestore
+        .collection(FirebaseConstants.chats)
+        .where('users', arrayContains: uid)
+        .snapshots()
+        .map((snapshot) {
+      final chatList = snapshot.docs
+          .map((doc) => ChatModel.fromMap(doc.id, doc.data()))
+          .toList();
+
+      chatList.sort((a, b) {
+        // Newest first; chats with no updatedAt sink to the bottom.
+        final timeA = a.updatedAt;
+        final timeB = b.updatedAt;
+        if (timeA == null && timeB == null) return 0;
+        if (timeA == null) return 1;
+        if (timeB == null) return -1;
+        return timeB.compareTo(timeA);
+      });
+      return chatList;
+    });
+  }
+
+  /// Streams the total unread message count across all of the user's chats.
+  Stream<int> totalUnreadCountStream() {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return Stream.value(0);
+
+    return _firestore
+        .collection(FirebaseConstants.chats)
+        .where('users', arrayContains: uid)
+        .snapshots()
+        .map((snapshot) {
+      int total = 0;
+      for (final doc in snapshot.docs) {
+        final unreadCounts =
+            Map<String, int>.from(doc.data()['unreadCounts'] ?? {});
+        total += unreadCounts[uid] ?? 0;
+      }
+      return total;
+    });
+  }
+
+  /// Looks up a user document by id (used to render chat headers/avatars).
+  Future<UserModel?> getUserById(String userId) async {
+    try {
+      final doc =
+          await _firestore.collection(FirebaseConstants.users).doc(userId).get();
+      if (doc.exists && doc.data() != null) {
+        return UserModel.fromMap(doc.id, doc.data()!);
+      }
+    } catch (e) {
+      AppLogger.e('getUserById failed', e);
+    }
+    return null;
+  }
 
   /// Send message
   Future<void> sendMessage({
@@ -110,7 +174,7 @@ class ChatService {
         'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      debugPrint('Error sending notification: $e');
+      AppLogger.e('Error sending chat notification', e);
     }
   }
 

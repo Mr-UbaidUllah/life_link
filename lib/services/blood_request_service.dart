@@ -62,21 +62,24 @@ class BloodRequestService {
     await batch.commit();
   }
 
-  Stream<List<BloodRequestModel>> getRequests() {
+  Stream<List<BloodRequestModel>> getRequests({int limit = 50}) {
+    // Filter to open requests SERVER-SIDE (and cap the result) so the feed no
+    // longer downloads the entire collection on every snapshot — closed/old
+    // requests were filtered out client-side anyway. Expiry is still checked
+    // client-side because it's a per-doc timestamp comparison.
+    // Requires composite index: Blood_request (status ASC, createdAt DESC).
     return _firestore
         .collection('Blood_request')
+        .where('status', isEqualTo: 'open')
         .orderBy('createdAt', descending: true)
+        .limit(limit)
         .snapshots()
         .map((snapshot) {
           final now = DateTime.now();
-          return snapshot.docs.map((doc) {
-            return BloodRequestModel.fromMap(doc.id, doc.data());
-          }).where((req) {
-            // Only show 'open' requests that haven't expired yet
-            final isOpen = req.status == 'open';
-            final isNotExpired = req.expiryDate.isAfter(now);
-            return isOpen && isNotExpired;
-          }).toList();
+          return snapshot.docs
+              .map((doc) => BloodRequestModel.fromMap(doc.id, doc.data()))
+              .where((req) => req.expiryDate.isAfter(now))
+              .toList();
         });
   }
 }
