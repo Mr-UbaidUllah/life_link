@@ -1,7 +1,6 @@
 import 'package:blood_donation/models/user_model.dart';
 import 'package:blood_donation/provider/theme_provider.dart';
 import 'package:blood_donation/theme/theme.dart';
-import 'package:blood_donation/widgets/motion.dart';
 import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:blood_donation/widgets/ui_kit.dart';
 import 'package:flutter/material.dart';
@@ -74,11 +73,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               );
             }
-            return ListView(
+            return SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(
                   parent: BouncingScrollPhysics()),
               padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 32.h),
-              children: Stagger.children([
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                 _identityHeader(theme, user),
                 SizedBox(height: 24.h),
                 _groupLabel(theme, 'Profile'),
@@ -143,7 +144,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ]),
                 SizedBox(height: 32.h),
                 _logoutButton(theme),
-              ], step: const Duration(milliseconds: 55)),
+                ],
+              ),
             );
           },
         ),

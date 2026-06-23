@@ -3,7 +3,6 @@ import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/theme/theme.dart';
 import 'package:blood_donation/view/auth/login_screen.dart';
 import 'package:blood_donation/widgets/app_snackbar.dart';
-import 'package:blood_donation/widgets/motion.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -113,7 +112,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       body: ListView(
         physics: const BouncingScrollPhysics(),
         padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 32.h),
-        children: Stagger.children([
+        children: [
           Container(
             padding: EdgeInsets.all(18.r),
             decoration: BoxDecoration(
@@ -196,7 +195,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
               ),
             ),
           ),
-        ], step: const Duration(milliseconds: 45)),
+        ],
       ),
     );
   }

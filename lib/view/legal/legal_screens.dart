@@ -1,6 +1,5 @@
 import 'package:blood_donation/core/constants/legal_constants.dart';
 import 'package:blood_donation/theme/theme.dart';
-import 'package:blood_donation/widgets/motion.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -49,7 +48,7 @@ class _LegalScaffold extends StatelessWidget {
         physics:
             const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 32.h),
-        children: Stagger.children([
+        children: [
           Container(
             padding: EdgeInsets.all(18.r),
             decoration: BoxDecoration(
@@ -106,7 +105,7 @@ class _LegalScaffold extends StatelessWidget {
             label: 'Contact us · ${LegalInfo.supportEmail}',
             onTap: () => _open('mailto:${LegalInfo.supportEmail}'),
           ),
-        ], step: const Duration(milliseconds: 40)),
+        ],
       ),
     );
   }
@@ -387,7 +386,7 @@ class FaqScreen extends StatelessWidget {
         physics:
             const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 32.h),
-        children: Stagger.children([
+        children: [
           for (final f in _faqs) _FaqTile(faq: f),
           SizedBox(height: 20.h),
           _LinkRow(
@@ -395,7 +394,7 @@ class FaqScreen extends StatelessWidget {
             label: 'Still need help? ${LegalInfo.supportEmail}',
             onTap: () => _LegalScaffold._open('mailto:${LegalInfo.supportEmail}'),
           ),
-        ], step: const Duration(milliseconds: 35)),
+        ],
       ),
     );
   }

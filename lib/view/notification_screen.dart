@@ -3,7 +3,6 @@ import 'package:blood_donation/services/notification_database_service.dart';
 import 'package:blood_donation/theme/theme.dart';
 import 'package:blood_donation/view/notification_detail_screen.dart';
 import 'package:blood_donation/widgets/home_widgets.dart';
-import 'package:blood_donation/widgets/motion.dart';
 import 'package:blood_donation/widgets/refresh_helpers.dart';
 import 'package:blood_donation/widgets/shimmer.dart';
 import 'package:flutter/material.dart';
@@ -164,8 +163,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   physics: const AlwaysScrollableScrollPhysics(
                       parent: BouncingScrollPhysics()),
                   padding: EdgeInsets.only(bottom: 24.h),
-                  children: Stagger.children(rows,
-                      step: const Duration(milliseconds: 45)),
+                  children: rows,
                 );
               }
             }

@@ -66,6 +66,17 @@ class _SignupScreenState extends State<SignupScreen> {
             Stack(
               children: [
                 RedContainer(height: height, width: width),
+                Positioned(
+                  top: 0,
+                  left: 4.w,
+                  child: SafeArea(
+                    child: IconButton(
+                      icon: Icon(Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white, size: 20.sp),
+                      onPressed: () => Navigator.maybePop(context),
+                    ),
+                  ),
+                ),
                 Padding(
                   padding: EdgeInsets.only(top: height * 0.3),
                   child: Container(

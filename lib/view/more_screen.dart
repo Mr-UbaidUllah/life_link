@@ -94,7 +94,7 @@ class _MoreScreenState extends State<MoreScreen> {
               physics: const AlwaysScrollableScrollPhysics(
                   parent: BouncingScrollPhysics()),
               padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 110.h),
-              children: Stagger.children([
+              children: [
                 // ---- PROFILE: everything about the user lives here ----
                 _groupLabel(theme, 'Profile'),
                 _profileCard(theme, user),
@@ -215,7 +215,7 @@ class _MoreScreenState extends State<MoreScreen> {
                 ]),
                 SizedBox(height: 16.h),
                 _buildSignOut(theme),
-              ]),
+              ],
             ),
           );
         },
