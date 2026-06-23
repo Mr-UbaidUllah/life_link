@@ -6,7 +6,9 @@ class NetworkProvider extends ChangeNotifier {
   bool _isOffline = false;
   bool get isOffline => _isOffline;
 
-  late StreamSubscription<List<ConnectivityResult>> _subscription;
+  // Nullable (not `late`) so dispose() can't throw a LateInitializationError if
+  // the subscription was never assigned (e.g. an early failure).
+  StreamSubscription<List<ConnectivityResult>>? _subscription;
 
   NetworkProvider() {
     _checkInitialConnection();
@@ -14,8 +16,14 @@ class NetworkProvider extends ChangeNotifier {
   }
 
   Future<void> _checkInitialConnection() async {
-    final List<ConnectivityResult> result = await Connectivity().checkConnectivity();
-    _updateState(result);
+    try {
+      final List<ConnectivityResult> result =
+          await Connectivity().checkConnectivity();
+      _updateState(result);
+    } catch (_) {
+      // checkConnectivity can throw on some platforms; assume online until the
+      // change stream tells us otherwise rather than crashing on startup.
+    }
   }
 
   void _subscribeToConnectivityChanges() {
@@ -36,7 +44,7 @@ class NetworkProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _subscription.cancel();
+    _subscription?.cancel();
     super.dispose();
   }
 }

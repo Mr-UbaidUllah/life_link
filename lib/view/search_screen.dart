@@ -1,18 +1,20 @@
+import 'package:blood_donation/core/constants/app_constants.dart';
 import 'package:blood_donation/models/bloodrequest_model.dart';
 import 'package:blood_donation/models/user_model.dart';
 import 'package:blood_donation/provider/blood_request_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
+import 'package:blood_donation/theme/theme.dart';
 import 'package:blood_donation/view/post_details.dart';
 import 'package:blood_donation/view/profile/profile_details_screen.dart';
-import 'package:blood_donation/widgets/custom_text_field.dart';
-import 'package:blood_donation/widgets/home_widgets.dart';
+import 'package:blood_donation/widgets/motion.dart';
 import 'package:blood_donation/widgets/shimmer.dart';
+import 'package:blood_donation/widgets/ui_kit.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
-import 'bottom_navigation.dart';
+enum _Mode { donors, requests }
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -22,15 +24,11 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  int selectedIndex = -1;
+  _Mode _mode = _Mode.donors;
+  String? _group; // null == all
+  String _query = '';
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
 
-  final List<String> bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-
-  // Cache the streams once — the search field calls setState on every keystroke,
-  // which would otherwise resubscribe both Firestore streams (and flash the
-  // skeletons) on each character typed.
   late final Stream<List<BloodRequestModel>> _requestStream;
   late final Stream<List<UserModel>> _donorStream;
 
@@ -40,9 +38,7 @@ class _SearchScreenState extends State<SearchScreen> {
     _requestStream = context.read<BloodrequestProvider>().requests;
     _donorStream = context.read<UserProvider>().donors;
     Future.microtask(() {
-      if (mounted) {
-        context.read<UserProvider>().loadCurrentUser();
-      }
+      if (mounted) context.read<UserProvider>().loadCurrentUser();
     });
   }
 
@@ -55,435 +51,420 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: theme.appBarTheme.backgroundColor,
-        centerTitle: true,
-        title: Text(
-          'Find Donors',
-          style: TextStyle(
-            color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.w700,
-            fontSize: 19.sp,
-          ),
-        ),
+        title: Text('Discover',
+            style: theme.textTheme.headlineMedium?.copyWith(fontSize: 24.sp)),
       ),
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          /// SEARCH FIELD
-          SliverToBoxAdapter(
-            child: Container(
-              padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 20.h),
-              color: theme.appBarTheme.backgroundColor,
-              child: CustomTextField(
-                controller: _searchController,
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-                prefixIcon: Icons.search_rounded,
-                hintText: 'Search by city, name or blood...',
-                suffixIcon: _searchQuery.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: Icon(Icons.close_rounded,
-                            size: 20.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                          FocusScope.of(context).unfocus();
-                        },
-                      ),
-              ),
-            ),
+      body: Column(
+        children: [
+          _searchField(theme),
+          _modeToggle(theme),
+          _groupChips(theme),
+          SizedBox(height: 6.h),
+          Expanded(
+            child: _mode == _Mode.donors
+                ? _donorResults(theme)
+                : _requestResults(theme),
           ),
-
-          /// BLOOD GROUP SECTION
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 10.h),
-              child: Text(
-                'Filter by Blood Group',
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-            ),
-          ),
-
-          SliverPadding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w),
-            sliver: SliverGrid(
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final isSelected = selectedIndex == index;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      if (selectedIndex == index) {
-                        selectedIndex = -1;
-                      } else {
-                        selectedIndex = index;
-                      }
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    decoration: BoxDecoration(
-                      color: isSelected ? theme.colorScheme.primary : theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(16.r),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: theme.colorScheme.primary.withValues(alpha: 0.25),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ]
-                          : null,
-                      border: Border.all(
-                        color: isSelected
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.primary.withValues(alpha: 0.12),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Icon(
-                          Icons.water_drop,
-                          color: isSelected
-                              ? theme.colorScheme.onPrimary.withValues(alpha: 0.2)
-                              : theme.colorScheme.primary.withValues(alpha: 0.1),
-                          size: 40.sp,
-                        ),
-                        Text(
-                          bloodGroups[index],
-                          style: TextStyle(
-                            color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 16.sp,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }, childCount: bloodGroups.length),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                mainAxisSpacing: 12.w,
-                crossAxisSpacing: 12.w,
-                childAspectRatio: 1,
-              ),
-            ),
-          ),
-
-          /// RECENT REQUEST SECTION
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(20.w, 30.h, 20.w, 10.h),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Recent Blood Requests',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => MainScreen.switchTab(MainScreen.tabRequests),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'View All',
-                          style: TextStyle(fontSize: 13.sp, color: theme.colorScheme.primary, fontWeight: FontWeight.w700),
-                        ),
-                        SizedBox(width: 2.w),
-                        Icon(Icons.chevron_right_rounded, size: 16.sp, color: theme.colorScheme.primary),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          SliverToBoxAdapter(
-            child: Consumer2<BloodrequestProvider, UserProvider>(
-              builder: (context, _, userProvider, __) {
-                final dismissedIds = userProvider.user?.dismissedRequests ?? [];
-
-                return StreamBuilder<List<BloodRequestModel>>(
-                  stream: _requestStream,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return AppShimmer(
-                        child: Column(
-                          children: List.generate(3, (_) => const BloodRequestSkeleton()),
-                        ),
-                      );
-                    }
-
-                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return _emptyMessage(theme, "No requests found");
-                    }
-
-                    final allRequests = snapshot.data!;
-                    final query = _searchQuery.toLowerCase();
-                    final selectedBlood = selectedIndex != -1 ? bloodGroups[selectedIndex] : null;
-
-                    final filteredRequests = allRequests.where((req) {
-                      final matchesQuery = query.isEmpty ||
-                          req.city.toLowerCase().contains(query) ||
-                          req.hospital.toLowerCase().contains(query) ||
-                          req.bloodGroup.toLowerCase().contains(query);
-
-                      final matchesBlood = selectedBlood == null || req.bloodGroup == selectedBlood;
-
-                      final isMine = req.userId == currentUserId;
-                      final isDismissed = dismissedIds.contains(req.id);
-
-                      // PROFESSIONAL FIX: Always show user's own requests, even if they'd normally be "dismissed" or hidden by default filtering
-                      // but hide other people's dismissed requests.
-                      return matchesQuery && matchesBlood && (isMine || !isDismissed);
-                    }).toList();
-
-                    if (filteredRequests.isEmpty) {
-                      return _emptyMessage(theme, "No requests match your search");
-                    }
-
-                    // Adjust display logic to prioritize mine or show a limited set when not searching
-                    final displayRequests = (_searchQuery.isEmpty && selectedIndex == -1)
-                        ? filteredRequests.take(5).toList()
-                        : filteredRequests;
-
-                    return Column(
-                      children: displayRequests.map((req) {
-                        return HomeContainer(
-                          request: req,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => PostDetailsScreen(request: req),
-                              ),
-                            );
-                          },
-                        );
-                      }).toList(),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-
-          /// DONORS SECTION
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(20.w, 30.h, 20.w, 15.h),
-              child: Consumer<UserProvider>(
-                builder: (context, provider, _) {
-                  final city = provider.user?.city;
-                  return Text(
-                    city != null ? 'Donors in $city' : 'Nearby Blood Donors',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-
-          Consumer<UserProvider>(
-            builder: (context, provider, child) {
-              return StreamBuilder<List<UserModel>>(
-                stream: _donorStream,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 20.w),
-                        child: AppShimmer(
-                          child: Column(
-                            children: List.generate(
-                              4,
-                              (_) => Padding(
-                                padding: EdgeInsets.only(bottom: 12.h),
-                                child: const UserTileSkeleton(),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return SliverToBoxAdapter(
-                      child: _emptyMessage(theme, 'No donors available right now'),
-                    );
-                  }
-
-                  final allDonors = snapshot.data!;
-                  final currentUser = provider.user;
-                  final query = _searchQuery.toLowerCase();
-                  final selectedBlood = selectedIndex != -1 ? bloodGroups[selectedIndex] : null;
-
-                  final filteredDonors = allDonors.where((user) {
-                    if (user.uid == currentUserId) return false;
-                    final isNearby = (user.city != null && user.city == currentUser?.city) &&
-                                     (user.country != null && user.country == currentUser?.country);
-
-                    if (_searchQuery.isEmpty && selectedBlood == null) {
-                      if (!isNearby) return false;
-                    } else {
-                      // Allow showing search results even if not nearby, but keep default view to nearby
-                      if (!isNearby && _searchQuery.isEmpty && selectedBlood == null) return false;
-                    }
-                    final matchesQuery = query.isEmpty ||
-                        (user.name?.toLowerCase().contains(query) ?? false) ||
-                        (user.bloodGroup?.toLowerCase().contains(query) ?? false);
-                    final matchesBlood = selectedBlood == null || user.bloodGroup == selectedBlood;
-                    return matchesQuery && matchesBlood;
-                  }).toList();
-
-                  if (filteredDonors.isEmpty) {
-                    return SliverToBoxAdapter(
-                      child: _emptyMessage(
-                        theme,
-                        _searchQuery.isEmpty && selectedBlood == null
-                            ? 'No donors found in your city'
-                            : 'No matching donors found',
-                      ),
-                    );
-                  }
-
-                  return SliverPadding(
-                    padding: EdgeInsets.symmetric(horizontal: 20.w),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final user = filteredDonors[index];
-                        return InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ProfileDetailsScreen(userId: user.uid),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            margin: EdgeInsets.only(bottom: 12.h),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surface,
-                              borderRadius: BorderRadius.circular(16.r),
-                              boxShadow: [
-                                BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
-                              ],
-                            ),
-                            child: ListTile(
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                              leading: CircleAvatar(
-                                radius: 25.r,
-                                backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                                backgroundImage: user.profileImage != null ? NetworkImage(user.profileImage!) : null,
-                                child: user.profileImage == null ? Icon(Icons.person_rounded, color: theme.colorScheme.onSurface.withValues(alpha: 0.4), size: 24.sp) : null,
-                              ),
-                              title: Text(
-                                user.name ?? 'Anonymous',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp, color: theme.colorScheme.onSurface),
-                              ),
-                              subtitle: Padding(
-                                padding: EdgeInsets.only(top: 4.h),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(Icons.bloodtype_rounded, size: 14.sp, color: theme.colorScheme.primary),
-                                        SizedBox(width: 4.w),
-                                        Text(
-                                          user.bloodGroup ?? '--',
-                                          style: TextStyle(fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
-                                        ),
-                                        SizedBox(width: 12.w),
-                                        Icon(Icons.location_on_rounded, size: 14.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
-                                        SizedBox(width: 4.w),
-                                        Flexible(
-                                          child: Text(
-                                            user.city ?? 'Unknown',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              trailing: Container(
-                                padding: EdgeInsets.all(8.r),
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10.r),
-                                ),
-                                child: Icon(Icons.arrow_forward_ios_rounded, color: theme.colorScheme.primary, size: 16.sp),
-                              ),
-                            ),
-                          ),
-                        );
-                      }, childCount: filteredDonors.length),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-
-          SliverToBoxAdapter(child: SizedBox(height: 90.h)),
         ],
       ),
     );
   }
 
-  Widget _emptyMessage(ThemeData theme, String text) {
+  // ------------------------------------------------------------ Search field
+
+  Widget _searchField(ThemeData theme) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
-      child: Center(
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 13.5.sp,
-            fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+      padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 12.h),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (v) => setState(() => _query = v),
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: _mode == _Mode.donors
+              ? 'Search donors by name or city…'
+              : 'Search requests by hospital or city…',
+          prefixIcon: Icon(Icons.search_rounded,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+          suffixIcon: _query.isEmpty
+              ? null
+              : IconButton(
+                  icon: Icon(Icons.close_rounded,
+                      size: 20.sp,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _query = '');
+                    FocusScope.of(context).unfocus();
+                  },
+                ),
+        ),
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------- Mode toggle
+
+  Widget _modeToggle(ThemeData theme) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      child: Container(
+        padding: EdgeInsets.all(4.r),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppRadii.lg.r),
+        ),
+        child: Row(
+          children: [
+            _modeTab(theme, _Mode.donors, 'Donors', Icons.people_alt_rounded),
+            _modeTab(theme, _Mode.requests, 'Requests', Icons.bloodtype_rounded),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _modeTab(ThemeData theme, _Mode mode, String label, IconData icon) {
+    final selected = _mode == mode;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _mode = mode),
+        child: AnimatedContainer(
+          duration: AppMotion.fast,
+          padding: EdgeInsets.symmetric(vertical: 11.h),
+          decoration: BoxDecoration(
+            gradient: selected ? AppGradients.hero : null,
+            borderRadius: BorderRadius.circular(AppRadii.md.r),
           ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon,
+                  size: 17.sp,
+                  color: selected
+                      ? Colors.white
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+              SizedBox(width: 6.w),
+              Text(label,
+                  style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13.5.sp,
+                      color: selected
+                          ? Colors.white
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.6))),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------- Group chips
+
+  Widget _groupChips(ThemeData theme) {
+    final options = <String?>[null, ...kBloodGroups];
+    return SizedBox(
+      height: 50.h,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
+        itemCount: options.length,
+        separatorBuilder: (_, __) => SizedBox(width: 8.w),
+        itemBuilder: (_, i) {
+          final value = options[i];
+          final selected = _group == value;
+          return GestureDetector(
+            onTap: () => setState(() => _group = value),
+            child: AnimatedContainer(
+              duration: AppMotion.fast,
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: selected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(AppRadii.md.r),
+                border: Border.all(
+                    color: selected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.outline),
+              ),
+              child: Text(value ?? 'All',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13.sp,
+                      color: selected
+                          ? Colors.white
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.7))),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------- Donor results
+
+  Widget _donorResults(ThemeData theme) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    return Consumer<UserProvider>(
+      builder: (context, provider, _) {
+        final me = provider.user;
+        return StreamBuilder<List<UserModel>>(
+          stream: _donorStream,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return AppShimmer(
+                child: ListView(
+                  padding: EdgeInsets.symmetric(horizontal: 20.w),
+                  children: List.generate(
+                      6,
+                      (_) => Padding(
+                          padding: EdgeInsets.only(bottom: 12.h),
+                          child: const UserTileSkeleton())),
+                ),
+              );
+            }
+            final q = _query.toLowerCase();
+            var donors = (snapshot.data ?? const <UserModel>[]).where((u) {
+              if (u.uid == uid) return false;
+              if (_group != null && u.bloodGroup != _group) return false;
+              if (q.isEmpty) return true;
+              return (u.name?.toLowerCase().contains(q) ?? false) ||
+                  (u.city?.toLowerCase().contains(q) ?? false) ||
+                  (u.bloodGroup?.toLowerCase().contains(q) ?? false);
+            }).toList();
+
+            // Available donors first, then same-city, then name.
+            donors.sort((a, b) {
+              if (a.isAvailable != b.isAvailable) {
+                return a.isAvailable ? -1 : 1;
+              }
+              final aCity = (me?.city != null && a.city == me?.city) ? 0 : 1;
+              final bCity = (me?.city != null && b.city == me?.city) ? 0 : 1;
+              if (aCity != bCity) return aCity.compareTo(bCity);
+              return (a.name ?? '').compareTo(b.name ?? '');
+            });
+
+            if (donors.isEmpty) {
+              return _empty(theme, Icons.people_outline_rounded,
+                  'No donors found', 'Try a different blood group or city.');
+            }
+
+            final availableCount = donors.where((d) => d.isAvailable).length;
+            return ListView.builder(
+              physics: const BouncingScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 100.h),
+              itemCount: donors.length + (availableCount > 0 ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (availableCount > 0 && index == 0) {
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: 12.h),
+                    child: Text(
+                      '$availableCount available to donate now',
+                      style: TextStyle(
+                          color: AppColors.green,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13.sp),
+                    ),
+                  );
+                }
+                final d = donors[availableCount > 0 ? index - 1 : index];
+                return _donorCard(theme, d);
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _donorCard(ThemeData theme, UserModel d) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12.h),
+      child: TapScale(
+        onTap: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => ProfileDetailsScreen(userId: d.uid))),
+        child: Container(
+          padding: EdgeInsets.all(14.r),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppRadii.xl.r),
+            border: Border.all(
+                color: d.isAvailable
+                    ? AppColors.green.withValues(alpha: 0.4)
+                    : theme.colorScheme.outline),
+          ),
+          child: Row(
+            children: [
+              Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 27.r,
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                    backgroundImage: (d.profileImage ?? '').isNotEmpty
+                        ? NetworkImage(d.profileImage!)
+                        : null,
+                    child: (d.profileImage ?? '').isEmpty
+                        ? Icon(Icons.person_rounded,
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.4))
+                        : null,
+                  ),
+                  if (d.isAvailable)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 14.r,
+                        height: 14.r,
+                        decoration: BoxDecoration(
+                          color: AppColors.green,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: theme.colorScheme.surface, width: 2),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              SizedBox(width: 14.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(d.name ?? 'Anonymous',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w800, fontSize: 15.sp)),
+                        ),
+                        if (d.isAvailable) ...[
+                          SizedBox(width: 8.w),
+                          const StatusPill(
+                              label: 'Available',
+                              color: AppColors.green,
+                              icon: Icons.bolt_rounded),
+                        ],
+                      ],
+                    ),
+                    SizedBox(height: 4.h),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on_rounded,
+                            size: 13.sp,
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.45)),
+                        SizedBox(width: 3.w),
+                        Flexible(
+                          child: Text(d.city ?? 'Unknown',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 12.5.sp,
+                                  color: theme.colorScheme.onSurface
+                                      .withValues(alpha: 0.55))),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 10.w),
+              BloodTypeBadge(group: d.bloodGroup ?? '', size: 42),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // -------------------------------------------------------- Request results
+
+  Widget _requestResults(ThemeData theme) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    return Consumer<UserProvider>(
+      builder: (context, provider, _) {
+        final dismissed = provider.dismissedRequestIds;
+        final blocked = provider.user?.blockedUsers ?? const [];
+        return StreamBuilder<List<BloodRequestModel>>(
+          stream: _requestStream,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return AppShimmer(
+                child: Column(
+                    children:
+                        List.generate(4, (_) => const BloodRequestSkeleton())),
+              );
+            }
+            final q = _query.toLowerCase();
+            final list = (snapshot.data ?? const <BloodRequestModel>[])
+                .where((r) {
+              final mine = r.userId == uid;
+              if (!mine &&
+                  (dismissed.contains(r.id) || blocked.contains(r.userId))) {
+                return false;
+              }
+              if (_group != null && r.bloodGroup != _group) return false;
+              if (q.isEmpty) return true;
+              return r.city.toLowerCase().contains(q) ||
+                  r.hospital.toLowerCase().contains(q) ||
+                  r.title.toLowerCase().contains(q) ||
+                  r.bloodGroup.toLowerCase().contains(q);
+            }).toList()
+              ..sort((a, b) => UrgencyLevel.fromName(a.urgency)
+                  .index
+                  .compareTo(UrgencyLevel.fromName(b.urgency).index));
+
+            if (list.isEmpty) {
+              return _empty(theme, Icons.bloodtype_outlined,
+                  'No requests found', 'Try a different filter or search.');
+            }
+            return ListView.builder(
+              physics: const BouncingScrollPhysics(),
+              padding: EdgeInsets.only(top: 4.h, bottom: 100.h),
+              itemCount: list.length,
+              itemBuilder: (context, index) {
+                final r = list[index];
+                return RequestCard(
+                  request: r,
+                  urgency: UrgencyLevel.fromName(r.urgency),
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(
+                          builder: (_) => PostDetailsScreen(request: r))),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _empty(ThemeData theme, IconData icon, String title, String subtitle) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(40.r),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon,
+                size: 64.sp,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.12)),
+            SizedBox(height: 14.h),
+            Text(title,
+                style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800)),
+            SizedBox(height: 6.h),
+            Text(subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 13.sp,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45))),
+          ],
         ),
       ),
     );

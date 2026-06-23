@@ -1,6 +1,7 @@
 import 'package:blood_donation/provider/auth_provider.dart';
 import 'package:blood_donation/view/profile/personal_information.dart';
 import 'package:blood_donation/view/auth/login_screen.dart';
+import 'package:blood_donation/widgets/app_snackbar.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
 import 'package:blood_donation/widgets/red_container.dart';
 import 'package:blood_donation/widgets/reusable_button.dart';
@@ -90,18 +91,14 @@ class _SignupScreenState extends State<SignupScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Create Account',
-                          style: TextStyle(
-                            fontSize: 32.sp,
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,
-                          ),
+                          'Create account',
+                          style: theme.textTheme.displaySmall?.copyWith(fontSize: 30.sp),
                         ),
                         SizedBox(height: 8.h),
                         Text(
                           'Sign up to join our life-saving community',
                           style: TextStyle(
-                            fontSize: 16.sp,
+                            fontSize: 15.sp,
                             color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
@@ -128,44 +125,29 @@ class _SignupScreenState extends State<SignupScreen> {
                         Selector<AuthProviders, bool>(
                           selector: (_, auth) => auth.isLoading,
                           builder: (context, isLoading, _) {
-                            return InkWell(
-                              onTap: isLoading
-                                  ? null
-                                  : () async {
-                                      FocusScope.of(context).unfocus();
-                                      if (!_formKey.currentState!.validate()) {
-                                        return;
-                                      }
-                                      final auth = context.read<AuthProviders>();
-                                      try {
-                                        await auth.signup(
-                                          emailController.text.trim(),
-                                          passwordController.text.trim(),
-                                        );
-                                        if (!context.mounted) return;
-                                        Navigator.of(context).pushReplacement(
-                                          MaterialPageRoute(
-                                            builder: (_) => const PersonelInformation(),
-                                          ),
-                                        );
-                                      } catch (e) {
-                                        if (!context.mounted) return;
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text(e.toString()),
-                                            backgroundColor: theme.colorScheme.error,
-                                            behavior: SnackBarBehavior.floating,
-                                          ),
-                                        );
-                                      }
-                                    },
-                              child: isLoading
-                                  ? Center(
-                                      child: CircularProgressIndicator(
-                                        color: theme.colorScheme.primary,
-                                      ),
-                                    )
-                                  : const ReusableButton(label: 'Sign up'),
+                            return ReusableButton(
+                              label: 'Sign up',
+                              isLoading: isLoading,
+                              onPressed: () async {
+                                FocusScope.of(context).unfocus();
+                                if (!_formKey.currentState!.validate()) return;
+                                final auth = context.read<AuthProviders>();
+                                try {
+                                  await auth.signup(
+                                    emailController.text.trim(),
+                                    passwordController.text.trim(),
+                                  );
+                                  if (!context.mounted) return;
+                                  Navigator.of(context).pushReplacement(
+                                    MaterialPageRoute(
+                                      builder: (_) => const PersonelInformation(),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  AppSnackbar.error(context, e.toString());
+                                }
+                              },
                             );
                           },
                         ),

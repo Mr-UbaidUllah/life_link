@@ -26,6 +26,16 @@ class _AddAmbulanceState extends State<AddAmbulance> {
   AmbulanceType selectedType = AmbulanceType.basic;
   File? selectedImage;
 
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    hospitalCtrl.dispose();
+    addressCtrl.dispose();
+    phoneCtrl.dispose();
+    priceCtrl.dispose();
+    super.dispose();
+  }
+
   void _showError(BuildContext context, ThemeData theme, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

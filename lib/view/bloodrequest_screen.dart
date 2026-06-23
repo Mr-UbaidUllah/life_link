@@ -1,14 +1,38 @@
+import 'package:blood_donation/core/constants/app_constants.dart';
 import 'package:blood_donation/models/bloodrequest_model.dart';
 import 'package:blood_donation/provider/blood_request_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
+import 'package:blood_donation/services/location_service.dart';
+import 'package:blood_donation/theme/theme.dart';
 import 'package:blood_donation/view/post_details.dart';
-import 'package:blood_donation/widgets/home_widgets.dart';
-import 'package:blood_donation/widgets/refresh_helpers.dart';
+import 'package:blood_donation/widgets/app_snackbar.dart';
 import 'package:blood_donation/widgets/shimmer.dart';
+import 'package:blood_donation/widgets/ui_kit.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+
+/// High-level lenses over the feed. The blood-group filter and free-text
+/// search are progressive (behind app-bar affordances) so the feed itself
+/// stays the focus — only this one lens row is ever pinned.
+enum _Lens { all, critical, nearMe, myType }
+
+extension _LensMeta on _Lens {
+  String get label => switch (this) {
+        _Lens.all => 'All',
+        _Lens.critical => 'Critical',
+        _Lens.nearMe => 'Near me',
+        _Lens.myType => 'My type',
+      };
+
+  IconData get icon => switch (this) {
+        _Lens.all => Icons.dashboard_rounded,
+        _Lens.critical => Icons.priority_high_rounded,
+        _Lens.nearMe => Icons.near_me_rounded,
+        _Lens.myType => Icons.favorite_rounded,
+      };
+}
 
 class BloodRequestScreen extends StatefulWidget {
   const BloodRequestScreen({super.key});
@@ -18,22 +42,14 @@ class BloodRequestScreen extends StatefulWidget {
 }
 
 class _BloodRequestScreenState extends State<BloodRequestScreen> {
-  static const List<String> _bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+  _Lens _lens = _Lens.all;
+  String? _selectedGroup; // null == all groups
+  String _query = '';
+  bool _searchActive = false;
+  final TextEditingController _searchController = TextEditingController();
+  double? _myLat;
+  double? _myLng;
 
-  // null == "All"
-  String? _selectedGroup;
-
-  // Ids dismissed this session, hidden immediately. onDismissed's Firestore
-  // round-trip (dismissRequest → loadCurrentUser) is async, but the cached
-  // stream can emit a rebuild before dismissedRequests updates — re-inserting
-  // the just-dismissed card with the same Key and tripping Dismissible's
-  // "a dismissed widget is still part of the tree" assertion. Filtering on this
-  // set in build() removes the card synchronously, before that race.
-  final Set<String> _locallyDismissed = {};
-
-  // Cache the requests stream once — the provider getter opens a new Firestore
-  // subscription per access, so the two StreamBuilders below (app-bar + body)
-  // would otherwise double-subscribe and resubscribe on every filter tap.
   late final Stream<List<BloodRequestModel>> _requestStream;
 
   @override
@@ -41,8 +57,29 @@ class _BloodRequestScreenState extends State<BloodRequestScreen> {
     super.initState();
     _requestStream = context.read<BloodrequestProvider>().requests;
     Future.microtask(() {
-      context.read<UserProvider>().loadCurrentUser();
+      if (mounted) context.read<UserProvider>().loadCurrentUser();
     });
+    LocationService.getCurrentPosition().then((pos) {
+      if (pos != null && mounted) {
+        setState(() {
+          _myLat = pos.latitude;
+          _myLng = pos.longitude;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  double? _distanceTo(BloodRequestModel r) {
+    if (_myLat == null || _myLng == null || r.lat == null || r.lng == null) {
+      return null;
+    }
+    return LocationService.distanceKm(_myLat!, _myLng!, r.lat!, r.lng!);
   }
 
   @override
@@ -53,256 +90,514 @@ class _BloodRequestScreenState extends State<BloodRequestScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: theme.appBarTheme.backgroundColor,
-        automaticallyImplyLeading: false,
-        leading: canPop
-            ? IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.colorScheme.onSurface),
-              )
-            : null,
-        centerTitle: true,
-        title: Text(
-          'Blood Requests',
-          style: TextStyle(
-            color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.w700,
-            fontSize: 19.sp,
-          ),
-        ),
-        actions: [
-          Consumer<BloodrequestProvider>(
-            builder: (context, _, __) {
-              return StreamBuilder<List<BloodRequestModel>>(
-                stream: _requestStream,
-                builder: (context, snapshot) {
-                  final allRequests = snapshot.data ?? [];
-                  return IconButton(
-                    onPressed: allRequests.isEmpty
-                        ? null
-                        : () => _showClearRequestsDialog(context, theme, allRequests),
-                    icon: Icon(Icons.delete_sweep_rounded, color: theme.colorScheme.primary),
-                    tooltip: 'Clear All Requests',
-                  );
-                },
-              );
-            },
-          ),
-          SizedBox(width: 8.w),
-        ],
-      ),
-      body: Consumer2<BloodrequestProvider, UserProvider>(
-        builder: (context, _, userProvider, __) {
-          final dismissedIds = userProvider.user?.dismissedRequests ?? [];
-          final userGroup = userProvider.user?.bloodGroup;
+      body: SafeArea(
+        bottom: false,
+        child: Consumer2<BloodrequestProvider, UserProvider>(
+          builder: (context, _, userProvider, __) {
+            final dismissedIds = userProvider.dismissedRequestIds;
+            final blockedIds = userProvider.user?.blockedUsers ?? const [];
+            final userGroup = userProvider.user?.bloodGroup;
+            final hasType = userGroup != null && userGroup.isNotEmpty;
 
-          return StreamBuilder<List<BloodRequestModel>>(
-            stream: _requestStream,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return ShimmerList(
-                  padding: EdgeInsets.only(top: 8.h),
-                  itemBuilder: (_, __) => const BloodRequestSkeleton(),
-                );
-              }
+            return StreamBuilder<List<BloodRequestModel>>(
+              stream: _requestStream,
+              builder: (context, snapshot) {
+                final loading =
+                    snapshot.connectionState == ConnectionState.waiting;
 
-              // Requests the user is allowed to see (own posts + non-dismissed).
-              // Exclude anything dismissed this session immediately, even before
-              // the provider's dismissedRequests list catches up.
-              final visible = (snapshot.data ?? []).where((req) {
-                final isMine = req.userId == currentUserId;
-                final isDismissed = dismissedIds.contains(req.id) || _locallyDismissed.contains(req.id);
-                return isMine || !isDismissed;
-              }).toList();
+                // Visible universe: my own posts always; others unless
+                // dismissed or blocked.
+                final all = (snapshot.data ?? const <BloodRequestModel>[])
+                    .where((req) {
+                  final mine = req.userId == currentUserId;
+                  final dismissed = dismissedIds.contains(req.id);
+                  final blocked = blockedIds.contains(req.userId);
+                  return mine || (!dismissed && !blocked);
+                }).toList();
 
-              // Apply the selected blood-group filter.
-              var requests = _selectedGroup == null
-                  ? visible
-                  : visible.where((r) => r.bloodGroup == _selectedGroup).toList();
+                // Base = group + search applied; lens counts derive from this.
+                final base = _base(all);
+                final criticalCount =
+                    base.where((r) => _matchesLens(r, _Lens.critical, userGroup)).length;
 
-              // With no explicit filter, surface requests matching the user first.
-              if (_selectedGroup == null && userGroup != null && userGroup.isNotEmpty) {
-                requests = [...requests]..sort((a, b) {
-                    final aMatch = a.bloodGroup == userGroup ? 0 : 1;
-                    final bMatch = b.bloodGroup == userGroup ? 0 : 1;
-                    return aMatch.compareTo(bMatch);
-                  });
-              }
+                final list = base
+                    .where((r) => _matchesLens(r, _lens, userGroup))
+                    .toList()
+                  ..sort((a, b) => _sort(a, b, userGroup));
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSummaryHeader(theme, requests.length, _selectedGroup),
-                  _buildFilterChips(theme, userGroup),
-                  Expanded(
-                    child: RefreshIndicator(
-                      onRefresh: () => context.read<UserProvider>().loadCurrentUser(),
-                      color: theme.colorScheme.primary,
-                      child: requests.isEmpty
-                        ? RefreshableFill(child: _buildEmptyState(theme))
-                        : ListView.builder(
-                            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                            padding: EdgeInsets.only(top: 4.h, bottom: 96.h),
-                            itemCount: requests.length,
-                            itemBuilder: (context, index) {
-                              final req = requests[index];
-                              final isMine = req.userId == currentUserId;
+                final showBanner = !loading &&
+                    !_searchActive &&
+                    _lens != _Lens.critical &&
+                    criticalCount > 0;
+                final filtersActive = _selectedGroup != null || _query.isNotEmpty;
 
-                              return Dismissible(
-                                key: Key(req.id),
-                                direction: isMine ? DismissDirection.none : DismissDirection.endToStart,
-                                background: Container(
-                                  alignment: Alignment.centerRight,
-                                  padding: EdgeInsets.only(right: 24.w),
-                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.visibility_off_rounded,
-                                          size: 19.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-                                      SizedBox(width: 8.w),
-                                      Text('Dismiss',
-                                          style: TextStyle(
-                                              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 13.sp)),
-                                    ],
-                                  ),
-                                ),
-                                onDismissed: isMine ? null : (direction) {
-                                  // Hide synchronously, then persist. The setState
-                                  // rebuild drops this Dismissible from the tree on
-                                  // the very next frame, satisfying its contract.
-                                  setState(() => _locallyDismissed.add(req.id));
-                                  userProvider.dismissRequest(req.id);
-                                },
-                                child: HomeContainer(
-                                  request: req,
-                                  matchesUser: userGroup != null && userGroup.isNotEmpty && req.bloodGroup == userGroup,
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => PostDetailsScreen(request: req),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                          ),
+                return CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics()),
+                  slivers: [
+                    _appBar(theme, canPop, all, currentUserId),
+                    if (_searchActive)
+                      SliverToBoxAdapter(child: _searchField(theme)),
+                    if (showBanner)
+                      SliverToBoxAdapter(
+                        child: _criticalBanner(theme, criticalCount),
+                      ),
+                    if (filtersActive)
+                      SliverToBoxAdapter(child: _activeFilters(theme)),
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _LensHeaderDelegate(
+                        height: 60.h,
+                        child: _lensBar(theme, base, userGroup, hasType),
+                      ),
                     ),
-                  ),
-                ],
-              );
-            },
-          );
-        },
+                    if (loading)
+                      SliverToBoxAdapter(
+                        child: AppShimmer(
+                          child: Column(
+                            children: const [
+                              BloodRequestSkeleton(),
+                              BloodRequestSkeleton(),
+                              BloodRequestSkeleton(),
+                            ],
+                          ),
+                        ),
+                      )
+                    else if (list.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _emptyState(theme),
+                      )
+                    else
+                      SliverList.builder(
+                        itemCount: list.length,
+                        itemBuilder: (context, index) {
+                          final req = list[index];
+                          final mine = req.userId == currentUserId;
+                          return Padding(
+                            padding: EdgeInsets.only(top: index == 0 ? 4.h : 0),
+                            child: Dismissible(
+                              key: Key(req.id),
+                              direction: mine
+                                  ? DismissDirection.none
+                                  : DismissDirection.endToStart,
+                              background: _dismissBg(theme),
+                              onDismissed: mine
+                                  ? null
+                                  // Keep the dismissal until just past the
+                                  // request's own expiry — after that it's gone
+                                  // from the feed anyway and TTL reaps the doc.
+                                  : (_) => userProvider.dismissRequest(
+                                        req.id,
+                                        req.expiryDate
+                                            .add(const Duration(days: 1)),
+                                      ),
+                              child: RequestCard(
+                                request: req,
+                                urgency: UrgencyLevel.fromName(req.urgency),
+                                distanceKm: _distanceTo(req),
+                                matchesUser: hasType &&
+                                    req.bloodGroup == userGroup,
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          PostDetailsScreen(request: req)),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    SliverToBoxAdapter(child: SizedBox(height: 110.h)),
+                  ],
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildSummaryHeader(ThemeData theme, int count, String? activeFilter) {
-    final noun = count == 1 ? 'request' : 'requests';
-    final headline = activeFilter == null ? '$count open $noun' : '$count $activeFilter $noun';
+  // ---------------------------------------------------------------- Filtering
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 4.h),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(9.w),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12.r),
+  /// Group + search filter only (lens-independent). Lens counts derive here.
+  List<BloodRequestModel> _base(List<BloodRequestModel> all) {
+    final q = _query.trim().toLowerCase();
+    return all.where((r) {
+      if (_selectedGroup != null && r.bloodGroup != _selectedGroup) {
+        return false;
+      }
+      if (q.isNotEmpty) {
+        final hay =
+            '${r.title} ${r.hospital} ${r.city} ${r.bloodGroup}'.toLowerCase();
+        if (!hay.contains(q)) return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  bool _matchesLens(BloodRequestModel r, _Lens lens, String? userGroup) {
+    switch (lens) {
+      case _Lens.all:
+        return true;
+      case _Lens.critical:
+        return UrgencyLevel.fromName(r.urgency) == UrgencyLevel.critical;
+      case _Lens.nearMe:
+        return _distanceTo(r) != null;
+      case _Lens.myType:
+        return userGroup != null &&
+            userGroup.isNotEmpty &&
+            r.bloodGroup == userGroup;
+    }
+  }
+
+  int _sort(BloodRequestModel a, BloodRequestModel b, String? userGroup) {
+    if (_lens == _Lens.nearMe) {
+      final da = _distanceTo(a), db = _distanceTo(b);
+      if (da != null && db != null) return da.compareTo(db);
+    }
+    if (userGroup != null && userGroup.isNotEmpty) {
+      final am = a.bloodGroup == userGroup ? 0 : 1;
+      final bm = b.bloodGroup == userGroup ? 0 : 1;
+      if (am != bm) return am.compareTo(bm);
+    }
+    final u = UrgencyLevel.fromName(a.urgency)
+        .index
+        .compareTo(UrgencyLevel.fromName(b.urgency).index);
+    if (u != 0) return u;
+    return b.createdAt.compareTo(a.createdAt);
+  }
+
+  // ------------------------------------------------------------------ AppBar
+
+  Widget _appBar(ThemeData theme, bool canPop, List<BloodRequestModel> all,
+      String? currentUserId) {
+    final groupActive = _selectedGroup != null;
+    return SliverAppBar(
+      pinned: true,
+      floating: true,
+      snap: true,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      surfaceTintColor: Colors.transparent,
+      automaticallyImplyLeading: false,
+      titleSpacing: canPop ? 0 : 20.w,
+      leading: canPop
+          ? IconButton(
+              icon: Icon(Icons.arrow_back_ios_new_rounded,
+                  color: theme.colorScheme.onSurface, size: 20.sp),
+              onPressed: () => Navigator.pop(context),
+            )
+          : null,
+      title: Text('Requests',
+          style: theme.textTheme.headlineMedium?.copyWith(fontSize: 26.sp)),
+      actions: [
+        IconButton(
+          tooltip: _searchActive ? 'Close search' : 'Search requests',
+          onPressed: _toggleSearch,
+          icon: Icon(_searchActive ? Icons.search_off_rounded : Icons.search_rounded,
+              color: theme.colorScheme.onSurface, size: 23.sp),
+        ),
+        // Blood-type filter (progressive — opens a sheet). Dot when active.
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            IconButton(
+              tooltip: 'Filter by blood type',
+              onPressed: () => _openGroupSheet(theme),
+              icon: Icon(Icons.tune_rounded,
+                  color: theme.colorScheme.onSurface, size: 22.sp),
             ),
-            child: Icon(Icons.bloodtype_rounded, color: theme.colorScheme.primary, size: 20.sp),
+            if (groupActive)
+              Positioned(
+                top: 10.h,
+                right: 10.w,
+                child: Container(
+                  width: 8.r,
+                  height: 8.r,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: theme.scaffoldBackgroundColor, width: 1.5),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        if (all.any((r) => r.userId != currentUserId))
+          IconButton(
+            tooltip: 'Clear feed',
+            onPressed: () => _showClearDialog(theme, all),
+            icon: Icon(Icons.delete_sweep_rounded,
+                color: theme.colorScheme.onSurface, size: 22.sp),
           ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        SizedBox(width: 4.w),
+      ],
+    );
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _searchActive = !_searchActive;
+      if (!_searchActive) {
+        _searchController.clear();
+        _query = '';
+        FocusScope.of(context).unfocus();
+      }
+    });
+  }
+
+  // ------------------------------------------------------------- Search field
+
+  Widget _searchField(ThemeData theme) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 8.h),
+      child: Container(
+        height: 48.h,
+        padding: EdgeInsets.symmetric(horizontal: 14.w),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppRadii.md.r),
+          border: Border.all(color: theme.colorScheme.outline),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.search_rounded,
+                size: 20.sp,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                autofocus: true,
+                onChanged: (v) => setState(() => _query = v),
+                textAlignVertical: TextAlignVertical.center,
+                style: TextStyle(fontSize: 14.5.sp),
+                decoration: InputDecoration(
+                  isCollapsed: true,
+                  border: InputBorder.none,
+                  hintText: 'Search hospital, city or blood type',
+                  hintStyle: TextStyle(
+                      fontSize: 13.5.sp,
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.4)),
+                ),
+              ),
+            ),
+            if (_query.isNotEmpty)
+              GestureDetector(
+                onTap: () {
+                  _searchController.clear();
+                  setState(() => _query = '');
+                },
+                child: Icon(Icons.close_rounded,
+                    size: 18.sp,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------- Critical banner
+
+  Widget _criticalBanner(ThemeData theme, int count) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 4.h),
+      child: Material(
+        color: theme.colorScheme.primary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppRadii.lg.r),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadii.lg.r),
+          onTap: () => setState(() => _lens = _Lens.critical),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadii.lg.r),
+              border: Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.25)),
+            ),
+            child: Row(
               children: [
-                Text(
-                  headline,
-                  style: TextStyle(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w800,
-                    color: theme.colorScheme.onSurface,
+                Container(
+                  padding: EdgeInsets.all(8.r),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.priority_high_rounded,
+                      color: Colors.white, size: 18.sp),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        count == 1
+                            ? '1 critical request needs blood now'
+                            : '$count critical requests need blood now',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13.5.sp,
+                            color: theme.colorScheme.primary),
+                      ),
+                      SizedBox(height: 1.h),
+                      Text('Tap to view',
+                          style: TextStyle(
+                              fontSize: 11.5.sp,
+                              color: theme.colorScheme.primary
+                                  .withValues(alpha: 0.7))),
+                    ],
                   ),
                 ),
-                SizedBox(height: 1.h),
-                Text(
-                  'Tap a card to help · swipe to dismiss',
-                  style: TextStyle(
-                    fontSize: 11.5.sp,
-                    fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
-                  ),
-                ),
+                Icon(Icons.chevron_right_rounded,
+                    color: theme.colorScheme.primary, size: 22.sp),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------- Active filters
+
+  Widget _activeFilters(ThemeData theme) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20.w, 6.h, 20.w, 2.h),
+      child: Wrap(
+        spacing: 8.w,
+        runSpacing: 6.h,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          if (_selectedGroup != null)
+            _removablePill(theme, 'Type: $_selectedGroup',
+                () => setState(() => _selectedGroup = null)),
+          if (_query.isNotEmpty)
+            _removablePill(theme, 'Search: "$_query"', () {
+              _searchController.clear();
+              setState(() => _query = '');
+            }),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChips(ThemeData theme, String? userGroup) {
-    final options = <String?>[null, ..._bloodGroups];
-    return SizedBox(
-      height: 46.h,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
-        itemCount: options.length,
-        itemBuilder: (context, index) {
-          final value = options[index];
-          final isSelected = _selectedGroup == value;
-          final isUserGroup = value != null && value == userGroup;
-          final label = value ?? 'All';
+  Widget _removablePill(ThemeData theme, String label, VoidCallback onClear) {
+    return GestureDetector(
+      onTap: onClear,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(12.w, 6.h, 8.w, 6.h),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(AppRadii.pill.r),
+          border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha: 0.25)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label,
+                style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.primary)),
+            SizedBox(width: 4.w),
+            Icon(Icons.close_rounded,
+                size: 14.sp, color: theme.colorScheme.primary),
+          ],
+        ),
+      ),
+    );
+  }
 
-          return Padding(
-            padding: EdgeInsets.only(right: 8.w),
+  // -------------------------------------------------------- Pinned lens bar
+
+  Widget _lensBar(ThemeData theme, List<BloodRequestModel> base,
+      String? userGroup, bool hasType) {
+    // Hide "My type" until the user has a blood group set.
+    final visible = [
+      _Lens.all,
+      _Lens.critical,
+      _Lens.nearMe,
+      if (hasType) _Lens.myType,
+    ];
+    int countFor(_Lens l) =>
+        base.where((r) => _matchesLens(r, l, userGroup)).length;
+
+    return Container(
+      color: theme.scaffoldBackgroundColor,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(horizontal: 20.w),
+        itemCount: visible.length,
+        separatorBuilder: (_, __) => SizedBox(width: 8.w),
+        itemBuilder: (_, i) {
+          final lens = visible[i];
+          final selected = _lens == lens;
+          final count = countFor(lens);
+          return Center(
             child: GestureDetector(
-              onTap: () => setState(() => _selectedGroup = value),
+              onTap: () => setState(() => _lens = lens),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: EdgeInsets.symmetric(horizontal: 16.w),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: isSelected ? theme.colorScheme.primary : theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(14.r),
-                  border: Border.all(
-                    color: isSelected
+              duration: AppMotion.fast,
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              height: 44.h,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: selected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(AppRadii.pill.r),
+                border: Border.all(
+                    color: selected
                         ? theme.colorScheme.primary
-                        : theme.colorScheme.primary.withValues(alpha: 0.15),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w800,
-                        color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                      ),
-                    ),
-                    if (isUserGroup) ...[
-                      SizedBox(width: 5.w),
-                      Icon(
-                        Icons.star_rounded,
-                        size: 13.sp,
-                        color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
-                      ),
-                    ],
-                  ],
-                ),
+                        : theme.colorScheme.outline),
               ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(lens.icon,
+                      size: 15.sp,
+                      color: selected
+                          ? Colors.white
+                          : theme.colorScheme.onSurface
+                              .withValues(alpha: 0.6)),
+                  SizedBox(width: 6.w),
+                  Text(lens.label,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13.sp,
+                          color: selected
+                              ? Colors.white
+                              : theme.colorScheme.onSurface)),
+                  SizedBox(width: 6.w),
+                  Container(
+                    constraints: BoxConstraints(minWidth: 18.w),
+                    padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 1.h),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? Colors.white.withValues(alpha: 0.25)
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(AppRadii.pill.r),
+                    ),
+                    child: Text('$count',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w800,
+                            color: selected
+                                ? Colors.white
+                                : theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.6))),
+                  ),
+                ],
+              ),
+            ),
             ),
           );
         },
@@ -310,81 +605,194 @@ class _BloodRequestScreenState extends State<BloodRequestScreen> {
     );
   }
 
-  Widget _buildEmptyState(ThemeData theme) {
-    final filtered = _selectedGroup != null;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.bloodtype_outlined, size: 80.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
-          SizedBox(height: 16.h),
-          Text(
-            filtered ? 'No $_selectedGroup requests' : 'No active requests',
-            style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            filtered ? 'Try a different blood group.' : 'Everything is currently stable.',
-            style: TextStyle(fontSize: 14.sp, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
-          ),
-          if (filtered) ...[
-            SizedBox(height: 16.h),
-            TextButton(
-              onPressed: () => setState(() => _selectedGroup = null),
-              child: Text('Show all requests', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w700)),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
+  // ---------------------------------------------------- Blood-group sheet
 
-  void _showClearRequestsDialog(BuildContext context, ThemeData theme, List<BloodRequestModel> allRequests) {
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-
-    showDialog(
+  void _openGroupSheet(ThemeData theme) {
+    showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: theme.colorScheme.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
-          title: Text('Clear All Requests?', style: TextStyle(color: theme.colorScheme.onSurface)),
-          content: Text(
-            'This action will hide all current blood requests from your view. Your own requests will remain visible for you to manage.',
-            style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.8)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                final idsToDismiss = allRequests
-                    .where((req) => req.userId != currentUserId)
-                    .map((e) => e.id)
-                    .toList();
+      backgroundColor: theme.colorScheme.surface,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheet) {
+            Widget chip(String? value) {
+              final selected = _selectedGroup == value;
+              return GestureDetector(
+                onTap: () {
+                  setState(() => _selectedGroup = value);
+                  Navigator.pop(sheetContext);
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(AppRadii.md.r),
+                    border: Border.all(
+                        color: selected
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.outline),
+                  ),
+                  child: Text(value ?? 'All types',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14.sp,
+                          color: selected
+                              ? Colors.white
+                              : theme.colorScheme.onSurface)),
+                ),
+              );
+            }
 
-                if (idsToDismiss.isNotEmpty) {
-                  await context.read<UserProvider>().dismissAllRequests(idsToDismiss);
-                }
-
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Feed cleared (Your posts remain)'), backgroundColor: Colors.green),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+            return Padding(
+              padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 28.h),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Filter by blood type',
+                      style: theme.textTheme.titleLarge?.copyWith(fontSize: 18.sp)),
+                  SizedBox(height: 4.h),
+                  Text('Show only requests for a specific group.',
+                      style: TextStyle(
+                          fontSize: 13.sp,
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.55))),
+                  SizedBox(height: 18.h),
+                  Wrap(
+                    spacing: 10.w,
+                    runSpacing: 10.h,
+                    children: [
+                      chip(null),
+                      for (final g in kBloodGroups) chip(g),
+                    ],
+                  ),
+                ],
               ),
-              child: const Text('Hide Others', style: TextStyle(color: Colors.white)),
-            ),
-          ],
+            );
+          },
         );
       },
     );
   }
+
+  // ------------------------------------------------------------- Misc pieces
+
+  Widget _dismissBg(ThemeData theme) => Container(
+        alignment: Alignment.centerRight,
+        padding: EdgeInsets.only(right: 32.w),
+        child: Icon(Icons.visibility_off_rounded,
+            size: 22.sp,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
+      );
+
+  Widget _emptyState(ThemeData theme) {
+    final filtered =
+        _selectedGroup != null || _lens != _Lens.all || _query.isNotEmpty;
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(40.r),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.bloodtype_outlined,
+                size: 72.sp,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.12)),
+            SizedBox(height: 16.h),
+            Text(
+                filtered
+                    ? 'Nothing matches this filter'
+                    : 'No active requests',
+                style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.w800)),
+            SizedBox(height: 6.h),
+            Text(
+              filtered
+                  ? 'Try a different lens, blood type or search.'
+                  : 'All clear for now.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: 13.sp,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.45)),
+            ),
+            if (filtered) ...[
+              SizedBox(height: 14.h),
+              TextButton(
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() {
+                    _lens = _Lens.all;
+                    _selectedGroup = null;
+                    _query = '';
+                    _searchActive = false;
+                  });
+                },
+                child: const Text('Reset filters'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showClearDialog(ThemeData theme, List<BloodRequestModel> all) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: theme.colorScheme.surface,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: const Text('Clear feed?'),
+        content: const Text(
+            'This hides all current requests from your view. Your own posts stay.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              final idToExpiry = <String, DateTime>{
+                for (final r in all.where((r) => r.userId != uid))
+                  r.id: r.expiryDate.add(const Duration(days: 1)),
+              };
+              if (idToExpiry.isNotEmpty) {
+                await context
+                    .read<UserProvider>()
+                    .dismissAllRequests(idToExpiry);
+              }
+              if (mounted) AppSnackbar.success(context, 'Feed cleared');
+            },
+            child: const Text('Hide others'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Pins the single lens row below the app bar. Fixed extent (min == max) keeps
+/// it lightweight — the feed, not the chrome, owns the screen.
+class _LensHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final double height;
+  final Widget child;
+
+  _LensHeaderDelegate({required this.height, required this.child});
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+          BuildContext context, double shrinkOffset, bool overlapsContent) =>
+      SizedBox.expand(child: child);
+
+  @override
+  bool shouldRebuild(covariant _LensHeaderDelegate oldDelegate) => true;
 }

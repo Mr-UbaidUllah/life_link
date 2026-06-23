@@ -1,6 +1,6 @@
 import 'package:blood_donation/models/ambulance_model.dart';
 import 'package:blood_donation/provider/ambulance_provider.dart';
-import 'package:blood_donation/view/add_ambulence.dart';
+import 'package:blood_donation/view/add_ambulance.dart';
 import 'package:blood_donation/widgets/ambulence_card.dart';
 import 'package:blood_donation/widgets/refresh_helpers.dart';
 import 'package:blood_donation/widgets/shimmer.dart';

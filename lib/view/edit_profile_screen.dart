@@ -1,10 +1,14 @@
 import 'dart:io';
+import 'package:blood_donation/core/constants/app_constants.dart';
 import 'package:blood_donation/models/user_model.dart';
 import 'package:blood_donation/provider/storage_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
+import 'package:blood_donation/theme/theme.dart';
 import 'package:blood_donation/widgets/app_snackbar.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
 import 'package:blood_donation/widgets/custom_dropdown_form_field.dart';
+import 'package:blood_donation/widgets/motion.dart';
+import 'package:blood_donation/widgets/ui_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -23,26 +27,42 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
-  late final TextEditingController _cityController;
-  late final TextEditingController _countryController;
   late final TextEditingController _aboutController;
 
+  // Country/city are pickers (not free text) so an edited profile keeps the
+  // exact canonical values the notification matching compares against. See
+  // app_constants.kCountryCities — the single source shared with create-request.
+  String? _selectedCountry;
+  String? _selectedCity;
   String? _selectedBloodGroup;
   bool _isDonor = false;
   File? _image;
   bool _isLoading = false;
-
-  final List<String> _bloodGroups = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.user.name);
     _phoneController = TextEditingController(text: widget.user.phone);
-    _cityController = TextEditingController(text: widget.user.city);
-    _countryController = TextEditingController(text: widget.user.country);
     _aboutController = TextEditingController(text: widget.user.about);
-    _selectedBloodGroup = widget.user.bloodGroup;
+
+    // Only restore a saved value if it's still a valid picker option, otherwise
+    // the dropdown would assert on an item that isn't in its list (e.g. a city
+    // saved under the old free-text field or a since-removed value). A dropped
+    // value just shows as unselected and the validator makes the user re-pick.
+    if (widget.user.bloodGroup != null &&
+        kBloodGroups.contains(widget.user.bloodGroup)) {
+      _selectedBloodGroup = widget.user.bloodGroup;
+    }
+    if (widget.user.country != null &&
+        kCountryCities.containsKey(widget.user.country)) {
+      _selectedCountry = widget.user.country;
+      if (widget.user.city != null &&
+          (kCountryCities[_selectedCountry] ?? const [])
+              .contains(widget.user.city)) {
+        _selectedCity = widget.user.city;
+      }
+    }
     _isDonor = widget.user.isDonor;
   }
 
@@ -50,45 +70,52 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _cityController.dispose();
-    _countryController.dispose();
     _aboutController.dispose();
     super.dispose();
   }
 
   Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
+    // The picker foregrounds another activity; guard against returning to a
+    // disposed widget (setState-after-dispose).
+    if (!mounted) return;
     if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
+      setState(() => _image = File(pickedFile.path));
     }
   }
 
   Future<void> _updateProfile() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    // Re-entrancy guard: _isLoading only disables the button on the next
+    // rebuild, so a same-frame double-tap could otherwise upload + save twice.
+    if (_isLoading) return;
+    if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final storageProvider = Provider.of<StorageProvider>(context, listen: false);
+    final storageProvider =
+        Provider.of<StorageProvider>(context, listen: false);
 
     try {
       if (_image != null) {
-        final uploaded = await storageProvider.uploadImage(widget.user.uid, _image!);
+        final uploaded =
+            await storageProvider.uploadImage(widget.user.uid, _image!);
         if (!uploaded) {
           throw Exception('Failed to upload profile image');
         }
       }
 
-      // Update basic info if it changed
+      // Update the donor flag if it changed. toggleDonate is the ONLY thing
+      // that persists isDonor here (updatePersonalInfo doesn't touch it), so a
+      // failure must abort — otherwise we'd report "updated" with the donor
+      // toggle silently un-saved.
       if (_isDonor != widget.user.isDonor) {
-        await userProvider.toggleDonate(_isDonor);
+        final donorOk = await userProvider.toggleDonate(_isDonor);
+        if (!donorOk) {
+          throw Exception(
+              userProvider.error ?? 'Could not update your donor status');
+        }
       }
 
       final success = await userProvider.updatePersonalInfo(
@@ -96,8 +123,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         name: _nameController.text.trim(),
         phone: _phoneController.text.trim(),
         bloodGroup: _selectedBloodGroup ?? '',
-        country: _countryController.text.trim(),
-        city: _cityController.text.trim(),
+        country: _selectedCountry ?? '',
+        city: _selectedCity ?? '',
         about: _aboutController.text.trim(),
       );
 
@@ -113,16 +140,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } catch (e) {
       if (mounted) {
         AppSnackbar.error(
-          context,
-          e.toString().replaceFirst("Exception: ", ""),
-        );
+            context, e.toString().replaceFirst("Exception: ", ""));
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -132,275 +153,355 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        elevation: 0.5,
         backgroundColor: theme.appBarTheme.backgroundColor,
-        centerTitle: true,
-        title: Text(
-          'Edit Profile',
-          style: TextStyle(
-            color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.w900,
-            fontSize: 20.sp,
-          ),
-        ),
+        elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: theme.colorScheme.onSurface),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20.sp),
         ),
+        title: Text('Edit Profile', style: theme.textTheme.titleLarge),
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 30.h),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              /// PROFILE IMAGE PICKER
-              Center(
-                child: Stack(
-                  alignment: Alignment.bottomRight,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(4.r),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2), width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: CircleAvatar(
-                        radius: 60.r,
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                        backgroundImage: _image != null
-                            ? FileImage(_image!)
-                            : (widget.user.profileImage != null && widget.user.profileImage!.isNotEmpty
-                                ? NetworkImage(widget.user.profileImage!)
-                                : null) as ImageProvider?,
-                        child: _image == null && (widget.user.profileImage == null || widget.user.profileImage!.isEmpty)
-                            ? Icon(Icons.person_rounded, size: 60.r, color: theme.colorScheme.onSurface.withValues(alpha: 0.4))
-                            : null,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: _pickImage,
-                      child: Container(
-                        padding: EdgeInsets.all(10.r),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: theme.colorScheme.surface, width: 3),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 5,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Icon(Icons.camera_alt_rounded, size: 20.sp, color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.zero,
+          children: [
+            _buildAvatarHeader(theme),
+            Padding(
+              padding: EdgeInsets.fromLTRB(20.w, 22.h, 20.w, 32.h),
+              child: Column(
+                children: Stagger.children([
+                  _buildPersonalSection(theme),
+                  SizedBox(height: 16.h),
+                  _buildMedicalSection(theme),
+                  SizedBox(height: 16.h),
+                  _buildLocationSection(theme),
+                  SizedBox(height: 28.h),
+                  _buildSaveButton(theme),
+                ], step: const Duration(milliseconds: 55)),
               ),
-              
-              SizedBox(height: 40.h),
-
-              _buildSectionTitle('Personal Details', theme),
-              SizedBox(height: 16.h),
-              
-              CustomTextField(
-                controller: _nameController,
-                labelText: 'Full Name',
-                hintText: 'Enter your name',
-                prefixIcon: Icons.person_outline_rounded,
-                focusedBorderColor: theme.colorScheme.primary,
-                borderRadius: 16.r,
-                validator: (value) {
-                  final name = value?.trim() ?? '';
-                  if (name.isEmpty) {
-                    return 'Please enter your name';
-                  }
-                  if (name.length < 3) {
-                    return 'Name must be at least 3 characters';
-                  }
-                  return null;
-                },
-              ),
-
-              SizedBox(height: 20.h),
-
-              CustomTextField(
-                controller: _phoneController,
-                labelText: 'Phone Number',
-                hintText: 'Enter your phone number',
-                prefixIcon: Icons.phone_android_rounded,
-                keyboardType: TextInputType.phone,
-                focusedBorderColor: theme.colorScheme.primary,
-                borderRadius: 16.r,
-                // Match the setup screen: digits only, 10–11 chars, so a saved
-                // profile can't end up with an empty/garbage number that breaks
-                // the Call button on the profile screen.
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(11),
-                ],
-                validator: (value) {
-                  final phone = value?.trim() ?? '';
-                  if (phone.isEmpty) {
-                    return 'Please enter your phone number';
-                  }
-                  if (phone.length < 10) {
-                    return 'Enter a valid phone number';
-                  }
-                  return null;
-                },
-              ),
-
-              SizedBox(height: 30.h),
-              _buildSectionTitle('Medical Information', theme),
-              SizedBox(height: 16.h),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: CustomDropdownFormField<String>(
-                      value: _selectedBloodGroup,
-                      items: _bloodGroups,
-                      itemToString: (value) => value,
-                      labelText: 'Blood Group',
-                      hintText: 'Select',
-                      onChanged: (val) => setState(() => _selectedBloodGroup = val),
-                      prefixIcon: Icon(Icons.bloodtype_rounded, color: Colors.redAccent, size: 22.sp),
-                      borderRadius: 16.r,
-                    ),
-                  ),
-                  SizedBox(width: 16.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Available to Donate',
-                          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
-                        ),
-                        SizedBox(height: 8.h),
-                        Container(
-                          height: 56.h,
-                          padding: EdgeInsets.symmetric(horizontal: 12.w),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16.r),
-                            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.5)),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(_isDonor ? 'Yes' : 'No', style: TextStyle(fontSize: 15.sp)),
-                              Switch.adaptive(
-                                value: _isDonor,
-                                activeThumbColor: theme.colorScheme.primary,
-                                onChanged: (val) => setState(() => _isDonor = val),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              SizedBox(height: 30.h),
-              _buildSectionTitle('Location & Bio', theme),
-              SizedBox(height: 16.h),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: CustomTextField(
-                      controller: _countryController,
-                      labelText: 'Country',
-                      hintText: 'Country',
-                      prefixIcon: Icons.public_rounded,
-                      borderRadius: 16.r,
-                    ),
-                  ),
-                  SizedBox(width: 16.w),
-                  Expanded(
-                    child: CustomTextField(
-                      controller: _cityController,
-                      labelText: 'City',
-                      hintText: 'City',
-                      prefixIcon: Icons.location_city_rounded,
-                      borderRadius: 16.r,
-                    ),
-                  ),
-                ],
-              ),
-
-              SizedBox(height: 20.h),
-
-              CustomTextField(
-                controller: _aboutController,
-                labelText: 'About Me',
-                hintText: 'Write a short bio...',
-                prefixIcon: Icons.info_outline_rounded,
-                maxLines: 4,
-                borderRadius: 16.r,
-              ),
-
-              SizedBox(height: 40.h),
-
-              /// SAVE BUTTON
-              SizedBox(
-                width: double.infinity,
-                height: 56.h,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _updateProfile,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-                  ),
-                  child: _isLoading
-                      ? SizedBox(
-                          height: 24.h,
-                          width: 24.h,
-                          child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                        )
-                      : Text(
-                          'Save Changes',
-                          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
-                        ),
-                ),
-              ),
-              
-              SizedBox(height: 20.h),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title, ThemeData theme) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 16.sp,
-          fontWeight: FontWeight.w800,
-          color: theme.colorScheme.onSurface,
-          letterSpacing: 0.5,
-        ),
+  // -------------------------------------------------------- Avatar header
+
+  Widget _buildAvatarHeader(ThemeData theme) {
+    final hasNetwork = widget.user.profileImage != null &&
+        widget.user.profileImage!.isNotEmpty;
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(gradient: AppGradients.hero),
+      padding: EdgeInsets.only(top: 8.h, bottom: 26.h),
+      child: Column(
+        children: [
+          Stack(
+            alignment: Alignment.bottomRight,
+            children: [
+              Container(
+                padding: EdgeInsets.all(4.r),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.18),
+                  border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.5), width: 2.5),
+                ),
+                child: CircleAvatar(
+                  radius: 52.r,
+                  backgroundColor: Colors.white.withValues(alpha: 0.25),
+                  backgroundImage: _image != null
+                      ? FileImage(_image!)
+                      : (hasNetwork
+                          ? NetworkImage(widget.user.profileImage!)
+                          : null) as ImageProvider?,
+                  child: _image == null && !hasNetwork
+                      ? Icon(Icons.person_rounded,
+                          size: 52.r, color: Colors.white)
+                      : null,
+                ),
+              ),
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  padding: EdgeInsets.all(9.r),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2)),
+                    ],
+                  ),
+                  child: Icon(Icons.camera_alt_rounded,
+                      size: 18.sp, color: AppColors.primary),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          Text(
+            'Tap the camera to change photo',
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.85),
+                fontSize: 12.5.sp,
+                fontWeight: FontWeight.w500),
+          ),
+        ],
       ),
+    );
+  }
+
+  // ------------------------------------------------------------- Sections
+
+  Widget _buildPersonalSection(ThemeData theme) {
+    return _FormSection(
+      icon: Icons.person_outline_rounded,
+      color: AppColors.primary,
+      title: 'Personal Details',
+      children: [
+        CustomTextField(
+          controller: _nameController,
+          labelText: 'Full Name',
+          hintText: 'Enter your name',
+          prefixIcon: Icons.person_outline_rounded,
+          focusedBorderColor: theme.colorScheme.primary,
+          borderRadius: AppRadii.md.r,
+          validator: (value) {
+            final name = value?.trim() ?? '';
+            if (name.isEmpty) return 'Please enter your name';
+            if (name.length < 3) return 'Name must be at least 3 characters';
+            return null;
+          },
+        ),
+        SizedBox(height: 16.h),
+        CustomTextField(
+          controller: _phoneController,
+          labelText: 'Phone Number',
+          hintText: 'Enter your phone number',
+          prefixIcon: Icons.phone_android_rounded,
+          keyboardType: TextInputType.phone,
+          focusedBorderColor: theme.colorScheme.primary,
+          borderRadius: AppRadii.md.r,
+          // Match the setup screen: digits only, 10–11 chars, so a saved
+          // profile can't end up with an empty/garbage number that breaks the
+          // Call button on the profile screen.
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(11),
+          ],
+          validator: (value) {
+            final phone = value?.trim() ?? '';
+            if (phone.isEmpty) return 'Please enter your phone number';
+            if (phone.length < 10) return 'Enter a valid phone number';
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMedicalSection(ThemeData theme) {
+    return _FormSection(
+      icon: Icons.bloodtype_rounded,
+      color: AppColors.danger,
+      title: 'Medical Information',
+      children: [
+        CustomDropdownFormField<String>(
+          value: _selectedBloodGroup,
+          items: kBloodGroups,
+          itemToString: (value) => value,
+          labelText: 'Blood Group',
+          hintText: 'Select your blood group',
+          onChanged: (val) => setState(() => _selectedBloodGroup = val),
+          validator: (value) =>
+              value == null ? 'Please select your blood group' : null,
+          prefixIcon: Icon(Icons.bloodtype_rounded,
+              color: AppColors.danger, size: 22.sp),
+          borderRadius: AppRadii.md.r,
+        ),
+        SizedBox(height: 16.h),
+        // Donor opt-in as a prominent switch row.
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
+          decoration: BoxDecoration(
+            color: _isDonor
+                ? AppColors.green.withValues(alpha: 0.1)
+                : theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(AppRadii.md.r),
+            border: Border.all(
+                color: _isDonor
+                    ? AppColors.green.withValues(alpha: 0.3)
+                    : theme.colorScheme.outline),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.volunteer_activism_rounded,
+                  size: 20.sp,
+                  color: _isDonor
+                      ? AppColors.green
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Available to donate',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 14.sp)),
+                    Text(
+                        _isDonor
+                            ? 'You\'ll appear in donor searches'
+                            : 'Opt in to help others',
+                        style: TextStyle(
+                            fontSize: 11.5.sp,
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.55))),
+                  ],
+                ),
+              ),
+              Switch.adaptive(
+                value: _isDonor,
+                activeThumbColor: Colors.white,
+                activeTrackColor: AppColors.green,
+                onChanged: (val) => setState(() => _isDonor = val),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLocationSection(ThemeData theme) {
+    return _FormSection(
+      icon: Icons.location_on_outlined,
+      color: AppColors.info,
+      title: 'Location & Bio',
+      children: [
+        CustomDropdownFormField<String>(
+          value: _selectedCountry,
+          items: kCountryCities.keys.toList(),
+          itemToString: (value) => value,
+          labelText: 'Country',
+          hintText: 'Select your country',
+          prefixIcon: Icon(Icons.public_rounded,
+              color: AppColors.info, size: 22.sp),
+          borderRadius: AppRadii.md.r,
+          validator: (value) =>
+              value == null ? 'Please select your country' : null,
+          // Changing country invalidates the previously-picked city.
+          onChanged: (val) => setState(() {
+            _selectedCountry = val;
+            _selectedCity = null;
+          }),
+        ),
+        SizedBox(height: 16.h),
+        CustomDropdownFormField<String>(
+          value: _selectedCity,
+          items: kCountryCities[_selectedCountry] ?? const [],
+          itemToString: (value) => value,
+          labelText: 'City',
+          hintText: 'Select your city',
+          prefixIcon: Icon(Icons.location_city_rounded,
+              color: AppColors.info, size: 22.sp),
+          borderRadius: AppRadii.md.r,
+          enabled: _selectedCountry != null,
+          validator: (value) =>
+              value == null ? 'Please select your city' : null,
+          onChanged: (val) => setState(() => _selectedCity = val),
+        ),
+        SizedBox(height: 16.h),
+        CustomTextField(
+          controller: _aboutController,
+          labelText: 'About Me',
+          hintText: 'Write a short bio...',
+          prefixIcon: Icons.info_outline_rounded,
+          maxLines: 4,
+          borderRadius: AppRadii.md.r,
+        ),
+      ],
+    );
+  }
+
+  // ------------------------------------------------------------- Save button
+
+  Widget _buildSaveButton(ThemeData theme) {
+    return TapScale(
+      onTap: _isLoading ? null : _updateProfile,
+      child: Container(
+        width: double.infinity,
+        height: 54.h,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          gradient: AppGradients.hero,
+          borderRadius: BorderRadius.circular(AppRadii.md.r),
+          boxShadow: AppGradients.glow(AppColors.primary, alpha: 0.3),
+        ),
+        child: _isLoading
+            ? SizedBox(
+                height: 24.h,
+                width: 24.h,
+                child: const CircularProgressIndicator(
+                    color: Colors.white, strokeWidth: 2.5),
+              )
+            : Text('Save Changes',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w800)),
+      ),
+    );
+  }
+}
+
+/// A titled form group: colored icon chip + section title above a bordered
+/// card holding the fields.
+class _FormSection extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final List<Widget> children;
+
+  const _FormSection({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(7.r),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadii.sm.r),
+              ),
+              child: Icon(icon, size: 17.sp, color: color),
+            ),
+            SizedBox(width: 10.w),
+            Text(title,
+                style: TextStyle(
+                    fontSize: 15.sp, fontWeight: FontWeight.w800)),
+          ],
+        ),
+        SizedBox(height: 14.h),
+        AppCard(
+          padding: EdgeInsets.all(16.r),
+          child: Column(children: children),
+        ),
+      ],
     );
   }
 }

@@ -271,6 +271,162 @@ class UserTileSkeleton extends StatelessWidget {
   }
 }
 
+/// Skeleton matching the notification inbox cards (icon tile + title + body +
+/// meta row). Drop in while the notifications stream is still connecting.
+class NotificationListSkeleton extends StatelessWidget {
+  const NotificationListSkeleton({super.key, this.itemCount = 7});
+
+  final int itemCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AppShimmer(
+      child: ListView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 12.h),
+        itemCount: itemCount,
+        itemBuilder: (_, __) => Container(
+          margin: EdgeInsets.symmetric(vertical: 4.h),
+          padding: EdgeInsets.all(14.r),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(20.r),
+            border: Border.all(color: theme.colorScheme.outline),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Bone(width: 42.r, height: 42.r, radius: 14),
+              SizedBox(width: 13.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Bone(height: 14.h, width: 150.w, radius: 6),
+                    SizedBox(height: 9.h),
+                    Bone(height: 11.h, width: double.infinity, radius: 5),
+                    SizedBox(height: 6.h),
+                    Bone(height: 11.h, width: 170.w, radius: 5),
+                    SizedBox(height: 10.h),
+                    Bone(height: 10.h, width: 100.w, radius: 5),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One generic "menu row" placeholder: leading icon tile + label + trailing.
+class _RowBone extends StatelessWidget {
+  const _RowBone();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 11.h),
+      child: Row(
+        children: [
+          Bone(width: 38.r, height: 38.r, radius: 12),
+          SizedBox(width: 14.w),
+          Expanded(child: Bone(height: 13.h, width: 120.w, radius: 6)),
+          SizedBox(width: 12.w),
+          Bone(height: 14.h, width: 14.w, radius: 5),
+        ],
+      ),
+    );
+  }
+}
+
+Widget _cardBox(BuildContext context, Widget child) {
+  final theme = Theme.of(context);
+  return Container(
+    padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
+    decoration: BoxDecoration(
+      color: theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(24.r),
+      border: Border.all(color: theme.colorScheme.outline),
+    ),
+    child: child,
+  );
+}
+
+/// Skeleton for the profile / "More" hub – a header (avatar + name + stats)
+/// followed by grouped menu rows.
+class ProfileMenuSkeleton extends StatelessWidget {
+  const ProfileMenuSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppShimmer(
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 20.h),
+        child: Column(
+          children: [
+            Bone(width: 88.r, height: 88.r, shape: BoxShape.circle),
+            SizedBox(height: 14.h),
+            Bone(height: 18.h, width: 160.w, radius: 6),
+            SizedBox(height: 8.h),
+            Bone(height: 12.h, width: 120.w, radius: 6),
+            SizedBox(height: 22.h),
+            _cardBox(
+              context,
+              Column(children: const [_RowBone(), _RowBone(), _RowBone()]),
+            ),
+            SizedBox(height: 16.h),
+            _cardBox(
+              context,
+              Column(children: const [_RowBone(), _RowBone(), _RowBone(), _RowBone()]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Skeleton for grouped settings lists – a few cards of menu rows.
+class SettingsSkeleton extends StatelessWidget {
+  const SettingsSkeleton({super.key, this.sections = 3, this.rowsPerSection = 3});
+
+  final int sections;
+  final int rowsPerSection;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppShimmer(
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 20.h),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (var s = 0; s < sections; s++) ...[
+              Padding(
+                padding: EdgeInsets.only(left: 4.w, bottom: 10.h, top: s == 0 ? 0 : 8.h),
+                child: Bone(height: 11.h, width: 90.w, radius: 5),
+              ),
+              _cardBox(
+                context,
+                Column(
+                  children: [
+                    for (var r = 0; r < rowsPerSection; r++) const _RowBone(),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Skeleton for a chat thread – alternating left/right message bubbles.
 class MessageListSkeleton extends StatelessWidget {
   const MessageListSkeleton({super.key, this.itemCount = 8});

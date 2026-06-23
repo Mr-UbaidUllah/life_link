@@ -50,6 +50,28 @@ class NotificationDatabaseService {
         .update({'isRead': true});
   }
 
+  /// Marks every unread notification read in a single batch — backs the
+  /// "Mark all read" action in the inbox.
+  Future<void> markAllAsRead() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+
+    final unread = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('notifications')
+        .where('isRead', isEqualTo: false)
+        .get();
+
+    if (unread.docs.isEmpty) return;
+
+    final batch = _firestore.batch();
+    for (final doc in unread.docs) {
+      batch.update(doc.reference, {'isRead': true});
+    }
+    await batch.commit();
+  }
+
   Future<void> deleteNotification(String notificationId) async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;

@@ -17,6 +17,16 @@ class BloodRequestModel {
   final DateTime expiryDate;
   final String status; // 'open', 'in_progress', or 'closed'
 
+  /// 'critical' | 'urgent' | 'routine'. Drives badge color, ordering and the
+  /// pulsing emphasis on critical requests. Defaults to 'urgent' for legacy
+  /// documents that predate this field.
+  final String urgency;
+
+  /// Optional geo-coordinates of the request (captured at creation when the
+  /// donor grants location). Null for legacy / permission-denied requests.
+  final double? lat;
+  final double? lng;
+
   BloodRequestModel({
     required this.id,
     required this.title,
@@ -33,6 +43,9 @@ class BloodRequestModel {
     required this.createdAt,
     required this.expiryDate,
     this.status = 'open',
+    this.urgency = 'urgent',
+    this.lat,
+    this.lng,
   });
 
   /// ✅ SAVE TO FIRESTORE
@@ -49,9 +62,12 @@ class BloodRequestModel {
       'city': city,
       'userId': userId,
       'acceptedByUserId': acceptedByUserId,
-      'createdAt': createdAt, 
+      'createdAt': createdAt,
       'expiryDate': expiryDate,
       'status': status,
+      'urgency': urgency,
+      'lat': lat,
+      'lng': lng,
     };
   }
 
@@ -75,6 +91,9 @@ class BloodRequestModel {
       createdAt: timestamp?.toDate() ?? DateTime.now(),
       expiryDate: expiryTimestamp?.toDate() ?? DateTime.now().add(const Duration(days: 1)),
       status: map['status'] ?? 'open',
+      urgency: map['urgency'] ?? 'urgent',
+      lat: (map['lat'] as num?)?.toDouble(),
+      lng: (map['lng'] as num?)?.toDouble(),
     );
   }
 }

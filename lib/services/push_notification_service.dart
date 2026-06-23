@@ -78,11 +78,17 @@ class NotificationService {
       return;
     }
 
-    await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-      'fcmToken': token,
-    }, SetOptions(merge: true));
-
-    AppLogger.d("FCM token saved");
+    // Wrap in try/catch: this runs from the onTokenRefresh listener too, where
+    // an offline/permission failure would otherwise surface as an unhandled
+    // async error. Missing a token write is non-fatal — it retries next launch.
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'fcmToken': token,
+      }, SetOptions(merge: true));
+      AppLogger.d("FCM token saved");
+    } catch (e) {
+      AppLogger.e('Failed to save FCM token', e);
+    }
   }
 
   //  LOCAL NOTIFICATION SETUP
@@ -102,7 +108,7 @@ class NotificationService {
         >()
         ?.createNotificationChannel(_channel);
 
-    debugPrint("✅ Local notifications ready");
+    AppLogger.d("Local notifications ready");
   }
 
   //  FOREGROUND HANDLER
@@ -135,5 +141,5 @@ class NotificationService {
 //  BACKGROUND / TERMINATED HANDLER
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint("📬 Background notification: ${message.notification?.title}");
+  AppLogger.d("Background notification: ${message.notification?.title}");
 }

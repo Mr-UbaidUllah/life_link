@@ -15,11 +15,22 @@ class UserModel {
   final String? profileImage;
   final DateTime createdAt;
   final String? fcmToken;
-  final List<String> dismissedRequests;
+
+  /// UIDs this user has blocked — their requests are hidden from feeds and they
+  /// can't be contacted. (Trust & safety.)
+  final List<String> blockedUsers;
   final String? about;
 
   /// Access role: 'user' (default) or 'admin'. Drives RBAC in security rules.
   final String role;
+
+  // ---- Retention / engagement ----
+  /// "On-call" availability — when true the donor is actively offering to
+  /// donate now. Distinct from [isDonor] (a standing opt-in).
+  final bool isAvailable;
+
+  /// Total completed donations — powers impact stats and achievement badges.
+  final int donationCount;
 
   // ---- Health screening ----
   /// Donor weight in kilograms (null = not provided).
@@ -44,9 +55,11 @@ class UserModel {
     this.profileImage,
     required this.createdAt,
     this.fcmToken,
-    this.dismissedRequests = const [],
+    this.blockedUsers = const [],
     this.about,
     this.role = 'user',
+    this.isAvailable = false,
+    this.donationCount = 0,
     this.weightKg,
     this.lastDonationDate,
     this.healthConditions = const [],
@@ -118,9 +131,11 @@ class UserModel {
     String? profileImage,
     DateTime? createdAt,
     String? fcmToken,
-    List<String>? dismissedRequests,
+    List<String>? blockedUsers,
     String? about,
     String? role,
+    bool? isAvailable,
+    int? donationCount,
     double? weightKg,
     DateTime? lastDonationDate,
     List<String>? healthConditions,
@@ -138,9 +153,11 @@ class UserModel {
       profileImage: profileImage ?? this.profileImage,
       createdAt: createdAt ?? this.createdAt,
       fcmToken: fcmToken ?? this.fcmToken,
-      dismissedRequests: dismissedRequests ?? this.dismissedRequests,
+      blockedUsers: blockedUsers ?? this.blockedUsers,
       about: about ?? this.about,
       role: role ?? this.role,
+      isAvailable: isAvailable ?? this.isAvailable,
+      donationCount: donationCount ?? this.donationCount,
       weightKg: weightKg ?? this.weightKg,
       lastDonationDate: lastDonationDate ?? this.lastDonationDate,
       healthConditions: healthConditions ?? this.healthConditions,
@@ -161,9 +178,11 @@ class UserModel {
       'profileImage': profileImage,
       'createdAt': createdAt, // Keep original createdAt if updating, or handle in service
       'fcmToken': fcmToken,
-      'dismissedRequests': dismissedRequests,
+      'blockedUsers': blockedUsers,
       'about': about,
       'role': role,
+      'isAvailable': isAvailable,
+      'donationCount': donationCount,
       'weightKg': weightKg,
       'lastDonationDate': lastDonationDate,
       'healthConditions': healthConditions,
@@ -172,7 +191,7 @@ class UserModel {
 
   factory UserModel.fromMap(String uid, Map<String, dynamic> map) {
     final dynamic timestamp = map['createdAt'];
-    final List<dynamic>? dismissed = map['dismissedRequests'];
+    final List<dynamic>? blocked = map['blockedUsers'];
     final List<dynamic>? conditions = map['healthConditions'];
     final dynamic lastDonation = map['lastDonationDate'];
     final dynamic weight = map['weightKg'];
@@ -197,9 +216,11 @@ class UserModel {
       profileImage: map['profileImage'],
       createdAt: createdAtDate,
       fcmToken: map['fcmToken'],
-      dismissedRequests: dismissed != null ? List<String>.from(dismissed) : [],
+      blockedUsers: blocked != null ? List<String>.from(blocked) : const [],
       about: map['about'],
       role: map['role'] ?? 'user',
+      isAvailable: map['isAvailable'] ?? false,
+      donationCount: (map['donationCount'] as num?)?.toInt() ?? 0,
       weightKg: weight == null ? null : (weight as num).toDouble(),
       lastDonationDate:
           lastDonation is Timestamp ? lastDonation.toDate() : null,

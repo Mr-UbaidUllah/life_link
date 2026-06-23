@@ -44,6 +44,9 @@ service cloud.firestore {
       // admin makes it. (A normal owner write that leaves role untouched passes.)
       allow update: if signedIn() && request.auth.uid == uid
                     && (!('role' in changedKeys()) );
+      // The owner may delete their own profile (in-app account deletion, a
+      // Play Store / App Store requirement). Admins may manage any profile.
+      allow delete: if signedIn() && request.auth.uid == uid;
       allow update, delete: if isAdmin();
 
       // Notifications: the owner reads and manages their own; any signed-in
@@ -53,6 +56,12 @@ service cloud.firestore {
         allow read, update, delete: if signedIn() && request.auth.uid == uid;
         allow create: if signedIn()
                       && request.resource.data.receiverId == uid;
+      }
+
+      // Hidden ("dismissed") requests: a private per-user list. Only the owner
+      // can read or write it. Docs carry an `expireAt` reaped by a TTL policy.
+      match /dismissedRequests/{requestId} {
+        allow read, write: if signedIn() && request.auth.uid == uid;
       }
     }
 
@@ -129,6 +138,16 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if createsAsSelf();
       allow update, delete: if ownsDirectoryDoc() || isAdmin();
+    }
+
+    // ---- Abuse reports ----
+    // Any signed-in user may file a report (stamped as themselves, status
+    // forced to 'pending'); only admins read or moderate them.
+    match /reports/{reportId} {
+      allow read, update, delete: if isAdmin();
+      allow create: if signedIn()
+                    && request.resource.data.reportedBy == request.auth.uid
+                    && request.resource.data.status == 'pending';
     }
 
     // Everything else is denied by default.

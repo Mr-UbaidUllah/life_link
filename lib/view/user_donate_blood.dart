@@ -16,6 +16,7 @@ class _UserDonateBloodState extends State<UserDonateBlood> {
   void initState() {
     super.initState();
     Future.microtask(() {
+      if (!mounted) return;
       Provider.of<UserProvider>(context, listen: false).loadCurrentUser();
     });
   }

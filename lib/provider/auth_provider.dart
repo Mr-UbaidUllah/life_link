@@ -57,4 +57,26 @@ class AuthProviders with ChangeNotifier {
     user = null;
     notifyListeners();
   }
+
+  /// Permanently deletes the account + the user's data. Reauthenticates with
+  /// [password] first (Firebase requires a recent login to delete).
+  Future<void> deleteAccount(String password) async {
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      await _authService.deleteAccount(password);
+      user = null;
+    } on FirebaseAuthException catch (e) {
+      throw authErrorMessage(e);
+    } on FirebaseException catch (e) {
+      throw firebaseErrorMessage(e);
+    } catch (e) {
+      if (e is String) rethrow;
+      throw 'Could not delete your account. Please try again.';
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
 }

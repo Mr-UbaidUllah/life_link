@@ -72,6 +72,41 @@ void main() {
     });
   });
 
+  group('NotificationModel.senderId/requestId — crash-proof getters', () {
+    NotificationModel build(Map<String, dynamic> extra) =>
+        NotificationModel.fromMap('n', {
+          'title': 't',
+          'body': 'b',
+          'type': 'chat',
+          'createdAt': null,
+          ...extra,
+        });
+
+    test('senderId reads a valid string field', () {
+      expect(build({'senderId': 'abc'}).senderId, 'abc');
+    });
+
+    test('senderId falls back to userId', () {
+      expect(build({'userId': 'uid-9'}).senderId, 'uid-9');
+    });
+
+    test('senderId returns null (no throw) when the field is non-string', () {
+      // A malformed doc where senderId got written as a number must NOT throw
+      // a cast error from the getter — this is the regression being locked in.
+      expect(build({'senderId': 12345}).senderId, isNull);
+    });
+
+    test('senderId returns null when absent', () {
+      expect(build({}).senderId, isNull);
+    });
+
+    test('requestId reads a valid string and is null-safe on bad types', () {
+      expect(build({'requestId': 'req-1'}).requestId, 'req-1');
+      expect(build({'requestId': 99}).requestId, isNull);
+      expect(build({}).requestId, isNull);
+    });
+  });
+
   group('ChatModel.fromMap — tolerates missing users/unreadCounts', () {
     test('full document round-trips', () {
       final c = ChatModel.fromMap('c1', {

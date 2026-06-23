@@ -30,6 +30,19 @@ class _AddOrganizationScreenState extends State<AddOrganizationScreen> {
   OrganizationType selectedType = OrganizationType.ngo;
   File? selectedImage;
 
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    countryCtrl.dispose();
+    cityCtrl.dispose();
+    addressCtrl.dispose();
+    phoneCtrl.dispose();
+    descriptionCtrl.dispose();
+    emailCtrl.dispose();
+    websiteCtrl.dispose();
+    super.dispose();
+  }
+
   void _showError(BuildContext context, ThemeData theme, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

@@ -1,14 +1,21 @@
+import 'dart:io';
+
 import 'package:blood_donation/core/constants/firebase_constants.dart';
 import 'package:blood_donation/models/chat_models.dart';
 import 'package:blood_donation/models/message_model.dart';
 import 'package:blood_donation/models/user_model.dart';
+import 'package:blood_donation/services/storage_service.dart';
 import 'package:blood_donation/utils/app_logger.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class ChatService {
+  ChatService({StorageService? storage})
+      : _storage = storage ?? StorageService();
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final StorageService _storage;
 
   /// Streams the current user's chats, newest-active first.
   Stream<List<ChatModel>> chatListStream() {
@@ -71,14 +78,86 @@ class ChatService {
     return null;
   }
 
-  /// Send message
+  /// Send a text message.
   Future<void> sendMessage({
     required String reciverid,
     required String text,
   }) async {
-    final currentUser = _auth.currentUser!;
+    await _deliver(
+      reciverid: reciverid,
+      text: text,
+      type: MessageType.text,
+    );
+  }
+
+  /// Upload an image/video attachment to Cloud Storage, then send it as a
+  /// message. [caption] is optional and ride-alongs as the message text.
+  Future<void> sendMediaMessage({
+    required String reciverid,
+    required File file,
+    required MessageType type,
+    String caption = '',
+  }) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw StateError('Cannot send a message while signed out.');
+    }
     final senderId = currentUser.uid;
-    final senderEmail = currentUser.email!;
+
+    List<String> ids = [senderId, reciverid];
+    ids.sort();
+    final chatRoomId = ids.join('_');
+
+    final isVideo = type == MessageType.video;
+    final ext = _extensionFor(file.path, fallback: isVideo ? 'mp4' : 'jpg');
+    // Unique per-attachment name so multiple sends never collide.
+    final fileName =
+        '${DateTime.now().millisecondsSinceEpoch}_${senderId.substring(0, 6)}.$ext';
+
+    final mediaUrl = await _storage.uploadFile(
+      path: '${FirebaseConstants.chatMediaFolder}/$chatRoomId/$fileName',
+      file: file,
+      contentType: isVideo ? 'video/mp4' : 'image/jpeg',
+    );
+
+    await _deliver(
+      reciverid: reciverid,
+      text: caption,
+      type: type,
+      mediaUrl: mediaUrl,
+    );
+  }
+
+  String _extensionFor(String path, {required String fallback}) {
+    final dot = path.lastIndexOf('.');
+    if (dot == -1 || dot == path.length - 1) return fallback;
+    final ext = path.substring(dot + 1).toLowerCase();
+    // Guard against odd paths (e.g. content URIs) producing a junk extension.
+    return ext.length <= 4 ? ext : fallback;
+  }
+
+  /// Short inbox/notification preview for a message of [type].
+  String _preview(MessageType type, String text) => switch (type) {
+        MessageType.image => text.isEmpty ? '📷 Photo' : '📷 $text',
+        MessageType.video => text.isEmpty ? '🎥 Video' : '🎥 $text',
+        MessageType.text => text,
+      };
+
+  /// Shared writer: updates the chat doc, appends the message and fires the
+  /// notification. Used by both text and media sends.
+  Future<void> _deliver({
+    required String reciverid,
+    required String text,
+    required MessageType type,
+    String? mediaUrl,
+  }) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw StateError('Cannot send a message while signed out.');
+    }
+    final senderId = currentUser.uid;
+    // email can be null for non-email auth providers — don't force-unwrap.
+    final senderEmail = currentUser.email ?? '';
     final Timestamp timestamp = Timestamp.now();
 
     // chatId
@@ -87,6 +166,8 @@ class ChatService {
     String chatRoomId = ids.join('_');
 
     final chatRef = _firestore.collection('chats').doc(chatRoomId);
+
+    final preview = _preview(type, text);
 
     // A message to yourself ("Saved Messages") must NOT bump an unread count —
     // the inbox hides self-chats, so that badge could never be cleared and
@@ -100,28 +181,33 @@ class ChatService {
     // literal top-level field with a dot in its name, so the count the inbox
     // reads (the nested `unreadCounts` map) never moved. Use a nested map —
     // merge:true deep-merges it, incrementing only the receiver's entry.
-    await chatRef.set({
-      'users': ids,
-      'lastMessage': text,
-      'updatedAt': timestamp,
-      if (!isSelfChat) 'unreadCounts': {reciverid: FieldValue.increment(1)},
-    }, SetOptions(merge: true));
-
     //  ADD MESSAGE
     MessageModel newMessage = MessageModel(
       senderId: senderId,
       senderEmail: senderEmail,
       receiverId: reciverid,
       text: text,
-      createdAt: Timestamp.now(), 
+      createdAt: Timestamp.now(),
       isDelivered: false,
+      type: type,
+      mediaUrl: mediaUrl,
     );
 
-    await chatRef.collection('messages').add(newMessage.toMap());
+    // Write the chat summary and the message atomically so the inbox can never
+    // show a preview / bumped unread count for a message that failed to land.
+    final batch = _firestore.batch();
+    batch.set(chatRef, {
+      'users': ids,
+      'lastMessage': preview,
+      'updatedAt': timestamp,
+      if (!isSelfChat) 'unreadCounts': {reciverid: FieldValue.increment(1)},
+    }, SetOptions(merge: true));
+    batch.set(chatRef.collection('messages').doc(), newMessage.toMap());
+    await batch.commit();
 
     // Send Notification
     if (senderId != reciverid) {
-       _sendNotification(reciverid, text, senderId);
+      _sendNotification(reciverid, preview, senderId);
     }
   }
 
@@ -179,7 +265,10 @@ class ChatService {
   }
 
   Stream<List<MessageModel>> getMessages({required String receiverId}) {
-    final currentUser = FirebaseAuth.instance.currentUser!;
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      return const Stream<List<MessageModel>>.empty();
+    }
     final senderId = currentUser.uid;
 
     List<String> ids = [senderId, receiverId];
@@ -201,23 +290,34 @@ class ChatService {
   }
 
   Future<void> deleteChat(String receiverId) async {
-    final senderId = _auth.currentUser!.uid;
+    final senderId = _auth.currentUser?.uid;
+    if (senderId == null) return;
     List<String> ids = [senderId, receiverId];
     ids.sort();
     String chatRoomId = ids.join('_');
 
     final chatRef = _firestore.collection('chats').doc(chatRoomId);
-    
-    final messages = await chatRef.collection('messages').get();
-    for (var doc in messages.docs) {
-      await doc.reference.delete();
+
+    // Delete messages in batched pages (max 500 writes/batch) instead of one
+    // sequential await-per-doc loop, so large chats don't fan out into hundreds
+    // of round-trips. The chat doc itself is deleted last.
+    while (true) {
+      final page = await chatRef.collection('messages').limit(400).get();
+      if (page.docs.isEmpty) break;
+      final batch = _firestore.batch();
+      for (final doc in page.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+      if (page.docs.length < 400) break;
     }
-    
+
     await chatRef.delete();
   }
 
   Future<void> deleteMessage(String receiverId, String messageId) async {
-    final senderId = _auth.currentUser!.uid;
+    final senderId = _auth.currentUser?.uid;
+    if (senderId == null) return;
     List<String> ids = [senderId, receiverId];
     ids.sort();
     String chatRoomId = ids.join('_');

@@ -1,3 +1,4 @@
+import 'package:blood_donation/theme/theme.dart';
 import 'package:blood_donation/view/auth/auth_wrappper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -55,8 +56,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final height = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: Column(
+      body: SafeArea(
+        child: Column(
         children: [
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: EdgeInsets.only(right: 12.w, top: 4.h),
+              child: currentIndex == pages.length - 1
+                  ? SizedBox(height: 40.h)
+                  : TextButton(
+                      onPressed: _finishOnboarding,
+                      child: Text('Skip',
+                          style: TextStyle(
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.5),
+                              fontWeight: FontWeight.w700)),
+                    ),
+            ),
+          ),
           Expanded(
             flex: 6,
             child: PageView.builder(
@@ -73,21 +91,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   children: [
                     Image.asset(pages[index]['image']!, height: height * 0.4),
                     SizedBox(height: height * 0.03),
-                    Text(
-                      pages[index]['title']!,
-                      style: TextStyle(
-                        fontSize: 20.sp,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 24.w),
+                      child: Text(
+                        pages[index]['title']!,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.headlineMedium?.copyWith(fontSize: 26.sp),
                       ),
                     ),
                     Padding(
-                      padding: EdgeInsets.all(height * 0.02),
+                      padding: EdgeInsets.fromLTRB(32.w, 12.h, 32.w, 0),
                       child: Text(
                         pages[index]['subtitle']!,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14.sp,
+                          height: 1.5,
                           color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
@@ -119,15 +138,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               height: 55.h,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary,
+                gradient: AppGradients.hero,
                 borderRadius: BorderRadius.circular(15.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                boxShadow: AppGradients.glow(AppColors.primary, alpha: 0.32),
               ),
               child: Center(
                 child: Text(
@@ -143,6 +156,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           SizedBox(height: height * 0.05),
         ],
+      ),
       ),
     );
   }

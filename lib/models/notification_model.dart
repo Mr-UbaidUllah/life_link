@@ -8,6 +8,11 @@ class NotificationModel {
   final DateTime createdAt;
   final bool isRead;
 
+  /// The full raw document, kept so the detail screen can read type-specific
+  /// metadata (senderId for chats, requestId for blood requests, etc.) without
+  /// the model needing a field for every notification variant.
+  final Map<String, dynamic> data;
+
   NotificationModel({
     required this.id,
     required this.title,
@@ -15,7 +20,23 @@ class NotificationModel {
     required this.type,
     required this.createdAt,
     this.isRead = false,
+    this.data = const {},
   });
+
+  /// User id of whoever triggered the notification (chat sender, available
+  /// donor). Null when the notification carries no associated user.
+  /// Uses `is String` instead of `as String?` so a malformed (non-string)
+  /// field can never throw a cast error from a getter.
+  String? get senderId {
+    final v = data['senderId'] ?? data['userId'];
+    return v is String ? v : null;
+  }
+
+  /// Blood request this notification refers to, when [type] is `blood_request`.
+  String? get requestId {
+    final v = data['requestId'];
+    return v is String ? v : null;
+  }
 
   factory NotificationModel.fromMap(String id, Map<String, dynamic> map) {
     return NotificationModel(
@@ -29,6 +50,7 @@ class NotificationModel {
           ? (map['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
       isRead: map['isRead'] ?? false,
+      data: map,
     );
   }
 

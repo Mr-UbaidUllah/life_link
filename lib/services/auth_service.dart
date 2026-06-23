@@ -116,6 +116,112 @@ class AuthService {
     await _auth.signOut();
   }
 
+  /// Permanently deletes the signed-in user's account and their personal data.
+  ///
+  /// Required for Play Store / App Store compliance (in-app account deletion).
+  /// Firebase requires a *recent* login to delete an account, so the caller
+  /// must supply the current password to reauthenticate first.
+  ///
+  /// Order matters: reauthenticate → wipe Firestore data the user owns (rules
+  /// only permit deleting your own documents) → delete the Auth account last,
+  /// because once the Auth user is gone the security rules would reject the
+  /// data writes.
+  Future<void> deleteAccount(String password) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw 'You are not signed in.';
+    }
+    final email = user.email;
+    if (email == null || email.isEmpty) {
+      throw 'This account type cannot be deleted from the app.';
+    }
+
+    // 1. Reauthenticate (clears "requires-recent-login").
+    final credential =
+        EmailAuthProvider.credential(email: email, password: password);
+    await user.reauthenticateWithCredential(credential);
+
+    final uid = user.uid;
+
+    // 2. Best-effort clean-up of the user's own data.
+    await _clearFcmToken(uid);
+    await _deleteUserData(uid);
+
+    // 3. Delete the authentication account itself.
+    await user.delete();
+  }
+
+  /// Removes the Firestore data a user owns, then finally their profile
+  /// document. Covers: blood requests, notifications subcollection,
+  /// dismissedRequests subcollection, the ambulance / organization / volunteer
+  /// listings they created (`createdBy == uid`), and every chat they're a
+  /// participant of (including each chat's messages subcollection). Deletes are
+  /// chunked to stay within Firestore's 500-write batch limit.
+  Future<void> _deleteUserData(String uid) async {
+    final refs = <DocumentReference>[];
+
+    // Blood requests the user posted.
+    final requests = await _firestore
+        .collection(FirebaseConstants.bloodRequests)
+        .where('userId', isEqualTo: uid)
+        .get();
+    refs.addAll(requests.docs.map((d) => d.reference));
+
+    // Notifications + dismissed-request markers under the user's own doc.
+    final notifications = await _firestore
+        .collection(FirebaseConstants.users)
+        .doc(uid)
+        .collection(FirebaseConstants.notifications)
+        .get();
+    refs.addAll(notifications.docs.map((d) => d.reference));
+
+    final dismissed = await _firestore
+        .collection(FirebaseConstants.users)
+        .doc(uid)
+        .collection('dismissedRequests')
+        .get();
+    refs.addAll(dismissed.docs.map((d) => d.reference));
+
+    // Listings this user created (each stamps `createdBy`).
+    for (final collection in [
+      FirebaseConstants.ambulance,
+      FirebaseConstants.organizations,
+      FirebaseConstants.volunteer,
+    ]) {
+      final owned = await _firestore
+          .collection(collection)
+          .where('createdBy', isEqualTo: uid)
+          .get();
+      refs.addAll(owned.docs.map((d) => d.reference));
+    }
+
+    // Chats the user is a participant of, plus each chat's messages. Deleting a
+    // shared chat is intentional — once one side is gone the thread is dead.
+    final chats = await _firestore
+        .collection(FirebaseConstants.chats)
+        .where('users', arrayContains: uid)
+        .get();
+    for (final chat in chats.docs) {
+      final messages =
+          await chat.reference.collection(FirebaseConstants.messages).get();
+      refs.addAll(messages.docs.map((d) => d.reference));
+      refs.add(chat.reference);
+    }
+
+    // Commit owned-data deletes in safe-sized chunks.
+    for (var i = 0; i < refs.length; i += 400) {
+      final batch = _firestore.batch();
+      for (final ref in refs.skip(i).take(400)) {
+        batch.delete(ref);
+      }
+      await batch.commit();
+    }
+
+    // The profile document last, so any rule that keys off it still resolves
+    // while the data above is being removed.
+    await _firestore.collection(FirebaseConstants.users).doc(uid).delete();
+  }
+
   Future<UserModel?> getCurrentUserData() async {
     final firebaseUser = _auth.currentUser;
 

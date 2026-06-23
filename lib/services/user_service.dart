@@ -107,22 +107,77 @@ class UserFirestoreService {
         .set({'isDonor': isDonor}, SetOptions(merge: true));
   }
 
-  Future<void> dismissRequest(String requestId) async {
+  // ---- Dismissed (hidden) requests ----
+  //
+  // Stored server-side as one doc per dismissal in
+  // `users/{uid}/dismissedRequests/{requestId}`. Each doc carries an `expireAt`
+  // timestamp so a Firestore TTL policy auto-deletes it once the underlying
+  // request is gone — the list can never grow unbounded and needs no manual
+  // pruning. (Enable TTL on the `expireAt` field for the `dismissedRequests`
+  // collection group; see firestore.rules / project README.)
+
+  CollectionReference<Map<String, dynamic>> _dismissedCol(String uid) =>
+      _firestore.collection('users').doc(uid).collection('dismissedRequests');
+
+  /// Hides a single request for the current user until [expireAt].
+  Future<void> dismissRequest(String requestId, DateTime expireAt) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    await _firestore.collection('users').doc(uid).update({
-      'dismissedRequests': FieldValue.arrayUnion([requestId]),
+    await _dismissedCol(uid).doc(requestId).set({
+      'createdAt': FieldValue.serverTimestamp(),
+      'expireAt': Timestamp.fromDate(expireAt),
     });
   }
 
-  Future<void> dismissAllRequests(List<String> requestIds) async {
+  /// Hides many requests at once (the "Clear feed" action). [idToExpiry] maps
+  /// each request id to the moment its dismissal may be garbage-collected.
+  Future<void> dismissRequests(Map<String, DateTime> idToExpiry) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || idToExpiry.isEmpty) return;
+
+    final batch = _firestore.batch();
+    idToExpiry.forEach((requestId, expireAt) {
+      batch.set(_dismissedCol(uid).doc(requestId), {
+        'createdAt': FieldValue.serverTimestamp(),
+        'expireAt': Timestamp.fromDate(expireAt),
+      });
+    });
+    await batch.commit();
+  }
+
+  /// Live set of request ids the current user has hidden. Firestore's offline
+  /// latency compensation means a just-written dismissal appears here
+  /// immediately, so the feed updates without any local optimistic bookkeeping.
+  Stream<Set<String>> dismissedRequestIds() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return Stream.value(const <String>{});
+
+    return _dismissedCol(uid).snapshots().map(
+          (snap) => snap.docs.map((d) => d.id).toSet(),
+        );
+  }
+
+  /// Sets the donor's "available to donate now" status.
+  Future<void> setAvailability(bool isAvailable) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    await _firestore.collection('users').doc(uid).update({
-      'dismissedRequests': FieldValue.arrayUnion(requestIds),
-    });
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .set({'isAvailable': isAvailable}, SetOptions(merge: true));
+  }
+
+  /// Blocks [otherUid] for the current user — their requests are hidden and
+  /// contact is disabled. Idempotent via arrayUnion.
+  Future<void> blockUser(String otherUid) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || uid == otherUid) return;
+
+    await _firestore.collection('users').doc(uid).set({
+      'blockedUsers': FieldValue.arrayUnion([otherUid]),
+    }, SetOptions(merge: true));
   }
 
   Stream<List<UserModel>> getDonors() {
@@ -135,14 +190,5 @@ class UserFirestoreService {
             return UserModel.fromMap(doc.id, doc.data());
           }).toList();
         });
-  }
-
-  /// Fetch ALL users
-  Stream<List<UserModel>> fetchAllUsers() {
-    return _firestore.collection('users').snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) {
-        return UserModel.fromMap(doc.id, doc.data());
-      }).toList();
-    });
   }
 }

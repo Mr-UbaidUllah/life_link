@@ -1,6 +1,7 @@
 import 'package:blood_donation/provider/auth_provider.dart';
 import 'package:blood_donation/view/auth/signup_screen.dart';
 import 'package:blood_donation/view/auth/auth_wrappper.dart';
+import 'package:blood_donation/widgets/app_snackbar.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
 import 'package:blood_donation/widgets/red_container.dart';
 import 'package:blood_donation/widgets/reusable_button.dart';
@@ -86,18 +87,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Welcome Back',
-                          style: TextStyle(
-                            fontSize: 32.sp,
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,
-                          ),
+                          'Welcome back',
+                          style: theme.textTheme.displaySmall?.copyWith(fontSize: 30.sp),
                         ),
                         SizedBox(height: 8.h),
                         Text(
                           'Login to continue saving lives',
                           style: TextStyle(
-                            fontSize: 16.sp,
+                            fontSize: 15.sp,
                             color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
@@ -123,44 +120,29 @@ class _LoginScreenState extends State<LoginScreen> {
                         SizedBox(height: 40.h),
                         Consumer<AuthProviders>(
                           builder: (context, auth, _) {
-                            return InkWell(
-                              onTap: auth.isLoading
-                                  ? null
-                                  : () async {
-                                      FocusScope.of(context).unfocus();
-                                      if (!_formKey.currentState!.validate()) {
-                                        return;
-                                      }
-                                      try {
-                                        await auth.login(
-                                          emailController.text.trim(),
-                                          passwordController.text.trim(),
-                                        );
-                                        if (context.mounted) {
-                                          Navigator.of(context).pushReplacement(
-                                            MaterialPageRoute(
-                                              builder: (_) => AuthWrapper(),
-                                            ),
-                                          );
-                                        }
-                                      } catch (e) {
-                                        if (!context.mounted) return;
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text(e.toString()),
-                                            backgroundColor: theme.colorScheme.error,
-                                            behavior: SnackBarBehavior.floating,
-                                          ),
-                                        );
-                                      }
-                                    },
-                              child: auth.isLoading
-                                  ? Center(
-                                      child: CircularProgressIndicator(
-                                        color: theme.colorScheme.primary,
+                            return ReusableButton(
+                              label: 'Login',
+                              isLoading: auth.isLoading,
+                              onPressed: () async {
+                                FocusScope.of(context).unfocus();
+                                if (!_formKey.currentState!.validate()) return;
+                                try {
+                                  await auth.login(
+                                    emailController.text.trim(),
+                                    passwordController.text.trim(),
+                                  );
+                                  if (context.mounted) {
+                                    Navigator.of(context).pushReplacement(
+                                      MaterialPageRoute(
+                                        builder: (_) => AuthWrapper(),
                                       ),
-                                    )
-                                  : const ReusableButton(label: 'Login'),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  AppSnackbar.error(context, e.toString());
+                                }
+                              },
                             );
                           },
                         ),

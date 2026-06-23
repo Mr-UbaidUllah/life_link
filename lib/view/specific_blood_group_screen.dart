@@ -45,7 +45,9 @@ class SpecificBloodgroupScreen extends StatelessWidget {
         child: Consumer<BloodGroupRequestProvider>(
           builder: (context, provider, _) {
             return StreamBuilder<List<BloodRequestModel>>(
-              stream: provider.postsByBloodGroup(bloodGroup!),
+              stream: bloodGroup == null
+                  ? const Stream<List<BloodRequestModel>>.empty()
+                  : provider.postsByBloodGroup(bloodGroup!),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return ShimmerList(

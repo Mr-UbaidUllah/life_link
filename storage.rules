@@ -18,6 +18,14 @@ service firebase.storage {
              && request.resource.contentType.matches('image/.*');
     }
 
+    function isChatMediaUnderLimit() {
+      // 50 MB cap — fits compressed photos and short clips while keeping storage
+      // and download-bandwidth bills bounded. Raw long videos are rejected.
+      return request.resource.size < 50 * 1024 * 1024
+             && (request.resource.contentType.matches('image/.*')
+                 || request.resource.contentType.matches('video/.*'));
+    }
+
     match /profile_images/{fileName} {
       allow read: if signedIn();
       allow write: if signedIn()
@@ -35,6 +43,16 @@ service firebase.storage {
     match /volunteer_images/{fileName} {
       allow read: if signedIn();
       allow write: if signedIn() && isImageUnder10MB();
+    }
+
+    // Chat attachments live under `chat_media/<uidA>_<uidB>/<file>`. Allow
+    // image + video writes (<=100MB) only from a signed-in user whose uid is
+    // one of the two participants encoded in the chat-room id.
+    match /chat_media/{chatId}/{fileName} {
+      allow read: if signedIn();
+      allow write: if signedIn()
+                   && isChatMediaUnderLimit()
+                   && chatId.matches('.*' + request.auth.uid + '.*');
     }
 
     // Everything else denied by default.

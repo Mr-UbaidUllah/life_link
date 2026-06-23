@@ -7,8 +7,6 @@ class BloodrequestProvider with ChangeNotifier {
       : _service = service ?? BloodRequestService();
 
   final BloodRequestService _service;
-  List<BloodRequestModel> _allRequests = [];
-  List<BloodRequestModel> _filteredRequests = [];
   bool isLoading = false;
 
   Future<void> bloodRequest(BloodRequestModel request) async {
@@ -91,26 +89,5 @@ class BloodrequestProvider with ChangeNotifier {
     }
   }
 
-  List<BloodRequestModel> get filteredrequests => _filteredRequests;
-
   Stream<List<BloodRequestModel>> get requests => _service.getRequests();
-
-  void setRequests(List<BloodRequestModel> list) {
-    _allRequests = list;
-    _filteredRequests = list;
-    notifyListeners();
-  }
-
-  void searchByBlood(String query) {
-    if (query.isEmpty) {
-      _filteredRequests = _allRequests;
-    } else {
-      _filteredRequests = _allRequests
-          .where(
-            (r) => r.bloodGroup.toLowerCase().contains(query.toLowerCase()),
-          )
-          .toList();
-    }
-    notifyListeners();
-  }
 }

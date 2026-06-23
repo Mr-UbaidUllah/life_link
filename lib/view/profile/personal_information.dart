@@ -1,3 +1,4 @@
+import 'package:blood_donation/core/constants/app_constants.dart';
 import 'package:blood_donation/provider/auth_provider.dart';
 import 'package:blood_donation/provider/user_provider.dart';
 import 'package:blood_donation/view/auth/auth_wrappper.dart';
@@ -79,126 +80,16 @@ class _PersonelInformationState extends State<PersonelInformation> {
     }
   }
 
-  final List<String> bloodGroups = [
-    'A+',
-    'A-',
-    'B+',
-    'B-',
-    'AB+',
-    'AB-',
-    'O+',
-    'O-',
-  ];
-  // Country -> cities. Add new countries/cities here only; the dropdowns and
-  // getCityList() derive everything from this single source of truth.
-  final Map<String, List<String>> citiesByCountry = {
-    'Pakistan': [
-      'Islamabad',
-      'Karachi',
-      'Lahore',
-      'Faisalabad',
-      'Rawalpindi',
-      'Multan',
-      'Peshawar',
-      'Quetta',
-      'Gujranwala',
-      'Sialkot',
-      'Hyderabad',
-      'Abbottabad',
-    ],
-    'India': [
-      'New Delhi',
-      'Mumbai',
-      'Bangalore',
-      'Hyderabad',
-      'Chennai',
-      'Kolkata',
-      'Pune',
-      'Ahmedabad',
-      'Jaipur',
-      'Lucknow',
-    ],
-    'USA': [
-      'New York',
-      'Los Angeles',
-      'Chicago',
-      'Houston',
-      'Phoenix',
-      'Philadelphia',
-      'San Antonio',
-      'San Diego',
-      'Dallas',
-      'San Francisco',
-    ],
-    'UAE': [
-      'Dubai',
-      'Abu Dhabi',
-      'Sharjah',
-      'Al Ain',
-      'Ajman',
-      'Ras Al Khaimah',
-      'Fujairah',
-    ],
-    'Canada': [
-      'Toronto',
-      'Montreal',
-      'Vancouver',
-      'Calgary',
-      'Ottawa',
-      'Edmonton',
-      'Winnipeg',
-      'Quebec City',
-    ],
-    'United Kingdom': [
-      'London',
-      'Birmingham',
-      'Manchester',
-      'Glasgow',
-      'Liverpool',
-      'Leeds',
-      'Bristol',
-      'Edinburgh',
-    ],
-    'Australia': [
-      'Sydney',
-      'Melbourne',
-      'Brisbane',
-      'Perth',
-      'Adelaide',
-      'Canberra',
-      'Gold Coast',
-    ],
-    'Saudi Arabia': [
-      'Riyadh',
-      'Jeddah',
-      'Mecca',
-      'Medina',
-      'Dammam',
-      'Khobar',
-      'Taif',
-    ],
-    'Bangladesh': [
-      'Dhaka',
-      'Chittagong',
-      'Khulna',
-      'Rajshahi',
-      'Sylhet',
-      'Barisal',
-    ],
-    'Germany': [
-      'Berlin',
-      'Munich',
-      'Hamburg',
-      'Frankfurt',
-      'Cologne',
-      'Stuttgart',
-    ],
-  };
+  // Blood groups and the country→cities map come from the single app-wide
+  // source (app_constants) so the value a donor saves here is always selectable
+  // on the create-request side — otherwise city/group could never match and the
+  // notification functions would silently never fire for them.
+  List<String> get bloodGroups => kBloodGroups;
 
-  List<String> get countries => citiesByCountry.keys.toList();
+  List<String> get countries => kCountryCities.keys.toList();
 
   List<String> getCityList() {
-    return citiesByCountry[selectedCountry] ?? [];
+    return kCountryCities[selectedCountry] ?? [];
   }
 
   @override

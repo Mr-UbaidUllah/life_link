@@ -342,6 +342,7 @@
 //   }
 // );
 const {onDocumentCreated, onDocumentUpdated} = require("firebase-functions/v2/firestore");
+const {onSchedule} = require("firebase-functions/v2/scheduler");
 const admin = require("firebase-admin");
 const {logger} = require("firebase-functions");
 
@@ -359,9 +360,10 @@ function norm(value) {
 
 /**
  * Whether a user should be notified about a blood request.
- * Rules: exact blood group match AND same city, and never the request's own
- * creator. Returns false if the request itself is missing bloodGroup/city, so
- * an incomplete request never broadcasts to everyone.
+ * Rules: the candidate must be a registered donor (isDonor === true), with an
+ * exact blood group match AND same city, and never the request's own creator.
+ * Returns false if the request itself is missing bloodGroup/city, so an
+ * incomplete request never broadcasts to everyone.
  *
  * @param {object} requestData  The Blood_request document data.
  * @param {string} userId       The candidate user's document id.
@@ -372,6 +374,11 @@ function norm(value) {
 function shouldNotifyForRequest(requestData, userId, userData, creatorUserId) {
   // Never notify the creator about their own request.
   if (creatorUserId && userId === creatorUserId) return false;
+
+  // Only registered donors are notified — non-donors can't act on a request,
+  // so pushing to them is pure cost. (The caller also pre-filters the query to
+  // isDonor === true; this keeps the rule correct if that ever changes.)
+  if (userData.isDonor !== true) return false;
 
   const reqGroup = norm(requestData.bloodGroup);
   const reqCity = norm(requestData.city);
@@ -444,21 +451,8 @@ exports.sendBloodRequestNotification = onDocumentCreated(
         logger.warn("⚠️ No userId found in request data");
       }
 
-      // Get all users
-      const usersSnapshot = await admin
-        .firestore()
-        .collection("users")
-        .get();
-
-      if (usersSnapshot.empty) {
-        logger.warn("❌ No users found");
-        return null;
-      }
-
-      logger.info(`✅ Found ${usersSnapshot.size} total users`);
-
       // If the request is missing the fields we match on, there's no safe
-      // audience — bail rather than broadcasting to everyone.
+      // audience — bail BEFORE reading any users rather than broadcasting.
       if (!norm(requestData.bloodGroup) || !norm(requestData.city)) {
         logger.warn(
           "❌ Request missing bloodGroup or city — skipping notifications " +
@@ -466,6 +460,23 @@ exports.sendBloodRequestNotification = onDocumentCreated(
         );
         return null;
       }
+
+      // Billing: read ONLY registered donors, not the whole users collection.
+      // isDonor is auto-indexed (single field), so this scales with the donor
+      // count rather than total user count. City/blood-group are then filtered
+      // in memory (case-insensitive via norm) by shouldNotifyForRequest.
+      const usersSnapshot = await admin
+        .firestore()
+        .collection("users")
+        .where("isDonor", "==", true)
+        .get();
+
+      if (usersSnapshot.empty) {
+        logger.warn("❌ No donors found");
+        return null;
+      }
+
+      logger.info(`✅ Found ${usersSnapshot.size} donor(s) to evaluate`);
 
       // Collect MATCHING recipients only — exact blood group + same city, and
       // never the creator (see shouldNotifyForRequest). Track ids (for the
@@ -491,7 +502,7 @@ exports.sendBloodRequestNotification = onDocumentCreated(
       });
 
       logger.info(
-        `📊 Stats: Total users: ${usersSnapshot.size}, ` +
+        `📊 Stats: Donors evaluated: ${usersSnapshot.size}, ` +
         `Matched: ${matchedUserIds.length}, With tokens: ${tokens.length}`
       );
 
@@ -587,21 +598,34 @@ exports.sendDonorAvailabilityNotification = onDocumentUpdated(
       if (!wasDonor && isDonor) {
         logger.info(`✅ User ${userId} is now available for donation!`);
 
-        // Get all users
-        const usersSnapshot = await admin
-          .firestore()
-          .collection("users")
-          .get();
-
-        if (usersSnapshot.empty) {
-          logger.warn("❌ No users found");
+        // Billing + relevance: only notify users in the SAME city as the donor.
+        // A donor in another city is irrelevant to a recipient, so broadcasting
+        // to the whole user base is both spammy and the dominant cost here
+        // (N reads + N inbox writes + N triggered push functions). If the donor
+        // has no city we have no safe audience — bail rather than broadcast.
+        const donorCity = afterData.city;
+        if (!norm(donorCity)) {
+          logger.warn("❌ Donor has no city — skipping donor-available broadcast");
           return null;
         }
 
-        logger.info(`✅ Found ${usersSnapshot.size} total users`);
+        // city comes from a fixed picker (app_constants), so an exact-match
+        // query is safe and reads only same-city users, not everyone.
+        const usersSnapshot = await admin
+          .firestore()
+          .collection("users")
+          .where("city", "==", donorCity)
+          .get();
 
-        // Collect recipients (everyone except the donor). Track ids for the
-        // in-app inbox and tokens for the push separately.
+        if (usersSnapshot.empty) {
+          logger.warn("❌ No same-city users found");
+          return null;
+        }
+
+        logger.info(`✅ Found ${usersSnapshot.size} user(s) in ${donorCity}`);
+
+        // Collect recipients (everyone in the city except the donor). Track ids
+        // for the in-app inbox and tokens for the push separately.
         const tokens = [];
         const recipientUserIds = [];
 
@@ -623,8 +647,13 @@ exports.sendDonorAvailabilityNotification = onDocumentUpdated(
           }
         });
 
+        if (recipientUserIds.length === 0) {
+          logger.info("ℹ️ No other users in city — nothing to send");
+          return null;
+        }
+
         logger.info(
-          `📊 Stats: Total users: ${usersSnapshot.size}, ` +
+          `📊 Stats: City users: ${usersSnapshot.size}, ` +
           `Recipients: ${recipientUserIds.length}, ` +
           `With tokens: ${tokens.length}`
         );
@@ -768,3 +797,129 @@ exports.sendChatPushNotification = onDocumentCreated(
     }
   }
 );
+
+// ============================================
+// ⏰ RE-ELIGIBILITY REMINDER (retention)
+// ============================================
+// Keep in sync with DonationEligibility.cooldownDays in the Flutter app.
+const COOLDOWN_DAYS = 56;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Daily at 09:00: nudge donors whose 56-day cooldown ended in the last 24h so
+ * they come back and donate again. Sends an FCM push (when a token exists) and
+ * writes an in-app inbox notification via the shared helper.
+ */
+exports.reEligibilityReminder = onSchedule("every day 09:00", async () => {
+  const now = Date.now();
+  // Eligible-again = lastDonationDate + COOLDOWN_DAYS. Target the 24h window of
+  // donors who crossed that line today.
+  const windowEnd = new Date(now - COOLDOWN_DAYS * DAY_MS);
+  const windowStart = new Date(now - (COOLDOWN_DAYS + 1) * DAY_MS);
+
+  const snap = await admin
+    .firestore()
+    .collection("users")
+    .where("isDonor", "==", true)
+    .where("lastDonationDate", ">=", admin.firestore.Timestamp.fromDate(windowStart))
+    .where("lastDonationDate", "<", admin.firestore.Timestamp.fromDate(windowEnd))
+    .get();
+
+  const tokens = [];
+  const recipientIds = [];
+  snap.forEach((doc) => {
+    recipientIds.push(doc.id);
+    const token = doc.get("fcmToken");
+    if (token) tokens.push(token);
+  });
+
+  if (tokens.length) {
+    await admin.messaging().sendEach(
+      tokens.map((token) => ({
+        token,
+        notification: {
+          title: "You can donate again! 🩸",
+          body: "Your recovery period is over. Someone near you may need your help.",
+        },
+        data: {type: "re_eligible"},
+        android: {priority: "high"},
+      })),
+    );
+  }
+
+  // Inbox copy so it appears in the Notifications screen too.
+  await writeInboxNotifications(recipientIds, {
+    title: "You can donate again! 🩸",
+    body: "Your recovery period is over. Tap to find requests near you.",
+    type: "re_eligible",
+  });
+
+  logger.info(`⏰ reEligibilityReminder: notified ${recipientIds.length} donor(s)`);
+});
+
+// ============================================
+// 🧹 CLOSE EXPIRED BLOOD REQUESTS (feed hygiene)
+// ============================================
+// Why this exists: the app filters expired requests out of the feed
+// CLIENT-SIDE, but nothing flipped their `status`, so they stayed `open`
+// forever — occupying the server-side `.limit()` window and shrinking the
+// visible feed. This sweep flips expired-but-open requests to `closed`.
+//
+// Cost design (deliberately frugal — "prevent unnecessary calls"):
+//   • Runs every 6 hours (4 invocations/day), NOT on every write. Per-document
+//     triggers would fire on every request create/update; a batched sweep is far
+//     cheaper and the client over-fetch covers the in-between window.
+//   • The query is filtered SERVER-SIDE (status == 'open' AND expiryDate < now),
+//     so it reads ONLY the docs that actually need closing — never the whole
+//     collection. On a healthy DB most runs read 0 docs and cost ~nothing.
+//   • Does no writes when there's nothing expired (early return, no empty batch).
+//   • Pages in batch-sized chunks with a hard cap so one run can't run away.
+// Requires composite index: Blood_request (status ASC, expiryDate ASC).
+const EXPIRE_PAGE_SIZE = 450; // Firestore batch limit is 500 ops.
+const EXPIRE_MAX_PAGES = 20; // Safety cap: ≤ 9000 closes per run.
+
+/**
+ * Core sweep: flip every open-but-expired Blood_request to `closed`, paged in
+ * batch-sized chunks. Extracted from the scheduled handler so it can be tested
+ * directly against the Firestore emulator with a deterministic `now`.
+ *
+ * @param {FirebaseFirestore.Firestore} db   Firestore instance.
+ * @param {FirebaseFirestore.Timestamp} now  Cutoff; requests expiring before
+ *   this are closed. Passed in so tests control the clock.
+ * @return {Promise<number>} count of requests closed.
+ */
+async function sweepExpiredRequests(db, now) {
+  let totalClosed = 0;
+
+  for (let page = 0; page < EXPIRE_MAX_PAGES; page++) {
+    const snap = await db
+      .collection("Blood_request")
+      .where("status", "==", "open")
+      .where("expiryDate", "<", now)
+      .limit(EXPIRE_PAGE_SIZE)
+      .get();
+
+    // Nothing left to close — stop before doing any write work.
+    if (snap.empty) break;
+
+    const batch = db.batch();
+    snap.forEach((doc) => batch.update(doc.reference, {status: "closed"}));
+    await batch.commit();
+
+    totalClosed += snap.size;
+
+    // A short page means we've drained the backlog; don't query again.
+    if (snap.size < EXPIRE_PAGE_SIZE) break;
+  }
+
+  return totalClosed;
+}
+
+exports.sweepExpiredRequests = sweepExpiredRequests;
+
+exports.closeExpiredRequests = onSchedule("every 6 hours", async () => {
+  const db = admin.firestore();
+  const totalClosed = await sweepExpiredRequests(db, admin.firestore.Timestamp.now());
+  logger.info(`🧹 closeExpiredRequests: closed ${totalClosed} expired request(s)`);
+  return {closed: totalClosed};
+});

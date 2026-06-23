@@ -14,4 +14,5 @@ class FirebaseConstants {
   static const String ambulanceImagesFolder = 'ambulance_images';
   static const String organizationImagesFolder = 'organization_images';
   static const String volunteerImagesFolder = 'volunteer_images';
+  static const String chatMediaFolder = 'chat_media';
 }

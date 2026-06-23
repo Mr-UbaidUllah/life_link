@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Blood Donation</string>
+	<string>Life Link</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -47,9 +47,17 @@
 	<true/>
 
 	<!-- Photo library access for the image picker (profile photos, organization
-	     and ambulance images, etc.). Required or the app crashes on first pick. -->
+	     and ambulance images, chat attachments, etc.). Required or the app
+	     crashes on first pick. -->
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Life Link needs access to your photos so you can set a profile picture and attach images to your posts.</string>
+	<string>Life Link needs access to your photos so you can set a profile picture and attach images and videos to your messages and posts.</string>
+
+	<!-- Camera + microphone access for capturing photos and recording videos to
+	     send in chat. Required or the app crashes when the camera is opened. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Life Link needs camera access so you can take photos and record videos to send in your messages.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Life Link needs microphone access so your recorded videos include sound.</string>
 
 	<!-- Schemes the app probes with canLaunchUrl before opening the dialer or
 	     email composer (url_launcher). Without these, canLaunchUrl returns false. -->
@@ -64,5 +72,16 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+
+	<!-- Location for proximity matching (geolocator): show distance to blood
+	     requests and sort by nearest. -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Life Link uses your location to show nearby blood requests and how far away each one is.</string>
+
+	<!-- Export compliance: the app uses only standard HTTPS/TLS encryption, so
+	     it is exempt. Setting this avoids the encryption question on every
+	     TestFlight / App Store upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

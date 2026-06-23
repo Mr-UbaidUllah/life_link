@@ -38,6 +38,16 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
     'Other',
   ];
 
+  @override
+  void dispose() {
+    nameController.dispose();
+    skillsController.dispose();
+    bioController.dispose();
+    phoneController.dispose();
+    locationController.dispose();
+    super.dispose();
+  }
+
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

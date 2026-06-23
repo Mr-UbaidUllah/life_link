@@ -1,9 +1,9 @@
 import 'package:blood_donation/models/user_model.dart';
 import 'package:blood_donation/provider/user_provider.dart';
+import 'package:blood_donation/theme/theme.dart';
 import 'package:blood_donation/utils/donation_eligibility.dart';
 import 'package:blood_donation/view/profile/image_screen.dart';
 import 'package:blood_donation/widgets/app_snackbar.dart';
-import 'package:blood_donation/widgets/custom_dropdown_form_field.dart';
 import 'package:blood_donation/widgets/custom_text_field.dart';
 import 'package:blood_donation/widgets/reusable_button.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -26,9 +26,7 @@ class BasicInformation extends StatefulWidget {
 }
 
 class _BasicInformationState extends State<BasicInformation> {
-  static const List<String> _donateOptions = ['Yes', 'No'];
-
-  String? _selectedOption;
+  bool _isDonor = false;
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _aboutController = TextEditingController();
   final TextEditingController _lastDonationController = TextEditingController();
@@ -36,6 +34,11 @@ class _BasicInformationState extends State<BasicInformation> {
   bool _neverDonated = false;
   final Set<String> _conditions = {};
   bool _loadingExisting = true;
+
+  // Synchronous in-flight guard: the ReusableButton only disables once
+  // provider.isLoading flips (next frame), so a same-frame double-tap could
+  // otherwise save twice and push two ImageScreens.
+  bool _saving = false;
 
   @override
   void initState() {
@@ -71,7 +74,7 @@ class _BasicInformationState extends State<BasicInformation> {
       final data = doc.data();
       if (data != null && mounted) {
         final user = UserModel.fromMap(doc.id, data);
-        _selectedOption = user.isDonor ? 'Yes' : 'No';
+        _isDonor = user.isDonor;
         _aboutController.text = user.about ?? '';
         if (user.weightKg != null) {
           _weightController.text = user.weightKg!.toStringAsFixed(
@@ -97,7 +100,7 @@ class _BasicInformationState extends State<BasicInformation> {
       uid: '',
       email: '',
       createdAt: DateTime.now(),
-      isDonor: _selectedOption == 'Yes',
+      isDonor: _isDonor,
       weightKg: double.tryParse(_weightController.text.trim()),
       lastDonationDate: _neverDonated ? null : _lastDonationDate,
       healthConditions: _conditions.toList(),
@@ -140,15 +143,11 @@ class _BasicInformationState extends State<BasicInformation> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    if (_selectedOption == null) {
-      AppSnackbar.error(context, 'Please select a donation preference');
-      return;
-    }
-
-    final isDonor = _selectedOption == 'Yes';
+    final isDonor = _isDonor;
     final weight = double.tryParse(_weightController.text.trim());
 
     // Weight is required for donors so eligibility can be evaluated.
@@ -157,6 +156,7 @@ class _BasicInformationState extends State<BasicInformation> {
       return;
     }
 
+    _saving = true;
     final provider = context.read<UserProvider>();
     final ok = await provider.updateHealthInfo(
       uid: user.uid,
@@ -168,6 +168,7 @@ class _BasicInformationState extends State<BasicInformation> {
     );
 
     if (!mounted) return;
+    _saving = false;
     if (ok) {
       await provider.loadCurrentUser();
       if (!mounted) return;
@@ -229,19 +230,7 @@ class _BasicInformationState extends State<BasicInformation> {
                       children: [
                         _sectionTitle(theme, 'Donation Preference'),
                         SizedBox(height: 12.h),
-                        CustomDropdownFormField(
-                          hintText: 'I want to donate blood',
-                          value: _selectedOption,
-                          items: _donateOptions,
-                          itemToString: (item) => item,
-                          borderRadius: 12,
-                          focusedBorderColor: theme.colorScheme.primary,
-                          prefixIcon: Icon(Icons.volunteer_activism_outlined,
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.4)),
-                          onChanged: (val) =>
-                              setState(() => _selectedOption = val),
-                        ),
+                        _buildDonateToggle(theme),
                         SizedBox(height: 24.h),
                         _sectionTitle(theme, 'Weight'),
                         SizedBox(height: 12.h),
@@ -345,6 +334,58 @@ class _BasicInformationState extends State<BasicInformation> {
         style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
       );
 
+  /// Donor opt-in as a switch row, matching the "Available to donate" toggle on
+  /// the Edit Profile screen so the same choice looks the same everywhere.
+  Widget _buildDonateToggle(ThemeData theme) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: _isDonor
+            ? AppColors.green.withValues(alpha: 0.1)
+            : theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+            color: _isDonor
+                ? AppColors.green.withValues(alpha: 0.3)
+                : theme.colorScheme.outline),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.volunteer_activism_rounded,
+              size: 20.sp,
+              color: _isDonor
+                  ? AppColors.green
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('I want to donate blood',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w800, fontSize: 14.sp)),
+                Text(
+                    _isDonor
+                        ? 'You\'ll appear in donor searches'
+                        : 'Opt in to help others',
+                    style: TextStyle(
+                        fontSize: 11.5.sp,
+                        color: theme.colorScheme.onSurface
+                            .withValues(alpha: 0.55))),
+              ],
+            ),
+          ),
+          Switch.adaptive(
+            value: _isDonor,
+            activeThumbColor: Colors.white,
+            activeTrackColor: AppColors.green,
+            onChanged: (val) => setState(() => _isDonor = val),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLastDonationField(ThemeData theme) {
     return CustomTextField(
       readOnly: true,
@@ -408,7 +449,7 @@ class _BasicInformationState extends State<BasicInformation> {
 
   Widget _buildEligibilityBanner(ThemeData theme) {
     // Only meaningful once the user opts in to donating.
-    if (_selectedOption != 'Yes') return const SizedBox.shrink();
+    if (!_isDonor) return const SizedBox.shrink();
 
     final result = _draftUser().evaluateEligibility();
     final color = result.isEligible

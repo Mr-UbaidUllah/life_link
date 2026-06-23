@@ -29,6 +29,22 @@ class StorageService {
     return ref.getDownloadURL();
   }
 
+  /// Uploads [file] to an explicit storage [path] (including filename and
+  /// extension) and returns the download URL. Used for chat attachments where
+  /// the extension/content-type vary (jpg/png images, mp4 videos).
+  Future<String> uploadFile({
+    required String path,
+    required File file,
+    String? contentType,
+  }) async {
+    final ref = _storage.ref().child(path);
+    await ref.putFile(
+      file,
+      contentType == null ? null : SettableMetadata(contentType: contentType),
+    );
+    return ref.getDownloadURL();
+  }
+
   /// Deletes `<folder>/<id>.jpg`. Returns true on success, false if it could
   /// not be removed (e.g. it never existed) — callers decide whether to care.
   Future<bool> deleteImage({

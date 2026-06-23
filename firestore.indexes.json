@@ -16,6 +16,22 @@
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isDonor", "order": "ASCENDING" },
+        { "fieldPath": "lastDonationDate", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "Blood_request",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "expiryDate", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
